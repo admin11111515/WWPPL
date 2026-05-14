@@ -89,6 +89,8 @@ export type SiteConfig = {
 		devices: boolean; // 设备页面开关
 		diary?: boolean; // 日记页面开关
 		projects?: boolean; // 项目页面开关
+		timeline?: boolean; // 时间线页面开关
+		skills?: boolean; // 技能页面开关
 	};
 	// 日记页面配置
 	diary?: {
@@ -189,6 +191,8 @@ export enum LinkPreset {
 	Devices = 8,
 	Diary = 9,
 	Projects = 10,
+	Timeline = 11,
+	Skills = 12,
 }
 
 export type NavBarLink = {

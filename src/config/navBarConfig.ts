@@ -18,11 +18,6 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 		LinkPreset.Archive,
 	];
 
-	// 根据配置决定是否添加相册，在siteConfig关闭pages.gallery时导航栏不显示相册
-	if (siteConfig.pages.gallery) {
-		links.push(LinkPreset.Gallery);
-	}
-
 	// 根据配置决定是否添加友链，在siteConfig关闭pages.friends时导航栏不显示友链
 	if (siteConfig.pages.friends) {
 		links.push(LinkPreset.Friends);
@@ -33,24 +28,35 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 		links.push(LinkPreset.Guestbook);
 	}
 
-	// 根据配置决定是否添加项目，在siteConfig关闭pages.projects时导航栏不显示项目
-	if (siteConfig.pages.projects) {
-		links.push(LinkPreset.Projects);
-	}
-
 	// 我的及其子菜单
-	// links.push({
-	// 	name: "我的",
-	// 	url: "/my/",
-	// 	icon: "material-symbols:person",
-	// 	children: [
-	// 		// 根据配置决定是否添加相册，在siteConfig关闭pages.gallery时导航栏不显示相册
-	// 		...(siteConfig.pages.gallery ? [LinkPreset.Gallery] : []),
+	links.push({
+		name: "我的",
+		url: "/my/",
+		icon: "material-symbols:person",
+		children: [
+			// 根据配置决定是否添加番组计划，在siteConfig关闭pages.bangumi时导航栏不显示番组计划
+			...(siteConfig.pages.bangumi ? [LinkPreset.Bangumi] : []),
 
-	// 		// 根据配置决定是否添加番组计划，在siteConfig关闭pages.bangumi时导航栏不显示番组计划
-	// 		...(siteConfig.pages.bangumi ? [LinkPreset.Bangumi] : []),
-	// 	],
-	// });
+			// 根据配置决定是否添加设备，在siteConfig关闭pages.devices时导航栏不显示设备
+			...(siteConfig.pages.devices ? [LinkPreset.Devices] : []),
+
+			
+			// 根据配置决定是否添加相册，在siteConfig关闭pages.gallery时导航栏不显示相册
+			...(siteConfig.pages.gallery ? [LinkPreset.Gallery] : []),
+			
+			// 根据配置决定是否添加日记，在siteConfig关闭pages.diary时导航栏不显示日记
+			...(siteConfig.pages.diary ? [LinkPreset.Diary] : []),
+
+			// 根据配置决定是否添加项目，在siteConfig关闭pages.projects时导航栏不显示项目
+			...(siteConfig.pages.projects ? [LinkPreset.Projects] : []),
+
+			// 根据配置决定是否添加时间线，在siteConfig关闭pages.timeline时导航栏不显示时间线
+			...(siteConfig.pages.timeline ? [LinkPreset.Timeline] : []),
+			
+			// 根据配置决定是否添加技能，在siteConfig关闭pages.skills时导航栏不显示技能
+			...(siteConfig.pages.skills ? [LinkPreset.Skills] : []),
+		],
+	});
 
 	// 关于及其子菜单
 	links.push({
@@ -63,12 +69,6 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 
 			// 根据配置决定是否添加赞助，在siteConfig关闭pages.sponsor时导航栏不显示赞助
 			...(siteConfig.pages.sponsor ? [LinkPreset.Sponsor] : []),
-
-			// 根据配置决定是否添加设备，在siteConfig关闭pages.devices时导航栏不显示设备
-			...(siteConfig.pages.devices ? [LinkPreset.Devices] : []),
-			
-			// 根据配置决定是否添加日记，在siteConfig关闭pages.diary时导航栏不显示日记
-			...(siteConfig.pages.diary ? [LinkPreset.Diary] : []),
 
 			// 关于页面
 			LinkPreset.About,
@@ -139,7 +139,7 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 	// 		LinkPreset.Friends,
 	// 	],
 	// });
-	
+
 
 	// 仅返回链接，其它导航搜索相关配置在模块顶层常量中独立导出
 	return { links } as NavBarConfig;

@@ -56,6 +56,16 @@ export const LinkPresets: { [key in LinkPreset]: NavBarLink } = {
 	[LinkPreset.Projects]: {
 		name: i18n(I18nKey.projects),
 		url: "/projects/",
-		icon: "material-symbols:code",
+		icon: "material-symbols:work",
+	},
+	[LinkPreset.Skills]: {
+		name: i18n(I18nKey.skills),
+		url: "/skills/",
+		icon: "material-symbols:psychology",
+	},
+	[LinkPreset.Timeline]: {
+		name: i18n(I18nKey.timeline),
+		url: "/timeline/",
+		icon: "material-symbols:timeline",
 	},
 };
