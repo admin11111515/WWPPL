@@ -42,7 +42,7 @@ main:
         target: /root/rsync/teek.seasir.top/dist/ # 目标服务器上的存放路径
         delete: true # 同步时删除目标路径中不存在的文件（确保目标与本地完全一致，避免冗余文件）
       docker:
-        image: docker.cnb.cool/znb/images/node:18
+        image: docker.cnb.cool/znb/images/node:22
         volumes:
           - /data/.cache:copy-on-write #声明式的构建缓存
       stages:
