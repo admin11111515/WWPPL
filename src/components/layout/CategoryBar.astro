@@ -3,7 +3,7 @@ import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import { Icon } from "astro-icon/components";
 import { getCategoryList, getSortedPostsList } from "@/utils/content-utils";
-import { url } from "@/utils/url-utils";
+import { url, getCategoryPageUrl } from "@/utils/url-utils";
 
 interface Props {
 	currentPostCategory?: string;
@@ -15,6 +15,7 @@ const categories = await getCategoryList();
 const totalPosts = (await getSortedPostsList()).length;
 const homeUrl = url("/");
 const archiveUrl = url("/archive/");
+const categoriesUrl = getCategoryPageUrl();
 ---
 
 <div
@@ -42,6 +43,15 @@ const archiveUrl = url("/archive/");
     >
       {i18n(I18nKey.archive)}
       <span class="text-xs opacity-60 ml-1">{totalPosts}</span>
+    </a>
+    <a
+      href={categoriesUrl}
+      class="category-pill text-sm px-3 py-1 rounded-lg whitespace-nowrap flex-shrink-0
+             transition-colors duration-200 flex items-center justify-center"
+      data-category-name="__categories__"
+    >
+      {i18n(I18nKey.categories)}
+      <span class="text-xs opacity-60 ml-1">{categories.length}</span>
     </a>
     <div class="category-divider shrink-0"></div>
     <div class="scroll-area relative">

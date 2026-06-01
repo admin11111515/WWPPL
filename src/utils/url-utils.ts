@@ -50,8 +50,12 @@ export function getCategoryUrl(category: string | null): string {
 		category.trim() === "" ||
 		category.trim().toLowerCase() === i18n(I18nKey.uncategorized).toLowerCase()
 	)
-		return url("/archive/?uncategorized=true");
-	return url(`/archive/?category=${encodeURIComponent(category.trim())}`);
+		return url("/categories/uncategorized/");
+	return url(`/categories/${encodeURIComponent(category.trim())}/`);
+}
+
+export function getCategoryPageUrl(): string {
+	return url("/categories/");
 }
 
 export function getDir(path: string): string {

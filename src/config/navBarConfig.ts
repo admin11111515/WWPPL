@@ -14,6 +14,13 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 		// 主页
 		LinkPreset.Home,
 
+		// 文章分类
+		{
+			name: "分类",
+			url: "/categories/",
+			icon: "material-symbols:folder-open",
+		},
+		
 		// 归档
 		LinkPreset.Archive,
 	];
