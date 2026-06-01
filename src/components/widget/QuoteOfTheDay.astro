@@ -47,7 +47,6 @@ const quote = quotes[randomIndex] || { text: "暂无名言", author: "" };
 		font-style: italic;
 		font-size: 0.9rem;
 		line-height: 1.6;
-		color: var(--text-color);
 		padding: 0 0.5rem;
 		margin: 0;
 	}
@@ -72,7 +71,7 @@ const quote = quotes[randomIndex] || { text: "暂无名言", author: "" };
 
 	/* 深色模式优化 */
 	:global(html.dark) .quote-text {
-		color: var(--text-color);
+		color: #fff;
 	}
 
 	/* 悬停效果 */

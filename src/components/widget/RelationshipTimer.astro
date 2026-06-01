@@ -55,7 +55,8 @@ const style = Astro.props.style;
   @reference "tailwindcss";
 
   .timer-num {
-    @apply font-bold text-neutral-700 dark:text-neutral-200 min-w-[1rem] text-center;
+    @apply font-bold text-neutral-700 dark:text-neutral-200 min-w-[0rem] text-center;
+    color: var(--primary);
   }
   .timer-unit {
     @apply px-1 py-0.5 rounded text-[10px] text-white font-medium shrink-0;
