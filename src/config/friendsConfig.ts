@@ -128,7 +128,7 @@ export const friendsConfig: FriendLink[] = [
 		title: "十三",
 		imgurl: "https://img.nw177.cn/blog/100.assets/avatar.webp",
 		desc: "欲买桂花同载酒，终不似，少年游。",
-		siteurl: "https://firefly.nw177.cn",
+		siteurl: "https://blog.nw177.cn",
 		tags: ["Astro"],
 		weight: 8,
 		enabled: true

@@ -16,6 +16,8 @@ const uncategorized = params.get("uncategorized");
 
 interface Post {
 	id: string;
+	type?: "post" | "moment" | "bangumi" | "life";
+	link?: string;
 	data: {
 		title: string;
 		tags: string[];
@@ -181,8 +183,9 @@ onMount(async () => {
 			</div>
 
 			{#each group.posts as post}
+				{@const postLink = post.link || getPostUrlBySlug(post.id)}
 				<a
-						href={getPostUrlBySlug(post.id)}
+						href={postLink}
 						aria-label={post.data.title}
 						class="group btn-plain block! h-10 w-full rounded-lg hover:text-[initial]"
 				>
@@ -210,7 +213,24 @@ onMount(async () => {
                      group-hover:translate-x-1 transition-all group-hover:text-(--primary)
                      text-75 pr-8 whitespace-nowrap text-ellipsis overflow-hidden"
 						>
-							{post.data.title}
+							{#if post.type === 'post'}
+								<span class="px-1.5 py-0.5 text-[10px] bg-amber-500 text-white rounded-md shrink-0 uppercase tracking-wider opacity-80 font-normal">
+									文章
+								</span>
+							{:else if post.type === 'moment'}
+								<span class="px-1.5 py-0.5 text-[10px] bg-(--primary) text-white rounded-md shrink-0 uppercase tracking-wider opacity-80 font-normal">
+									{i18n(I18nKey.moments) || 'Moment'}
+								</span>
+							{:else if post.type === 'bangumi'}
+								<span class="px-1.5 py-0.5 text-[10px] bg-red-500 text-white rounded-md shrink-0 uppercase tracking-wider opacity-80 font-normal">
+									{i18n(I18nKey.bangumi) || 'Record'}
+								</span>
+							{:else if post.type === 'life'}
+								<span class="px-1.5 py-0.5 text-[10px] bg-emerald-600 text-white rounded-md shrink-0 uppercase tracking-wider opacity-80 font-normal">
+									生活
+								</span>
+							{/if}
+							<span class="truncate">{post.data.title}</span>
 						</div>
 
 						<!-- tag list -->

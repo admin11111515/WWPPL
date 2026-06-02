@@ -87,6 +87,7 @@ export const ja: Translation = {
 	[Key.readTime]: "読了時間",
 	[Key.license]: "ライセンス",
 	[Key.bangumi]: "バングミ",
+	[Key.moments]: "ダイナミック",
 
 	// バングミフィルターと状態文本
 	[Key.bangumiTitle]: "私のバングミ",

@@ -1,7 +1,8 @@
 import { type CollectionEntry, getCollection } from "astro:content";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
-import { getCategoryUrl } from "@utils/url-utils";
+import { getCategoryUrl, getPostUrlBySlug } from "@utils/url-utils";
+import { getDiaryList } from "@/data/diary";
 
 // // Retrieve posts and sort them by publication date
 async function getRawSortedPosts() {
@@ -75,6 +76,67 @@ export async function getTagList(): Promise<Tag[]> {
 	});
 
 	return keys.map((key) => ({ name: key, count: countMap[key] }));
+}
+
+export interface ArchiveItem {
+	id: string;
+	type: "post" | "moment" | "bangumi" | "life";
+	link?: string;
+	data: {
+		title: string;
+		published: Date;
+		tags: string[];
+		category?: string | null;
+	};
+}
+
+export async function getArchiveList(): Promise<ArchiveItem[]> {
+	const posts = await getCollection("posts", ({ data }) => {
+		return import.meta.env.PROD ? data.draft !== true : true;
+	});
+	const diaryList = getDiaryList();
+
+	const postItems: ArchiveItem[] = posts.map((post) => ({
+		id: post.id,
+		type: "post",
+		link: getPostUrlBySlug(post.id),
+		data: {
+			title: post.data.title,
+			published: post.data.published,
+			tags: post.data.tags,
+			category: post.data.category || null,
+		},
+	}));
+
+	// 将日记数据转换为归档项
+	const momentItems: ArchiveItem[] = diaryList.map((diary) => {
+		let title = diary.content || "";
+		title = title.replace(/[#*`]/g, "").trim();
+		if (title.length > 50) title = `${title.substring(0, 50)}...`;
+		if (!title) title = i18n(I18nKey.moments) || "日常动态";
+
+		return {
+			id: String(diary.id),
+			type: "moment",
+			link: "/diary/",
+			data: {
+				title: title,
+				published: new Date(diary.date),
+				tags: diary.tags || [],
+				category: null,
+			},
+		};
+	});
+
+	// 空数组，用于保持接口兼容性
+	const bangumiItems: ArchiveItem[] = [];
+	const lifeItems: ArchiveItem[] = [];
+
+	return [...postItems, ...momentItems, ...bangumiItems, ...lifeItems].sort((a, b) => {
+		const timeA = a.data.published.getTime();
+		const timeB = b.data.published.getTime();
+		return timeB - timeA;
+	});
 }
 
 export type Category = {

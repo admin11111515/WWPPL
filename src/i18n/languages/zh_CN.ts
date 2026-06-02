@@ -42,6 +42,7 @@ export const zh_CN: Translation = {
 	[Key.musicCover]: "封面",
 	[Key.musicNoCover]: "暂无封面",
 	[Key.musicAudioPlayer]: "音频播放器",
+	
 
 	// 公告栏
 	[Key.announcement]: "公告",
@@ -85,6 +86,7 @@ export const zh_CN: Translation = {
 	[Key.readTime]: "阅读时长",
 	[Key.license]: "许可协议",
 	[Key.bangumi]: "番组计划",
+	[Key.moments]: "动态",
 
 	// 番组计划筛选和状态文本
 	[Key.bangumiTitle]: "我的番组计划",
