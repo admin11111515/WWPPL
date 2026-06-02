@@ -159,6 +159,11 @@ export const sidebarLayoutConfig: SidebarLayoutConfig = {
 			position: "sticky",
 			// 是否在文章详情页显示
 			showOnPostPage: false,
+			// 响应式配置
+			responsive: {
+				// 是否显示年度文章热力图
+				showHeatmap: true,
+			},
 		},
 		{
 			// 组件类型：时间进度组件

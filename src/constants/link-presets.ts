@@ -68,4 +68,14 @@ export const LinkPresets: { [key in LinkPreset]: NavBarLink } = {
 		url: "/timeline/",
 		icon: "material-symbols:timeline",
 	},
+	[LinkPreset.Tags]: {
+		name: i18n(I18nKey.tags),
+		url: "/tags/",
+		icon: "material-symbols:tag-rounded",
+	},
+	[LinkPreset.Categories]: {
+		name: i18n(I18nKey.categories),
+		url: "/categories/",
+		icon: "material-symbols:folder-open-rounded",
+	},
 };
