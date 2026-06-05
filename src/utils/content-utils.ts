@@ -3,6 +3,8 @@ import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import { getCategoryUrl, getPostUrlBySlug } from "@utils/url-utils";
 import { getDiaryList } from "@/data/diary";
+import { siteConfig } from "@/config/siteConfig";
+import type { UserSubjectCollection } from "@/types/bangumi";
 
 // // Retrieve posts and sort them by publication date
 async function getRawSortedPosts() {
@@ -90,6 +92,70 @@ export interface ArchiveItem {
 	};
 }
 
+// 获取 Bangumi 数据的辅助函数
+async function fetchBangumiArchiveData(): Promise<ArchiveItem[]> {
+	const bangumiConfig = siteConfig.bangumi;
+	if (!bangumiConfig) return [];
+
+	const username = bangumiConfig.userId;
+	const apiUrl = bangumiConfig.apiUrl || "https://api.bangumi.one";
+	
+	// 检查是否已配置用户ID
+	if (!username || username === "you-user-id" || username.trim() === "") {
+		console.log("[Archive] Bangumi 用户ID未配置，跳过获取");
+		return [];
+	}
+
+	// 分类映射
+	const categoryMap: Record<string, { name: string; subjectType: number }> = {
+		anime: { name: i18n(I18nKey.bangumiCategoryAnime), subjectType: 2 },
+		book: { name: i18n(I18nKey.bangumiCategoryBook), subjectType: 1 },
+		music: { name: i18n(I18nKey.bangumiCategoryMusic), subjectType: 3 },
+		game: { name: i18n(I18nKey.bangumiCategoryGame), subjectType: 4 },
+	};
+
+	const subjectBaseUrl = bangumiConfig.subjectBaseUrl || "https://bangumi.one/subject/";
+	const bangumiItems: ArchiveItem[] = [];
+
+	for (const [key, info] of Object.entries(categoryMap)) {
+		try {
+			const url = `${apiUrl}/v0/users/${username}/collections?subject_type=${info.subjectType}&limit=50&offset=0`;
+			const response = await fetch(url, {
+				headers: {
+					"User-Agent": "YuuOuRou Blog",
+					Accept: "application/json",
+				},
+			});
+
+			if (!response.ok) {
+				console.warn(`[Archive] 获取 Bangumi ${info.name} 数据失败: ${response.status}`);
+				continue;
+			}
+
+			const data = (await response.json()) as { data: UserSubjectCollection[] };
+			const collections = data.data || [];
+
+			for (const item of collections) {
+				bangumiItems.push({
+					id: `bangumi-${item.subject.id}`,
+					type: "bangumi",
+					link: `${subjectBaseUrl}${item.subject.id}`,
+					data: {
+						title: item.subject.name,
+						published: item.subject.date ? new Date(item.subject.date) : new Date(),
+						tags: item.subject.tags?.map((t) => t.name) || [],
+						category: info.name,
+					},
+				});
+			}
+		} catch (error) {
+			console.error(`[Archive] 获取 Bangumi ${info.name} 数据异常:`, error);
+		}
+	}
+
+	return bangumiItems;
+}
+
 export async function getArchiveList(): Promise<ArchiveItem[]> {
 	const posts = await getCollection("posts", ({ data }) => {
 		return import.meta.env.PROD ? data.draft !== true : true;
@@ -128,8 +194,8 @@ export async function getArchiveList(): Promise<ArchiveItem[]> {
 		};
 	});
 
-	// 空数组，用于保持接口兼容性
-	const bangumiItems: ArchiveItem[] = [];
+	// 获取 Bangumi 数据
+	const bangumiItems: ArchiveItem[] = await fetchBangumiArchiveData();
 	const lifeItems: ArchiveItem[] = [];
 
 	return [...postItems, ...momentItems, ...bangumiItems, ...lifeItems].sort((a, b) => {
