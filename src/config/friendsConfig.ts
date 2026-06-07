@@ -186,7 +186,34 @@ export const friendsConfig: FriendLink[] = [
 		tags: ["Astro"],
 		weight: 0,
 		enabled: true
-	}
+	},
+	{
+		title: "小王的博客",
+		imgurl: "https://www.huhaha.vip/acatar.webp",
+		desc: "一个上了年纪的猿人.",
+		siteurl: "https://www.huhaha.vip/",
+		tags: ["Astro"],
+		weight: 0,
+		enabled: true
+	},
+	{
+		title: "Sigrika-善良耙耙柑🍊",
+		imgurl: "https://weavatar.com/avatar/bc0dba25ea5949e8290d012e081ceec669aa7784c7ad765173473c80cbaee404",
+		desc: "记录我的二次元之旅",
+		siteurl: "https://qwq.sigrika.cc/",
+		tags: ["Astro"],
+		weight: 0,
+		enabled: true
+	},
+	{
+		title: "Nachcekoの小窝",
+		imgurl: "https://avatars.githubusercontent.com/u/172878250?v=4",
+		desc: "1つの熱愛の2次元の小さい萌の新しい~ /.こんにちはnya~です",
+		siteurl: "https://tbmiao.dpdns.org",
+		tags: ["Astro"],
+		weight: 0,
+		enabled: true
+	},
 ];
 
 // 获取启用的友链并进行排序
