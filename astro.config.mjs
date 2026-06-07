@@ -37,7 +37,7 @@ import { remarkExcerpt } from "./src/plugins/remark-excerpt.js";
 import { remarkImageGrid } from "./src/plugins/remark-image-grid.js";
 import { remarkMermaid } from "./src/plugins/remark-mermaid.js";
 import { remarkPlantuml } from "./src/plugins/remark-plantuml.js";
-import { remarkReadingTime } from "./src/plugins/remark-reading-time.js";
+import { remarkReadingTime } from "./src/plugins/remark-reading-time.mjs";
 
 if (process.env.NODE_ENV === "development") {
 	setMaxListeners(20);
