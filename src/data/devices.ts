@@ -83,6 +83,14 @@ export const devicesData: DeviceCategory = {
 			link: "https://www.dji.com/cn/osmo-pocket-4",
 			price: "2999元",
 		},
+		{
+			name: "影石Insta360 Luna Ultra",
+			image: "/images/device/Insta360 Luna Ultra.webp",
+			specs: "创作者套装",
+			description: "昼夜清晰，远近随心",
+			link: "https://store.insta360.com/cn/product/luna-series",
+			price: "4849元",
+		},
 	],
 	路由器: [
 		{

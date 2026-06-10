@@ -13,6 +13,7 @@ import Tags from "@/components/widget/Tags.astro";
 import RelationshipTimer from "@/components/widget/RelationshipTimer.astro";  // 引入恋爱计时组件
 import QuoteOfTheDay from "@/components/widget/QuoteOfTheDay.astro"; // 引入今日一言组件
 import UmamiStats from "@/components/widget/UmamiStats.astro"; // UmamiStats 组件
+import Weather from "@/components/widget/Weather.astro"; // 引入天气组件
 
 
 import { sidebarLayoutConfig } from "@/config";
@@ -59,6 +60,7 @@ const componentMap = {
 	relationship: RelationshipTimer,
 	quoteOfTheDay: QuoteOfTheDay,
 	umamiStats: UmamiStats,
+	weather: Weather,
 } satisfies Record<WidgetComponentType, typeof Profile>;
 
 // 获取侧边栏位置
