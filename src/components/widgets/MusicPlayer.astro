@@ -57,6 +57,13 @@ const lrcUrl = currentSrc ? currentSrc.replace(/\.[^/.]+$/, ".lrc") : "";
 const playlistData = list ? JSON.stringify(list) : "[]";
 const playlistListData = playlists ? JSON.stringify(playlists) : "[]";
 const playlistSongsData = JSON.stringify(playlistSongs);
+
+// 按需加载：初始仅渲染前 BATCH_SIZE 首，后续通过 JS 滚动加载
+const BATCH_SIZE = 100;
+const totalCount = list ? list.length : 0;
+const initialBatch = list ? list.slice(0, BATCH_SIZE) : [];
+const hasMore = totalCount > BATCH_SIZE;
+
 import { Icon } from "astro-icon/components";
 
 ---
@@ -250,8 +257,9 @@ import { Icon } from "astro-icon/components";
                   没有找到匹配的歌曲
                 </div>
                 <!-- 歌曲列表：由 Astro 构建时渲染，每首歌一个 li -->
-                <ul class="space-y-3" id="playlist-list">
-                {list && list.map((item, index) => (
+                <!-- data-total-count 供 JS 判断是否需要加载更多 -->
+                <ul class="space-y-3" id="playlist-list" data-total-count={totalCount}>
+                {initialBatch && initialBatch.map((item, index) => (
                   <li class={`playlist-item group flex items-center gap-3 p-3 rounded-2xl hover:bg-black/5 dark:hover:bg-white/5 border border-transparent transition-all cursor-pointer ${index === 0 ? 'active border-gray-300 dark:border-gray-600 bg-black/5 dark:bg-white/5' : ''}`} data-index={index} data-search={`${item.title || ''} ${item.artist || ''} ${item.duration || ''}`}>
                     <!-- 序号 -->
                     <span class="font-mono text-gray-500 dark:text-gray-400 text-sm font-bold w-6 text-center group-hover:dark:text-neutral-100 dark:text-white transition-colors">{(index + 1).toString().padStart(2, '0')}</span>
@@ -277,6 +285,12 @@ import { Icon } from "astro-icon/components";
                   </li>
                 ))}
               </ul>
+                <!-- 加载更多触发点：当滚动到此元素时触发下一批歌曲加载 -->
+                {hasMore && (
+                  <div id="playlist-load-more" class="flex items-center justify-center py-4 text-sm text-gray-500 dark:text-gray-400 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+                    <span class="font-mono">加载更多歌曲 ({initialBatch.length}/{totalCount})</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

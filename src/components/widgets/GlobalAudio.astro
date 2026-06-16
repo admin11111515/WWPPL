@@ -84,6 +84,9 @@ const showMini = musicPlayerConfig.showMiniPlayer ?? false;
             this.playlistSongs = {};
             this.activePlaylistId = 'all';
             this.playlistSearchQuery = '';
+            this.BATCH_SIZE = 100;
+            this.renderedCount = 0; // Number of songs currently rendered in DOM
+            this._lazyLoadObserver = null; // IntersectionObserver for lazy loading
 
             // Initial binding
             this.handlePageLoad();
@@ -400,6 +403,13 @@ const showMini = musicPlayerConfig.showMiniPlayer ?? false;
             this.bindPlaylistEvents();
             this.bindPlaylistSearchEvents();
             this.applyPlaylistSearch();
+
+            // Sync renderedCount with actual DOM items (from static HTML)
+            const existingItems = document.querySelectorAll('#playlist-list .playlist-item');
+            this.renderedCount = existingItems.length;
+
+            // Setup lazy loading for the playlist (if applicable)
+            this.setupLazyLoading();
 
             // Restore previously selected playlist highlight
             if (this.activePlaylistId) {
@@ -731,7 +741,16 @@ const showMini = musicPlayerConfig.showMiniPlayer ?? false;
 
         applyPlaylistSearch() {
             const query = this.playlistSearchInput?.value ?? this.playlistSearchQuery ?? '';
+            const prevQuery = this.playlistSearchQuery;
             this.playlistSearchQuery = query;
+
+            const hasQuery = !!this.normalizeSearchText(query);
+            const wasSearching = !!this.normalizeSearchText(prevQuery);
+
+            // If searching and there are unrendered songs, render all to enable full-text search
+            if (hasQuery && this.renderedCount < this.playlist.length) {
+                this.renderPlaylistList({ append: true, start: this.renderedCount, end: this.playlist.length });
+            }
 
             const items = document.querySelectorAll('.playlist-item');
             let visibleCount = 0;
@@ -746,12 +765,58 @@ const showMini = musicPlayerConfig.showMiniPlayer ?? false;
                 this.playlistEmptyState.classList.toggle('hidden', visibleCount > 0);
             }
 
-            if (!this.normalizeSearchText(query)) {
+            // Hide load-more indicator when searching
+            const loadMoreEl = document.getElementById('playlist-load-more');
+            if (loadMoreEl) {
+                loadMoreEl.classList.toggle('hidden', hasQuery);
+            }
+
+            if (!hasQuery) {
                 this.scrollActivePlaylistItemIntoView('auto');
+                
+                // When clearing search, reset to batch rendering if all songs were loaded for search
+                if (wasSearching && this.renderedCount >= this.playlist.length) {
+                    this.resetPlaylistRendering();
+                }
             }
         }
 
+        /**
+         * Reset playlist rendering to first batch only (remove excess DOM nodes)
+         */
+        resetPlaylistRendering() {
+            const playlistListEl = document.getElementById('playlist-list');
+            if (!playlistListEl) return;
+
+            const allItems = playlistListEl.querySelectorAll('.playlist-item');
+            const batchSize = this.BATCH_SIZE;
+
+            if (allItems.length <= batchSize) return;
+
+            // Remove items beyond the first batch
+            for (let i = allItems.length - 1; i >= batchSize; i--) {
+                allItems[i].remove();
+            }
+
+            this.renderedCount = batchSize;
+            this.updateLoadMoreIndicator();
+            this.setupLazyLoading();
+        }
+
         scrollActivePlaylistItemIntoView(behavior = 'smooth') {
+            // If the active song is beyond the rendered batch, load more songs first
+            if (this.currentIndex >= this.renderedCount) {
+                this.loadMorePlaylistSongs();
+                // Wait for DOM to update, then scroll
+                requestAnimationFrame(() => {
+                    this._scrollActiveItem(behavior);
+                });
+                return;
+            }
+            this._scrollActiveItem(behavior);
+        }
+
+        _scrollActiveItem(behavior = 'smooth') {
             const activeItem = this.playlistContainer?.querySelector('.playlist-item.active:not(.hidden)');
             if (!activeItem) return;
 
@@ -806,10 +871,24 @@ const showMini = musicPlayerConfig.showMiniPlayer ?? false;
             }
         }
 
-        renderPlaylistList() {
+        /**
+         * 渲染播放列表（支持分批渲染）
+         * @param {Object} options - { append: boolean, start: number, end: number }
+         *   append=false: 清空并只渲染前 BATCH_SIZE 首
+         *   append=true: 追加渲染 start 到 end 之间的歌曲
+         */
+        renderPlaylistList(options = {}) {
+            const { append = false, start = 0, end = this.BATCH_SIZE } = options;
             const playlistListEl = document.getElementById('playlist-list');
             if (!playlistListEl) return;
-            playlistListEl.innerHTML = this.playlist.map((song, index) => `
+
+            const actualStart = append ? this.renderedCount : start;
+            const actualEnd = Math.min(this.playlist.length, end);
+            const batch = this.playlist.slice(actualStart, actualEnd);
+
+            if (batch.length === 0) return;
+
+            const renderItem = (song, index) => `
                 <li class="playlist-item group flex items-center gap-3 p-3 rounded-2xl hover:bg-black/5 dark:hover:bg-white/5 border border-transparent transition-all cursor-pointer ${index === this.currentIndex ? 'active border-gray-300 dark:border-gray-600 bg-black/5 dark:bg-white/5' : ''}" data-index="${index}" data-search="${(song.title || '').replace(/"/g, '&quot;')} ${(song.artist || '').replace(/"/g, '&quot;')} ${(song.duration || '').replace(/"/g, '&quot;')}">
                     <span class="font-mono text-gray-500 dark:text-gray-400 text-sm font-bold w-6 text-center group-hover:text-gray-900 dark:text-white transition-colors">${String(index + 1).padStart(2, '0')}</span>
                     <div class="relative w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-gray-200 dark:border-gray-700/50">
@@ -828,8 +907,109 @@ const showMini = musicPlayerConfig.showMiniPlayer ?? false;
                     </div>
                     <div class="text-xs font-mono text-gray-500 dark:text-gray-400 font-bold playlist-duration" data-song-index="${index}">${song.duration || '--:--'}</div>
                 </li>
-            `).join('');
+            `;
+
+            if (append) {
+                playlistListEl.insertAdjacentHTML('beforeend', batch.map((song, i) => renderItem(song, actualStart + i)).join(''));
+            } else {
+                playlistListEl.innerHTML = batch.map((song, i) => renderItem(song, start + i)).join('');
+                this.renderedCount = 0;
+            }
+
+            this.renderedCount = Math.max(this.renderedCount, actualEnd);
+
+            // Update total count attribute
+            playlistListEl.setAttribute('data-total-count', this.playlist.length);
+
+            // Update or remove the load-more indicator
+            this.updateLoadMoreIndicator();
+
+            // Re-bind playlist events (delegation handles this, but ensure bound)
             this.bindPlaylistEvents();
+
+            // Setup lazy loading observer
+            this.setupLazyLoading();
+        }
+
+        /**
+         * 更新"加载更多"指示器状态
+         */
+        updateLoadMoreIndicator() {
+            let loadMoreEl = document.getElementById('playlist-load-more');
+            
+            // If the element doesn't exist, create it after the playlist list
+            if (!loadMoreEl) {
+                const playlistListEl = document.getElementById('playlist-list');
+                if (!playlistListEl) return;
+                loadMoreEl = document.createElement('div');
+                loadMoreEl.id = 'playlist-load-more';
+                loadMoreEl.className = 'flex items-center justify-center py-4 text-sm text-gray-500 dark:text-gray-400 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300 transition-colors';
+                playlistListEl.parentNode.insertBefore(loadMoreEl, playlistListEl.nextSibling);
+            }
+
+            if (this.renderedCount >= this.playlist.length) {
+                // All songs loaded
+                loadMoreEl.innerHTML = '<span class="font-mono text-xs text-gray-400 dark:text-gray-500">已加载全部歌曲</span>';
+                loadMoreEl.style.cursor = 'default';
+                loadMoreEl.classList.add('pointer-events-none');
+            } else {
+                loadMoreEl.innerHTML = `<span class="font-mono">加载更多歌曲 (${this.renderedCount}/${this.playlist.length})</span>`;
+                loadMoreEl.style.cursor = 'pointer';
+                loadMoreEl.classList.remove('pointer-events-none');
+            }
+        }
+
+        /**
+         * 设置 IntersectionObserver 实现滚动加载
+         */
+        setupLazyLoading() {
+            // Clean up existing observer
+            if (this._lazyLoadObserver) {
+                this._lazyLoadObserver.disconnect();
+                this._lazyLoadObserver = null;
+            }
+
+            const loadMoreEl = document.getElementById('playlist-load-more');
+            if (!loadMoreEl || this.renderedCount >= this.playlist.length) return;
+
+            // Get the scrollable parent of #playlist-list
+            const scrollContainer = document.querySelector('#playlist-container .custom-scrollbar');
+            if (!scrollContainer) return;
+
+            this._lazyLoadObserver = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting) {
+                    this.loadMorePlaylistSongs();
+                }
+            }, {
+                root: scrollContainer,
+                rootMargin: '100px',
+                threshold: 0.1
+            });
+
+            this._lazyLoadObserver.observe(loadMoreEl);
+
+            // Also handle click on the load-more element
+            if (!loadMoreEl.dataset.bound) {
+                loadMoreEl.addEventListener('click', () => this.loadMorePlaylistSongs());
+                loadMoreEl.dataset.bound = 'true';
+            }
+        }
+
+        /**
+         * 加载下一批歌曲到播放列表
+         */
+        loadMorePlaylistSongs() {
+            if (this.renderedCount >= this.playlist.length) return;
+
+            const nextStart = this.renderedCount;
+            const nextEnd = Math.min(this.playlist.length, nextStart + this.BATCH_SIZE);
+
+            this.renderPlaylistList({ append: true, start: nextStart, end: nextEnd });
+
+            // Update active state for newly loaded items if current song is in the new batch
+            if (this.currentIndex >= nextStart && this.currentIndex < nextEnd) {
+                this.updateUI();
+            }
         }
 
         async updatePlaylistDurations() {
@@ -1055,6 +1235,8 @@ const showMini = musicPlayerConfig.showMiniPlayer ?? false;
                 this.btnLyrics?.classList.remove('bg-gray-200', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300', 'shadow-sm');
                 this.applyPlaylistSearch();
                 this.scrollActivePlaylistItemIntoView();
+                // Re-setup lazy loading when switching to playlist view
+                this.setupLazyLoading();
             } else {
                 this.lyricsContainer?.classList.remove('hidden');
                 this.playlistContainer?.classList.add('hidden');

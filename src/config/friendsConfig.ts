@@ -241,6 +241,24 @@ export const friendsConfig: FriendLink[] = [
 		weight: 0,
 		enabled: true
 	},
+	{
+		title: "小生",
+		desc: "天生我材必有用，千金散尽还复来。",
+		siteurl: "https://www.zsso.cn",
+		imgurl: "https://t.alcy.cc/tx",
+		tags: ["Blog"],
+		weight: 0,
+		enabled: true
+	},
+	{
+		title: "mccsjs",
+		desc: "点一盏灯，等待一个迷路的夜🍁",
+		siteurl: "https://blog.seln.cn",
+		imgurl: "https://blog.seln.cn/img/ico.jpg",
+		tags: ["Blog"],
+		weight: 0,
+		enabled: true
+	},
 ];
 
 // 获取启用的友链并进行排序
