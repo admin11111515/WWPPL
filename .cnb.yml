@@ -82,8 +82,8 @@ main:
         #   settings:
         #     branch: master
         #     auth_type: https
-        #     username: ${GIT_USERNAME}
-        #     password: ${GIT_ACCESS_TOKEN}
+        #     username: ${GITEE_USERNAME}
+        #     password: ${GITEE_ACCESS_TOKEN}
         #     target_url: https://gitee.com/SeasirHyde/teek-hyde.git
         #     # git_email: 'github-actions[bot]@users.noreply.github.com'
 
@@ -93,8 +93,8 @@ main:
           settings:
             branch: main
             auth_type: https
-            username: ${GIT_USERNAME}
-            password: ${GIT_ACCESS_TOKEN}
+            username: ${GITHUB_USERNAME}
+            password: ${GITHUB_ACCESS_TOKEN}
             target_url: https://github.com/Seasir-Hyde/Firefly-hyde.git
             # git_email: 'github-actions[bot]@users.noreply.github.com'
 
