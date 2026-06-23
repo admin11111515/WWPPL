@@ -87,6 +87,17 @@ main:
         #     target_url: https://gitee.com/SeasirHyde/teek-hyde.git
         #     # git_email: 'github-actions[bot]@users.noreply.github.com'
 
+        # 同步仓库到github
+        - name: 👉 同步仓库到github
+          image: tencentcom/git-sync
+          settings:
+            branch: master
+            auth_type: https
+            username: ${GIT_USERNAME}
+            password: ${GIT_ACCESS_TOKEN}
+            target_url: https://github.com/Seasir-Hyde/Firefly-hyde.git
+            # git_email: 'github-actions[bot]@users.noreply.github.com'
+
 
         # 构建知识库
         # - name: 📖 构建知识库
