@@ -111,7 +111,7 @@ export const siteConfig: SiteConfig = {
 		// 相册页面开关
 		gallery: true,
 		// 设备页面开关
-		devices: true,
+		devices: false,
 		// 日记页面开关
 		diary: true,
 		// 项目页面开关
