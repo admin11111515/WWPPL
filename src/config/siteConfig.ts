@@ -117,7 +117,7 @@ export const siteConfig: SiteConfig = {
 		// 项目页面开关
 		projects: true,
 		// 时间线页面开关
-		timeline: true,
+		timeline: false,
 		// 技能页面开关
 		skills: true,
 	},
