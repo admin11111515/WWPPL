@@ -68,9 +68,6 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 			// 番组计划
 			LinkPresets.Bangumi,
 
-			// 设备
-			LinkPresets.Devices,
-
 			// 音乐
 			LinkPresets.Music,
 		],
