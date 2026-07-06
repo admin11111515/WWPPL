@@ -7,15 +7,15 @@ export const externalMomentsConfig = {
 	enable: true,
 
 	// GitHub Gist ID（创建 Gist 后从 URL 中获取）
-	gistId: "ee329e8726b8d77b68f23c602ae76f8c",
+	gistId: "63681782052c48c2b7814ea6969c3b43",
 
 	// Gist 中的文件名
 	fileName: "moments.json",
 
 	// 默认作者信息
-	defaultAuthor: "Hyde",
+	defaultAuthor: "WWPPL",
 	defaultAvatar:
-		"https://i.postimg.cc/7YLVJqnp/wei-xin-tu-pian-2026-05-07-020150-883.jpg",
+		"https://i0.hdslb.com/bfs/article/b7d2082a053870308bc072ca4a9d13fd5b332748.jpg",
 
 	// 后台登录密码的 SHA-256 哈希（明文密码不再存入代码）
 	// 生成方式：echo -n "你的密码" | hyde189755
