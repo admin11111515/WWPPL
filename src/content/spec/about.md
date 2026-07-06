@@ -14,7 +14,7 @@
 
 ## 🛠️ 关于本站
 
-本站使用 [Firefly](https://github.com/CuteLeaf/Firefly) 主题构建，基于 [Astro](https://astro.build/) 框架。
+本站使用 [Firefly](https://github.com/admin11111515/WWPPL) 主题构建，基于 [Astro](https://astro.build/) 框架。
 
 ---
 

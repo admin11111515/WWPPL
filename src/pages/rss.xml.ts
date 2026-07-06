@@ -56,7 +56,7 @@ export async function GET(context: APIContext) {
 		site: context.site ?? "https://firefly.cuteleaf.cn",
 		customData: `<templateTheme>Firefly</templateTheme>
 		<templateThemeVersion>${pkg.version}</templateThemeVersion>
-		<templateThemeUrl>https://github.com/CuteLeaf/Firefly</templateThemeUrl>
+		<templateThemeUrl>https://github.com/admin11111515/WWPPL</templateThemeUrl>
 		<lastBuildDate>${formatDateI18nWithTime(new Date())}</lastBuildDate>`,
 		items: feedItems,
 	});
