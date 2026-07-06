@@ -111,6 +111,36 @@ export const skillsData: Skill[] = [
 		experience: { years: 1, months: 0 },
 		color: "#ED8B00",
 	},
+	{
+		id: "csharp",
+		name: "C#",
+		description: "微软开发的现代面向对象编程语言，适用于 .NET 生态",
+		icon: "devicon:csharp",
+		category: "backend",
+		level: "beginner",
+		experience: { years: 1, months: 0 },
+		color: "#239120",
+	},
+	{
+		id: "php",
+		name: "PHP",
+		description: "广泛使用的服务器端脚本语言，特别适合 Web 开发",
+		icon: "logos:php",
+		category: "backend",
+		level: "beginner",
+		experience: { years: 1, months: 0 },
+		color: "#777BB4",
+	},
+	{
+		id: "jsp",
+		name: "JSP",
+		description: "Java Server Pages，Java Web 开发的动态页面技术",
+		icon: "logos:java",
+		category: "backend",
+		level: "beginner",
+		experience: { years: 0, months: 6 },
+		color: "#ED8B00",
+	},
 
 	// Database Skills
 	{
