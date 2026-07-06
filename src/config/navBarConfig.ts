@@ -96,9 +96,6 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 			// 项目
 			LinkPresets.Projects,
 
-			// 时间线
-			LinkPresets.Timeline,
-
 			// 技能
 			LinkPresets.Skills,
 		],
