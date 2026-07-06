@@ -1,19 +1,21 @@
 # 关于我 / About Me
 
+## 👋 Hi, 我是 WWPPL
+
+欢迎来到我的个人博客！这里是我记录感悟、分享技术心得和学习历程的地方。
+
+## 📝 关于内容
+
+在这个博客里，你会看到：
+
+- **感悟** - 生活中的思考与体会
+- **技术心得** - 编程和技术探索中的收获
+- **学习历程** - 学习新知识的记录与总结
+
 ## 🛠️ 关于本站
 
-这个网站使用 **Astro** 框架构建，采用了 [Firefly](https://github.com/CuteLeaf/Firefly) 模板，Firefly 是基于 [Fuwari](https://github.com/saicaca/fuwari) 的二次开发。
-
-**Firefly** 是一款基于 Astro 框架和 Fuwari 模板开发的清新美观且现代化个人博客主题模板，专为技术爱好者和内容创作者设计。该主题融合了现代 Web 技术栈，提供了丰富的功能模块和高度可定制的界面，让您能够轻松打造出专业且美观的个人博客网站。
-
-**📝Firefly使用文档： [https://docs-firefly.cuteleaf.cn](https://docs-firefly.cuteleaf.cn/)**
-
-**⭐Firefly开源地址：[https://github.com/CuteLeaf/Firefly](https://github.com/CuteLeaf/Firefly)** 
-
-**⭐Fuwari开源地址：[https://github.com/saicaca/fuwari](https://github.com/saicaca/fuwari)**
-
-::cnb{repo="W3C/w3c"}
+本站使用 [Firefly](https://github.com/CuteLeaf/Firefly) 主题构建，基于 [Astro](https://astro.build/) 框架。
 
 ---
 
-*感谢你的来访！希望在这里能找到对你有用的内容！*
+*感谢你的来访！希望这里的内容能对你有所帮助。*

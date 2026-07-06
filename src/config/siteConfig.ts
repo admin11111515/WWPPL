@@ -6,39 +6,27 @@ const SITE_LANG = "zh_CN";
 
 export const siteConfig: SiteConfig = {
 	// 站点标题
-	title: "Hyde Blog",
+	title: "WWPPL Blog",
 
 	// 站点副标题
-	subtitle: "人心中的成见是一座大山",
+	subtitle: "分享感悟、技术心得与学习历程",
 
 	// 站点 URL
-	site_url: "https://seasir.top",
+	site_url: "https://wwppl.dpdns.org",
 
 	// 站点描述
 	description:
-		"Hyde 是一个记录折腾博客搭建教程、分享教程、随笔感悟，技术探索与生活记录，都在这里。",
+		"WWPPL 的个人博客，分享感悟、技术心得与学习历程。",
 
 	// 站点关键词
 	keywords: [
-		"Hyde",
-		"个人博客主题",
-		"Astro",
-		"ACGN",
-		"博客",
-		"技术博客",
-		"静态博客",
-		"现代化博客",
-		"内容创作者",
-		"开源主题",
-		"番组追踪",
-		"技术分享",
-		"生活点滴",
-		"建站记录",
-		"技术折腾",
+		"WWPPL",
 		"个人博客",
-		"日常随笔",
-		"生活相册",
-		"折腾日记",
+		"技术博客",
+		"学习笔记",
+		"感悟",
+		"技术心得",
+		"生活记录",
 	],
 
 	// 主题色
@@ -90,7 +78,7 @@ export const siteConfig: SiteConfig = {
 			alt: "🍀",
 		},
 		// 导航栏标题
-		title: "Hyde",
+		title: "WWPPL",
 		// 全宽导航栏，导航栏是否占满屏幕宽度
 		widthFull: true,
 		// 导航菜单对齐方式，left：左对齐，center：居中
@@ -135,7 +123,7 @@ export const siteConfig: SiteConfig = {
 	diary: {
 		// 默认头像
 		defaultAvatar:
-			"https://i.postimg.cc/7YLVJqnp/wei-xin-tu-pian-2026-05-07-020150-883.jpg",
+			"https://i0.hdslb.com/bfs/article/b7d2082a053870308bc072ca4a9d13fd5b332748.jpg",
 	},
 
 	// 说说页面封面配置（微信朋友圈风格）
