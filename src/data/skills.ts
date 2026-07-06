@@ -123,6 +123,16 @@ export const skillsData: Skill[] = [
 		experience: { years: 1, months: 0 },
 		color: "#4479A1",
 	},
+	{
+		id: "postgresql",
+		name: "PostgreSQL",
+		description: "强大的开源关系型数据库管理系统",
+		icon: "logos:postgresql",
+		category: "database",
+		level: "beginner",
+		experience: { years: 1, months: 0 },
+		color: "#336791",
+	},
 
 	// Tools
 	{
