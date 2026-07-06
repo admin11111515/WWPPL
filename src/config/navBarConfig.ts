@@ -62,6 +62,9 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 			// 友链
 			LinkPresets.Friends,
 
+			// 追番
+			LinkPresets.Anime,
+
 			// 番组计划
 			LinkPresets.Bangumi,
 
@@ -191,6 +194,12 @@ export const LinkPresets: Record<string, NavBarLink> = {
 		url: "/bangumi/",
 		icon: "material-symbols:movie",
 		pageKey: "bangumi",
+	},
+	Anime: {
+		name: "追番",
+		url: "/anime/",
+		icon: "material-symbols:movie",
+		pageKey: "anime",
 	},
 	Gallery: {
 		name: "相册",

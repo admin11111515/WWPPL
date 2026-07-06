@@ -83,12 +83,13 @@ export type SiteConfig = {
 		sponsor: boolean; // 打赏页面开关
 		guestbook: boolean; // 留言板页面开关
 		bangumi: boolean; // Bangumi页面开关
+		anime: boolean; // 追番页面开关
 		gallery: boolean; // 相册页面开关
 		devices: boolean; // 设备页面开关
 		diary: boolean; // 日记页面开关
 		projects: boolean; // 项目页面开关
 		timeline: boolean; // 时间线页面开关
-		skills: boolean; // 技能页面开关	
+		skills: boolean; // 技能页面开关
 	};
 
 	// 日记页面配置
@@ -150,6 +151,13 @@ export type SiteConfig = {
 		apiUrl?: string; // Bangumi API 地址
 		subjectBaseUrl?: string; // 条目详情页地址
 		categoryOrder?: ("anime" | "game" | "book" | "music" | "real")[]; // 条目类型排序顺序
+	};
+
+	// 追番配置（Bilibili）
+	anime?: {
+		bilibili?: {
+			uid?: string; // Bilibili用户UID
+		};
 	};
 
 	// 分页配置

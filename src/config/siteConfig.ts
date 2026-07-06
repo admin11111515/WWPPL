@@ -106,6 +106,8 @@ export const siteConfig: SiteConfig = {
 		guestbook: true,
 		// 番组计划页面开关，含追番、游戏、书籍和音乐
 		bangumi: true,
+		// 追番页面开关
+		anime: true,
 		// 相册页面开关
 		gallery: true,
 		// 设备页面开关
@@ -200,6 +202,15 @@ export const siteConfig: SiteConfig = {
 		// 可选值: "anime" | "book" | "music" | "game" | "real" (暂不支持"real"类型)
 		// 未列出的类型将按默认顺序排在后面
 		categoryOrder: ["anime", "book", "music", "game"],
+	},
+
+	// 追番配置（Bilibili）
+	anime: {
+		// Bilibili 配置
+		bilibili: {
+			// 你的 Bilibili 用户 UID
+			uid: "76627534",
+		},
 	},
 
 	// 分页配置
