@@ -247,7 +247,7 @@ export const siteConfig: SiteConfig = {
 		// name: 显示名称
 		// server: "netease" 网易云 / "tencent" QQ音乐
 		playlists: [
-			{ id: "2129428887", name: "我喜欢的音乐", server: "netease" },
+			{ id: "18126719128", name: "我喜欢的音乐", server: "netease" },
 		],
 	},
 };
