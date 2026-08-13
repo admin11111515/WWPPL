@@ -12,7 +12,7 @@ export const profileConfig: ProfileConfig = {
 	name: "WWPPL",
 
 	// 个人签名
-	bio: "分享感悟、技术心得与学习历程",
+	bio: "记录生活，也写一点代码",
 
 	// 链接配置
 	// 已经预装的图标集：fa7-brands，fa7-regular，fa7-solid，material-symbols，simple-icons

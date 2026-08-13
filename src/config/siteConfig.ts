@@ -9,24 +9,23 @@ export const siteConfig: SiteConfig = {
 	title: "WWPPL Blog",
 
 	// 站点副标题
-	subtitle: "分享感悟、技术心得与学习历程",
+	subtitle: "记录生活，也写一点代码",
 
 	// 站点 URL
 	site_url: "https://wwppl.dpdns.org",
 
 	// 站点描述
 	description:
-		"WWPPL 的个人博客，分享感悟、技术心得与学习历程。",
+		"WWPPL 的个人博客，记录生活与思考，偶尔分享一些技术心得。",
 
 	// 站点关键词
 	keywords: [
 		"WWPPL",
 		"个人博客",
-		"技术博客",
-		"学习笔记",
+		"生活记录",
+		"随笔",
 		"感悟",
 		"技术心得",
-		"生活记录",
 	],
 
 	// 主题色
