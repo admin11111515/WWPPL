@@ -298,20 +298,6 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
         <span id="status-text">正在连接...</span>
       </div>
 
-      <!-- Token 输入 -->
-      <div class="card" id="token-card">
-        <div class="field">
-          <div class="field-label"><span class="icon">🔑</span> GitHub Token</div>
-          <div class="input-row">
-            <input type="text" id="token-manual" placeholder="ghp_xxx 或 github_pat_xxx" autocomplete="off" />
-            <button class="btn btn-sm" onclick="applyManualToken()">连接</button>
-            <button class="btn btn-sm" id="disconnect-btn" onclick="disconnectToken()" style="display:none;">断开</button>
-          </div>
-          <div style="margin-top:0.5rem;font-size:0.75rem;color:var(--text-3);">
-            Token 与笔记、文章后台共用，输入一次保存在浏览器本地；需要 <a href="https://github.com/settings/tokens/new?scopes=gist&description=moments-writer" target="_blank" style="color:var(--primary);">gist 权限</a>
-          </div>
-        </div>
-      </div>
 
       <!-- 写说说 -->
       <div class="card">
@@ -386,15 +372,12 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
   <div class="toast" id="toast"></div>
 
   <script is:inline
-    data-token={externalMomentsConfig.githubToken || ""}
     data-gist={externalMomentsConfig.gistId || ""}
     data-file={externalMomentsConfig.fileName || "moments.json"}>
     var _script = document.currentScript;
-    var ENV_TOKEN = _script.getAttribute("data-token") || "";
-    var TOKEN = localStorage.getItem("gh_github_token") || localStorage.getItem("gh_moments_token") || ENV_TOKEN || "";
     var GIST_ID = _script.getAttribute("data-gist") || "";
     var FILE_NAME = _script.getAttribute("data-file") || "moments.json";
-    var API = "https://api.github.com";
+    var API = "/api/github";
 
     // ===== 工具 =====
     function $(id) { return document.getElementById(id); }
@@ -417,58 +400,31 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
     // ===== 退出 =====
     function doLogout() {
       sessionStorage.removeItem("admin_auth");
+      fetch("/api/auth/logout", { method: "POST" }).catch(function() {});
       window.location.href = "/admin/";
     }
 
-    // ===== Token 验证 =====
     function setStatus(ok, text) {
       $("status-dot").className = "status-dot " + (ok ? "ok" : "err");
       $("status-text").textContent = text;
     }
-
-    function applyManualToken() {
-      var t = $("token-manual").value.trim();
-      if (!t) { toast("请输入 Token", "err"); return; }
-      TOKEN = t;
-      localStorage.setItem("gh_github_token", t);
-      localStorage.removeItem("gh_moments_token");
-      validateAndLoad();
+    function checkAuth() {
+      return fetch("/api/auth/status")
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (!d.authed) { window.location.href = "/admin/"; return false; }
+          return true;
+        })
+        .catch(function() { window.location.href = "/admin/"; return false; });
     }
-
-    function disconnectToken() {
-      TOKEN = "";
-      localStorage.removeItem("gh_github_token");
-      localStorage.removeItem("gh_moments_token");
-      $("token-manual").value = "";
-      $("disconnect-btn").style.display = "none";
-      setStatus(false, "已断开，请重新输入 Token");
-      showEmpty();
-    }
-
     function validateAndLoad() {
-      if (!TOKEN) {
-        setStatus(false, "请输入 Token 后点击连接");
-        showEmpty();
-        return;
-      }
       if (!GIST_ID) {
         setStatus(false, "未配置 Gist ID");
         showEmpty();
         return;
       }
-      setStatus(false, "正在连接...");
-      $("disconnect-btn").style.display = "none";
-      fetch(API + "/gists/" + GIST_ID, {
-        headers: { "Authorization": "Bearer " + TOKEN, "Accept": "application/vnd.github+json" }
-      }).then(function(r) {
-        if (r.ok) {
-          setStatus(true, "已连接");
-          $("disconnect-btn").style.display = "";
-          loadMoments();
-        }
-        else if (r.status === 401) { setStatus(false, "Token 无效或已过期"); }
-        else { setStatus(false, "连接失败（HTTP " + r.status + "）"); }
-      }).catch(function(e) { setStatus(false, "网络错误: " + e.message); });
+      setStatus(true, "已连接");
+      loadMoments();
     }
 
     // ===== 图片 =====
@@ -584,7 +540,7 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
       list.innerHTML = '<div class="empty-state"><span class="spinner"></span></div>';
 
       fetch(API + "/gists/" + GIST_ID, {
-        headers: { "Authorization": "Bearer " + TOKEN, "Accept": "application/vnd.github+json" }
+        headers: { "Accept": "application/vnd.github+json" }
       }).then(function(r) { return r.json(); }).then(function(gist) {
         var file = gist.files[FILE_NAME];
         if (!file) { showEmpty(); return; }
@@ -646,7 +602,7 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
 
     function editMoment(id) {
       fetch(API + "/gists/" + GIST_ID, {
-        headers: { "Authorization": "Bearer " + TOKEN, "Accept": "application/vnd.github+json" }
+        headers: { "Accept": "application/vnd.github+json" }
       }).then(function(r) { return r.json(); }).then(function(gist) {
         var file = gist.files[FILE_NAME];
         var moments = []; try { moments = JSON.parse(file.content || "[]"); } catch(e) {}
@@ -707,7 +663,7 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
       btn.textContent = isEdit ? "保存中..." : (images.length ? "发布中...（含 " + images.length + " 张图）" : "发布中...");
 
       fetch(API + "/gists/" + GIST_ID, {
-        headers: { "Authorization": "Bearer " + TOKEN, "Accept": "application/vnd.github+json" }
+        headers: { "Accept": "application/vnd.github+json" }
       }).then(function(r) { return r.json(); }).then(function(gist) {
         var file = gist.files[FILE_NAME];
         var moments = [];
@@ -735,7 +691,7 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
 
         return fetch(API + "/gists/" + GIST_ID, {
           method: "PATCH",
-          headers: { "Authorization": "Bearer " + TOKEN, "Accept": "application/vnd.github+json", "Content-Type": "application/json" },
+          headers: { "Accept": "application/vnd.github+json", "Content-Type": "application/json" },
           body: JSON.stringify({ files: { [FILE_NAME]: { content: JSON.stringify(moments, null, 2) } } })
         });
       }).then(function(r) {
@@ -752,14 +708,14 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
     function deleteMoment(id) {
       if (!confirm("确定删除？")) return;
       fetch(API + "/gists/" + GIST_ID, {
-        headers: { "Authorization": "Bearer " + TOKEN, "Accept": "application/vnd.github+json" }
+        headers: { "Accept": "application/vnd.github+json" }
       }).then(function(r) { return r.json(); }).then(function(gist) {
         var file = gist.files[FILE_NAME];
         var moments = []; try { moments = JSON.parse(file.content || "[]"); } catch(e) {}
         moments = moments.filter(function(m) { return m.id !== id; });
         return fetch(API + "/gists/" + GIST_ID, {
           method: "PATCH",
-          headers: { "Authorization": "Bearer " + TOKEN, "Accept": "application/vnd.github+json", "Content-Type": "application/json" },
+          headers: { "Accept": "application/vnd.github+json", "Content-Type": "application/json" },
           body: JSON.stringify({ files: { [FILE_NAME]: { content: JSON.stringify(moments, null, 2) } } })
         });
       }).then(function(r) {
@@ -770,15 +726,11 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
 
     // ===== 初始化 =====
     (function() {
-      // 未登录则跳转回后台入口
-      if (sessionStorage.getItem("admin_auth") !== "1") {
-        window.location.href = "/admin/";
-        return;
-      }
-      // 预填 Token 输入框
-      if (TOKEN) { $("token-manual").value = TOKEN; }
-      renderImgs();
-      validateAndLoad();
+      checkAuth().then(function(ok) {
+        if (!ok) return;
+        renderImgs();
+        validateAndLoad();
+      });
     })();
   </script>
 </body>

@@ -293,19 +293,6 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       <span id="status-text">正在连接...</span>
     </div>
 
-    <div class="card" id="token-card">
-      <div class="field">
-        <div class="field-label"><span class="icon">🔑</span> GitHub Token</div>
-        <div style="display:flex;gap:0.5rem;">
-          <input type="text" id="token-input" placeholder="ghp_xxx 或 github_pat_xxx" autocomplete="off" class="input-single" style="flex:1;" />
-          <button class="btn btn-sm" onclick="applyToken()">连接</button>
-          <button class="btn btn-sm" id="disconnect-btn" onclick="disconnectToken()" style="display:none;">断开</button>
-        </div>
-        <div class="field-hint">
-          需要仓库读写权限：<a href="https://github.com/settings/tokens/new?scopes=repo&description=posts-writer" target="_blank" style="color:var(--primary);">repo 权限</a>，或 fine-grained token 给 WWPPL 仓库 Contents: Read and write。Token 与说说、笔记后台共用，输入一次保存在浏览器本地。
-        </div>
-      </div>
-    </div>
 
     <div class="layout-grid">
       <div class="card post-list-card">
@@ -406,8 +393,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
   <script is:inline data-config={postsConfig}>
     var _script = document.currentScript;
     var CONFIG = JSON.parse(_script.getAttribute("data-config") || "{}");
-    var API = "https://api.github.com";
-    var TOKEN = localStorage.getItem("gh_github_token") || localStorage.getItem("gh_posts_token") || "";
+    var API = "/api/github";
     var posts = [];
     var editingPath = "";
     var editingSha = "";
@@ -425,7 +411,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       localStorage.setItem("theme", document.documentElement.classList.contains("dark") ? "dark" : "light");
     }
     if (localStorage.getItem("theme") === "dark") document.documentElement.classList.add("dark");
-    function doLogout() { sessionStorage.removeItem("admin_auth"); window.location.href = "/admin/"; }
+    function doLogout() { sessionStorage.removeItem("admin_auth"); fetch("/api/auth/logout", { method: "POST" }).catch(function() {}); window.location.href = "/admin/"; }
     function setStatus(ok, text) {
       $("status-dot").className = "status-dot " + (ok ? "ok" : "err");
       $("status-text").textContent = text;
@@ -433,9 +419,6 @@ const postsConfig = JSON.stringify(externalPostsConfig);
     function todayStr() {
       var d = new Date();
       return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
-    }
-    function authHeaders() {
-      return { "Authorization": "Bearer " + TOKEN };
     }
     function encPath(p) {
       return p.split("/").map(encodeURIComponent).join("/");
@@ -459,47 +442,26 @@ const postsConfig = JSON.stringify(externalPostsConfig);
     }
 
     // ===== 认证 =====
-    if (sessionStorage.getItem("admin_auth") !== "1") {
-      window.location.href = "/admin/";
-    }
-
-    // ===== Token =====
-    function applyToken() {
-      var t = $("token-input").value.trim();
-      if (!t) { toast("请输入 Token", "err"); return; }
-      TOKEN = t;
-      localStorage.setItem("gh_github_token", t);
-      localStorage.removeItem("gh_posts_token");
-      connect();
-    }
-    function disconnectToken() {
-      TOKEN = "";
-      localStorage.removeItem("gh_github_token");
-      localStorage.removeItem("gh_posts_token");
-      $("token-input").value = "";
-      $("disconnect-btn").style.display = "none";
-      setStatus(false, "已断开");
+    // ===== 认证 =====
+    function checkAuth() {
+      return fetch("/api/auth/status")
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (!d.authed) { window.location.href = "/admin/"; return false; }
+          return true;
+        })
+        .catch(function() { window.location.href = "/admin/"; return false; });
     }
     function connect() {
-      if (!TOKEN) { setStatus(false, "请输入 Token"); return; }
-      setStatus(false, "正在连接...");
-      fetch(API + "/user", { headers: authHeaders() })
-        .then(function(r) {
-          if (r.ok) {
-            setStatus(true, "已连接");
-            $("disconnect-btn").style.display = "";
-            loadPosts();
-          } else if (r.status === 401) { setStatus(false, "Token 无效"); }
-          else { setStatus(false, "连接失败 HTTP " + r.status); }
-        })
-        .catch(function(e) { setStatus(false, "网络错误: " + e.message); });
+      setStatus(true, "已连接");
+      loadPosts();
     }
 
     // ===== 文章列表 =====
     function loadPosts() {
       $("post-list").innerHTML = '<div class="empty-state"><span class="spinner"></span><p>正在加载...</p></div>';
       var url = API + "/repos/" + CONFIG.owner + "/" + CONFIG.repo + "/git/trees/" + CONFIG.branch + "?recursive=1";
-      fetch(url, { headers: authHeaders() })
+      fetch(url, {})
         .then(function(r) {
           if (!r.ok) throw new Error("拉取仓库失败 HTTP " + r.status);
           return r.json();
@@ -527,7 +489,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
         });
     }
     function fetchPostMeta(path) {
-      return fetch(API + "/repos/" + CONFIG.owner + "/" + CONFIG.repo + "/contents/" + encPath(path) + "?ref=" + CONFIG.branch, { headers: authHeaders() })
+      return fetch(API + "/repos/" + CONFIG.owner + "/" + CONFIG.repo + "/contents/" + encPath(path) + "?ref=" + CONFIG.branch, {})
         .then(function(r) {
           if (!r.ok) throw new Error("读取文件失败 HTTP " + r.status);
           return r.json();
@@ -643,7 +605,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       newPost();
     }
     function editPost(path) {
-      fetch(API + "/repos/" + CONFIG.owner + "/" + CONFIG.repo + "/contents/" + encPath(path) + "?ref=" + CONFIG.branch, { headers: authHeaders() })
+      fetch(API + "/repos/" + CONFIG.owner + "/" + CONFIG.repo + "/contents/" + encPath(path) + "?ref=" + CONFIG.branch, {})
         .then(function(r) {
           if (!r.ok) throw new Error("读取失败 HTTP " + r.status);
           return r.json();
@@ -719,7 +681,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
     function putTextFile(path, text, sha, message) {
       return fetch(API + "/repos/" + CONFIG.owner + "/" + CONFIG.repo + "/contents/" + encPath(path), {
         method: "PUT",
-        headers: Object.assign({ "Content-Type": "application/json" }, authHeaders()),
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: message,
           content: b64EncodeUnicode(text),
@@ -732,13 +694,13 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       });
     }
     function getFileMeta(path) {
-      return fetch(API + "/repos/" + CONFIG.owner + "/" + CONFIG.repo + "/contents/" + encPath(path) + "?ref=" + CONFIG.branch, { headers: authHeaders() })
+      return fetch(API + "/repos/" + CONFIG.owner + "/" + CONFIG.repo + "/contents/" + encPath(path) + "?ref=" + CONFIG.branch, {})
         .then(function(r) { return r.json(); });
     }
     function deleteFile(path, sha, message) {
       return fetch(API + "/repos/" + CONFIG.owner + "/" + CONFIG.repo + "/contents/" + encPath(path), {
         method: "DELETE",
-        headers: Object.assign({ "Content-Type": "application/json" }, authHeaders()),
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: message, sha: sha, branch: CONFIG.branch })
       }).then(function(r) {
         if (!r.ok) throw new Error("删除失败 HTTP " + r.status);
@@ -746,7 +708,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       });
     }
     function listImagesDir(slug) {
-      return fetch(API + "/repos/" + CONFIG.owner + "/" + CONFIG.repo + "/contents/" + encPath(CONFIG.imagesPath + "/" + slug) + "?ref=" + CONFIG.branch, { headers: authHeaders() })
+      return fetch(API + "/repos/" + CONFIG.owner + "/" + CONFIG.repo + "/contents/" + encPath(CONFIG.imagesPath + "/" + slug) + "?ref=" + CONFIG.branch, {})
         .then(function(r) {
           if (r.status === 404) return [];
           if (!r.ok) throw new Error("读取图片目录失败 HTTP " + r.status);
@@ -764,7 +726,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
     function putBase64File(path, content, message) {
       return fetch(API + "/repos/" + CONFIG.owner + "/" + CONFIG.repo + "/contents/" + encPath(path), {
         method: "PUT",
-        headers: Object.assign({ "Content-Type": "application/json" }, authHeaders()),
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: message, content: content, branch: CONFIG.branch })
       }).then(function(r) {
         if (!r.ok) throw new Error("上传失败 HTTP " + r.status);
@@ -1025,7 +987,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
         .then(function(base64) {
           return fetch(API + "/repos/" + CONFIG.owner + "/" + CONFIG.repo + "/contents/" + encPath(imagePath), {
             method: "PUT",
-            headers: Object.assign({ "Content-Type": "application/json" }, authHeaders()),
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               message: "上传文章图片: " + slug,
               content: base64,
@@ -1055,12 +1017,10 @@ const postsConfig = JSON.stringify(externalPostsConfig);
 
     // ===== 初始化 =====
     $("date-input").value = todayStr();
-    if (TOKEN) {
-      $("token-input").value = TOKEN;
+    checkAuth().then(function(ok) {
+      if (!ok) return;
       connect();
-    } else {
-      setStatus(false, "请输入 GitHub Token");
-    }
+    });
   </script>
 </body>
 </html>

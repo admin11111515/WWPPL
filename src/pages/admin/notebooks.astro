@@ -292,20 +292,6 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
         <span id="status-text">正在连接...</span>
       </div>
 
-      <!-- Token 输入 -->
-      <div class="card" id="token-card">
-        <div class="field">
-          <div class="field-label"><span class="icon">🔑</span> GitHub Token</div>
-          <div style="display:flex;gap:0.5rem;">
-            <input type="text" id="token-input" placeholder="ghp_xxx 或 github_pat_xxx" autocomplete="off" class="input-single" style="flex:1;" />
-            <button class="btn btn-sm" onclick="applyToken()">连接</button>
-            <button class="btn btn-sm" id="disconnect-btn" onclick="disconnectToken()" style="display:none;">断开</button>
-          </div>
-          <div style="margin-top:0.5rem;font-size:0.75rem;color:var(--text-3);">
-            与说说、文章后台共用同一个 Token，输入一次保存在浏览器本地；需要 <a href="https://github.com/settings/tokens/new?scopes=gist&description=notebooks-writer" target="_blank" style="color:var(--primary);">gist 权限</a>
-          </div>
-        </div>
-      </div>
 
       <!-- 选择笔记本 -->
       <div class="card">
@@ -390,16 +376,13 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
   <div class="toast" id="toast"></div>
 
   <script is:inline
-    data-token={externalNotebooksConfig.githubToken || ""}
     data-gists={JSON.stringify(externalNotebooksConfig.notebookGists || {})}
     data-templates={JSON.stringify(externalNotebooksConfig.templates || [])}>
     var _script = document.currentScript;
-    var ENV_TOKEN = _script.getAttribute("data-token") || "";
-    var TOKEN = localStorage.getItem("gh_github_token") || localStorage.getItem("gh_moments_token") || ENV_TOKEN || "";
     var NOTEBOOK_GISTS = JSON.parse(_script.getAttribute("data-gists") || "{}");
     var TEMPLATES = JSON.parse(_script.getAttribute("data-templates") || "[]");
     var FILE_NAME = "notebooks-entries.json";
-    var API = "https://api.github.com";
+    var API = "/api/github";
 
     var currentNotebook = "";
     var editingEntryId = null;
@@ -416,7 +399,7 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
       localStorage.setItem("theme", document.documentElement.classList.contains("dark") ? "dark" : "light");
     }
     if (localStorage.getItem("theme") === "dark") document.documentElement.classList.add("dark");
-    function doLogout() { sessionStorage.removeItem("admin_auth"); window.location.href = "/admin/"; }
+    function doLogout() { sessionStorage.removeItem("admin_auth"); fetch("/api/auth/logout", { method: "POST" }).catch(function() {}); window.location.href = "/admin/"; }
     function setStatus(ok, text) {
       $("status-dot").className = "status-dot " + (ok ? "ok" : "err");
       $("status-text").textContent = text;
@@ -435,34 +418,18 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
       });
     });
 
-    // ===== Token =====
-    function applyToken() {
-      var t = $("token-input").value.trim();
-      if (!t) { toast("请输入 Token", "err"); return; }
-      TOKEN = t;
-      localStorage.setItem("gh_github_token", t);
-      localStorage.removeItem("gh_moments_token");
-      validateAndLoad();
-    }
-    function disconnectToken() {
-      TOKEN = "";
-      localStorage.removeItem("gh_github_token");
-      localStorage.removeItem("gh_moments_token");
-      $("token-input").value = "";
-      $("disconnect-btn").style.display = "none";
-      setStatus(false, "已断开");
+    function checkAuth() {
+      return fetch("/api/auth/status")
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (!d.authed) { window.location.href = "/admin/"; return false; }
+          return true;
+        })
+        .catch(function() { window.location.href = "/admin/"; return false; });
     }
     function validateAndLoad() {
-      if (!TOKEN) { setStatus(false, "请输入 Token"); return; }
-      setStatus(false, "正在连接...");
-      $("disconnect-btn").style.display = "none";
-      fetch(API + "/user", { headers: { "Authorization": "Bearer " + TOKEN } })
-        .then(function(r) {
-          if (r.ok) { setStatus(true, "已连接"); $("disconnect-btn").style.display = ""; initGist(); }
-          else if (r.status === 401) { setStatus(false, "Token 无效"); }
-          else { setStatus(false, "连接失败 HTTP " + r.status); }
-        })
-        .catch(function(e) { setStatus(false, "网络错误: " + e.message); });
+      setStatus(true, "已连接");
+      initGist();
     }
 
     // ===== 初始化 =====
@@ -482,7 +449,7 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
       }
 
       $("entries-list").innerHTML = '<div class="empty-state"><span class="spinner"></span></div>';
-      fetch(API + "/gists/" + gistId, { headers: { "Authorization": "Bearer " + TOKEN } })
+      fetch(API + "/gists/" + gistId, { headers: {} })
         .then(function(r) { return r.json(); })
         .then(function(gist) {
           var file = gist.files[FILE_NAME];
@@ -644,7 +611,7 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
 
       function doSave(gid) {
         var fetchGist = gid
-          ? fetch(API + "/gists/" + gid, { headers: { "Authorization": "Bearer " + TOKEN } }).then(function(r) { return r.json(); })
+          ? fetch(API + "/gists/" + gid, { headers: {} }).then(function(r) { return r.json(); })
           : Promise.resolve({ files: {} });
 
         fetchGist.then(function(gist) {
@@ -677,7 +644,7 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
 
           return fetch(gid ? API + "/gists/" + gid : API + "/gists", {
             method: method,
-            headers: { "Authorization": "Bearer " + TOKEN, "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json" },
             body: body
           }).then(function(r) {
             if (!r.ok) throw new Error("保存失败");
@@ -716,7 +683,7 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
       var gistId = NOTEBOOK_GISTS[currentNotebook];
       if (!gistId) return;
 
-      fetch(API + "/gists/" + gistId, { headers: { "Authorization": "Bearer " + TOKEN } })
+      fetch(API + "/gists/" + gistId, { headers: {} })
         .then(function(r) { return r.json(); })
         .then(function(gist) {
           var file = gist.files[FILE_NAME];
@@ -726,7 +693,7 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
 
           return fetch(API + "/gists/" + gistId, {
             method: "PATCH",
-            headers: { "Authorization": "Bearer " + TOKEN, "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ files: { [FILE_NAME]: { content: JSON.stringify(entries, null, 2) } } })
           });
         })
@@ -741,11 +708,12 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
 
     // ===== 初始化 =====
     (function() {
-      if (sessionStorage.getItem("admin_auth") !== "1") { window.location.href = "/admin/"; return; }
-      $("entry-date").value = new Date().toISOString().split("T")[0];
-      $("content-input").addEventListener("input", updatePreview);
-      if (TOKEN) { $("token-input").value = TOKEN; }
-      validateAndLoad();
+      checkAuth().then(function(ok) {
+        if (!ok) return;
+        $("entry-date").value = new Date().toISOString().split("T")[0];
+        $("content-input").addEventListener("input", updatePreview);
+        validateAndLoad();
+      });
     })();
   </script>
 </body>

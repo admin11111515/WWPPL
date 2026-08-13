@@ -77,6 +77,4 @@ export const externalNotebooksConfig = {
 	adminPasswordHash:
 		"b5d9ded2ab2812e8653f06fc4d3246a4b13642e8371bc74a7f1003eb4fb4e637",
 
-	// GitHub Token（优先从环境变量 GITHUB_TOKEN 读取）
-	githubToken: process.env.GITHUB_TOKEN || "",
 };

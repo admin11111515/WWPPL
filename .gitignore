@@ -39,3 +39,6 @@ package/
 .obsidian/
 .edgeone/
 scripts/fill-descriptions.ts
+
+# wrangler
+.wrangler/

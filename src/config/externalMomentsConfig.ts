@@ -22,7 +22,4 @@ export const externalMomentsConfig = {
 	adminPasswordHash:
 		"0d4e15dc08ef600b9d960f5e84e80e3256de345ec320db17f2c2e0edac7304dd",
 
-	// GitHub Token（优先从环境变量 GITHUB_TOKEN 读取）
-	// EdgeOne 部署时在环境变量中设置 GITHUB_TOKEN=你的token
-	githubToken: process.env.GITHUB_TOKEN || "",
 };
