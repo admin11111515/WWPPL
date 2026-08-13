@@ -302,7 +302,7 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
             <button class="btn btn-sm" id="disconnect-btn" onclick="disconnectToken()" style="display:none;">断开</button>
           </div>
           <div style="margin-top:0.5rem;font-size:0.75rem;color:var(--text-3);">
-            与说说后台共用同一个 Token，需要 <a href="https://github.com/settings/tokens/new?scopes=gist&description=notebooks-writer" target="_blank" style="color:var(--primary);">gist 权限</a>
+            与说说、文章后台共用同一个 Token，输入一次保存在浏览器本地；需要 <a href="https://github.com/settings/tokens/new?scopes=gist&description=notebooks-writer" target="_blank" style="color:var(--primary);">gist 权限</a>
           </div>
         </div>
       </div>
@@ -395,7 +395,7 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
     data-templates={JSON.stringify(externalNotebooksConfig.templates || [])}>
     var _script = document.currentScript;
     var ENV_TOKEN = _script.getAttribute("data-token") || "";
-    var TOKEN = localStorage.getItem("gh_moments_token") || ENV_TOKEN || "";
+    var TOKEN = localStorage.getItem("gh_github_token") || localStorage.getItem("gh_moments_token") || ENV_TOKEN || "";
     var NOTEBOOK_GISTS = JSON.parse(_script.getAttribute("data-gists") || "{}");
     var TEMPLATES = JSON.parse(_script.getAttribute("data-templates") || "[]");
     var FILE_NAME = "notebooks-entries.json";
@@ -440,11 +440,13 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
       var t = $("token-input").value.trim();
       if (!t) { toast("请输入 Token", "err"); return; }
       TOKEN = t;
-      localStorage.setItem("gh_moments_token", t);
+      localStorage.setItem("gh_github_token", t);
+      localStorage.removeItem("gh_moments_token");
       validateAndLoad();
     }
     function disconnectToken() {
       TOKEN = "";
+      localStorage.removeItem("gh_github_token");
       localStorage.removeItem("gh_moments_token");
       $("token-input").value = "";
       $("disconnect-btn").style.display = "none";

@@ -308,7 +308,7 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
             <button class="btn btn-sm" id="disconnect-btn" onclick="disconnectToken()" style="display:none;">断开</button>
           </div>
           <div style="margin-top:0.5rem;font-size:0.75rem;color:var(--text-3);">
-            Token 仅保存在浏览器本地，需要 <a href="https://github.com/settings/tokens/new?scopes=gist&description=moments-writer" target="_blank" style="color:var(--primary);">gist 权限</a>
+            Token 与笔记、文章后台共用，输入一次保存在浏览器本地；需要 <a href="https://github.com/settings/tokens/new?scopes=gist&description=moments-writer" target="_blank" style="color:var(--primary);">gist 权限</a>
           </div>
         </div>
       </div>
@@ -391,7 +391,7 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
     data-file={externalMomentsConfig.fileName || "moments.json"}>
     var _script = document.currentScript;
     var ENV_TOKEN = _script.getAttribute("data-token") || "";
-    var TOKEN = localStorage.getItem("gh_moments_token") || ENV_TOKEN || "";
+    var TOKEN = localStorage.getItem("gh_github_token") || localStorage.getItem("gh_moments_token") || ENV_TOKEN || "";
     var GIST_ID = _script.getAttribute("data-gist") || "";
     var FILE_NAME = _script.getAttribute("data-file") || "moments.json";
     var API = "https://api.github.com";
@@ -430,12 +430,14 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
       var t = $("token-manual").value.trim();
       if (!t) { toast("请输入 Token", "err"); return; }
       TOKEN = t;
-      localStorage.setItem("gh_moments_token", t);
+      localStorage.setItem("gh_github_token", t);
+      localStorage.removeItem("gh_moments_token");
       validateAndLoad();
     }
 
     function disconnectToken() {
       TOKEN = "";
+      localStorage.removeItem("gh_github_token");
       localStorage.removeItem("gh_moments_token");
       $("token-manual").value = "";
       $("disconnect-btn").style.display = "none";

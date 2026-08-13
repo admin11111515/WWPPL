@@ -302,7 +302,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
           <button class="btn btn-sm" id="disconnect-btn" onclick="disconnectToken()" style="display:none;">断开</button>
         </div>
         <div class="field-hint">
-          需要仓库读写权限：<a href="https://github.com/settings/tokens/new?scopes=repo&description=posts-writer" target="_blank" style="color:var(--primary);">repo 权限</a>，或 fine-grained token 给 WWPPL 仓库 Contents: Read and write。Token 只保存在本浏览器。
+          需要仓库读写权限：<a href="https://github.com/settings/tokens/new?scopes=repo&description=posts-writer" target="_blank" style="color:var(--primary);">repo 权限</a>，或 fine-grained token 给 WWPPL 仓库 Contents: Read and write。Token 与说说、笔记后台共用，输入一次保存在浏览器本地。
         </div>
       </div>
     </div>
@@ -407,7 +407,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
     var _script = document.currentScript;
     var CONFIG = JSON.parse(_script.getAttribute("data-config") || "{}");
     var API = "https://api.github.com";
-    var TOKEN = localStorage.getItem("gh_posts_token") || "";
+    var TOKEN = localStorage.getItem("gh_github_token") || localStorage.getItem("gh_posts_token") || "";
     var posts = [];
     var editingPath = "";
     var editingSha = "";
@@ -468,11 +468,13 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       var t = $("token-input").value.trim();
       if (!t) { toast("请输入 Token", "err"); return; }
       TOKEN = t;
-      localStorage.setItem("gh_posts_token", t);
+      localStorage.setItem("gh_github_token", t);
+      localStorage.removeItem("gh_posts_token");
       connect();
     }
     function disconnectToken() {
       TOKEN = "";
+      localStorage.removeItem("gh_github_token");
       localStorage.removeItem("gh_posts_token");
       $("token-input").value = "";
       $("disconnect-btn").style.display = "none";
