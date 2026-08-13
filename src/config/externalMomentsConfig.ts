@@ -15,7 +15,7 @@ export const externalMomentsConfig = {
 	// 默认作者信息
 	defaultAuthor: "WWPPL",
 	defaultAvatar:
-		"https://i0.hdslb.com/bfs/article/b7d2082a053870308bc072ca4a9d13fd5b332748.jpg",
+		"/assets/avatar.avif",
 
 	// 后台登录密码的 SHA-256 哈希（明文密码不再存入代码）
 	// 生成方式：echo -n "你的密码" | hyde189755

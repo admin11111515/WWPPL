@@ -16,6 +16,14 @@ const { Content } = await render(aboutPost);
 ---
 <MainGridLayout title={i18n(I18nKey.about)} description={i18n(I18nKey.about)}>
     <div class="flex w-full rounded-(--radius-large) overflow-hidden relative min-h-32">
+        <!-- 背景图区域 -->
+        <div class="about-hero">
+            <div class="about-hero-overlay">
+                <h1 class="about-hero-title">About Me</h1>
+                <p class="about-hero-subtitle">代码与生活，皆是修行</p>
+            </div>
+        </div>
+        <!-- 内容区域 -->
         <div class="card-base z-10 px-9 py-6 relative w-full ">
             <Markdown class="mt-2">
                 <Content />
@@ -23,3 +31,70 @@ const { Content } = await render(aboutPost);
         </div>
     </div>
 </MainGridLayout>
+
+<style>
+    .about-hero {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 260px;
+        background-image: url("https://t.alcy.cc/pc");
+        background-size: cover;
+        background-position: center;
+        border-radius: var(--radius-large) var(--radius-large) 0 0;
+        z-index: 0;
+    }
+
+    .about-hero-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+            to bottom,
+            rgba(0, 0, 0, 0.35),
+            rgba(0, 0, 0, 0.6)
+        );
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        border-radius: var(--radius-large) var(--radius-large) 0 0;
+    }
+
+    .about-hero-title {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: #fff;
+        letter-spacing: 0.05em;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        margin: 0;
+    }
+
+    .about-hero-subtitle {
+        font-size: 1rem;
+        color: rgba(255, 255, 255, 0.85);
+        letter-spacing: 0.15em;
+        margin: 0;
+    }
+
+    /* 内容区域上移，与背景图重叠 */
+    .card-base {
+        margin-top: 160px;
+    }
+
+    @media (max-width: 768px) {
+        .about-hero {
+            height: 200px;
+        }
+        .about-hero-title {
+            font-size: 1.75rem;
+        }
+        .about-hero-subtitle {
+            font-size: 0.875rem;
+        }
+        .card-base {
+            margin-top: 120px;
+        }
+    }
+</style>

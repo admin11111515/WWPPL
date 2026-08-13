@@ -125,7 +125,7 @@ export const siteConfig: SiteConfig = {
 	diary: {
 		// 默认头像
 		defaultAvatar:
-			"https://i0.hdslb.com/bfs/article/b7d2082a053870308bc072ca4a9d13fd5b332748.jpg",
+			"/assets/avatar.avif",
 	},
 
 	// 说说页面封面配置（微信朋友圈风格）

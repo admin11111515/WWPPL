@@ -89,24 +89,7 @@ const licenseName = licenseConfig.enable ? licenseConfig.name : "None";
 
 // ---- 组装展示数据 ----
 // 始终显示的项目（列表）
-const mainItems = [
-	{
-		icon: "material-symbols:cloud-outline",
-		label: i18n(I18nKey.siteInfoBuildPlatform),
-		value: buildPlatform,
-	},
-	{
-		icon: "mdi:clover",
-		label: i18n(I18nKey.siteInfoBlogVersion),
-		value: `Firefly v${blogVersion}`,
-		href: "https://github.com/admin11111515/WWPPL",
-	},
-	{
-		icon: "material-symbols:copyright-outline",
-		label: i18n(I18nKey.siteInfoLicense),
-		value: licenseName,
-	},
-];
+const mainItems: { icon: string; label: string; value: string; href?: string }[] = [];
 
 // 可折叠的项目（格子布局）
 // fullWidth: true 表示独占一行
@@ -116,32 +99,6 @@ const detailItems: {
 	value: string;
 	fullWidth?: boolean;
 }[] = [
-	{
-		icon: "material-symbols:language",
-		label: i18n(I18nKey.siteInfoDomain),
-		value: siteDomain,
-		fullWidth: true,
-	},
-	{
-		icon: "mdi:clover",
-		label: "Firefly",
-		value: `v${blogVersion}`,
-	},
-	{
-		icon: "material-symbols:rocket-launch-outline",
-		label: i18n(I18nKey.siteInfoAstroVersion),
-		value: `v${astroVersion}`,
-	},
-	{
-		icon: "fa7-brands:node-js",
-		label: i18n(I18nKey.siteInfoNodeVersion),
-		value: nodeVersion,
-	},
-	{
-		icon: "simple-icons:pnpm",
-		label: i18n(I18nKey.siteInfoPnpmVersion),
-		value: pnpmVersion,
-	},
 	{
 		icon: "material-symbols:build-outline",
 		label: i18n(I18nKey.siteInfoBuildTime),
@@ -206,7 +163,7 @@ const detailItems: {
       data-expand-text={i18n(I18nKey.siteInfoExpand)}
       data-collapse-text={i18n(I18nKey.siteInfoCollapse)}
     >
-      <div class="site-info-detail overflow-hidden collapsed">
+      <div class="site-info-detail overflow-hidden">
         <div class="grid grid-cols-2 gap-2">
           {
             detailItems.map(
@@ -241,7 +198,7 @@ const detailItems: {
       >
         <Icon
           name="material-symbols:keyboard-arrow-down-rounded" is:inline
-          class="site-info-toggle-icon w-6 h-6 transition-transform duration-200"
+          class="site-info-toggle-icon w-6 h-6 transition-transform duration-200 rotate-180"
         />
         <span class="site-info-toggle-text"></span>
       </button>
@@ -270,9 +227,9 @@ const detailItems: {
       const expandText = this.dataset.expandText || "展开构建信息";
       const collapseText = this.dataset.collapseText || "收起构建信息";
 
-      // 初始状态已在 HTML 中通过 class="collapsed" 设定，JS 只需同步文字
-      let expanded = false;
-      textEl.textContent = expandText;
+      // 初始状态为展开
+      let expanded = true;
+      textEl.textContent = collapseText;
 
       btn.addEventListener("click", () => {
         expanded = !expanded;

@@ -22,6 +22,18 @@ export const profileConfig: ProfileConfig = {
 	// showName: true 时显示图标和名称，false 时只显示图标
 	links: [
 		{
+			name: "QQ",
+			icon: "fa7-brands:qq",
+			url: "https://wpa.qq.com/msgrd?v=3&uin=3057067320",
+			showName: false,
+		},
+		{
+			name: "Email",
+			icon: "fa7-solid:envelope",
+			url: "mailto:3057067320@qq.com",
+			showName: false,
+		},
+		{
 			name: "GitHub",
 			icon: "fa7-brands:github",
 			url: "https://github.com/admin11111515",
