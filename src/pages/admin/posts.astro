@@ -440,6 +440,10 @@ const postsConfig = JSON.stringify(externalPostsConfig);
     function encPath(p) {
       return p.split("/").map(encodeURIComponent).join("/");
     }
+    function slugFromPath(path) {
+      var prefix = CONFIG.postsPath + "/";
+      return path.indexOf(prefix) === 0 ? path.slice(prefix.length).replace(/\.(md|mdx)$/i, "") : path;
+    }
 
     function b64EncodeUnicode(str) {
       var bytes = new TextEncoder().encode(str);
@@ -739,6 +743,48 @@ const postsConfig = JSON.stringify(externalPostsConfig);
         return r.json();
       });
     }
+    function listImagesDir(slug) {
+      return fetch(API + "/repos/" + CONFIG.owner + "/" + CONFIG.repo + "/contents/" + encPath(CONFIG.imagesPath + "/" + slug) + "?ref=" + CONFIG.branch, { headers: authHeaders() })
+        .then(function(r) {
+          if (r.status === 404) return [];
+          if (!r.ok) throw new Error("读取图片目录失败 HTTP " + r.status);
+          return r.json();
+        });
+    }
+    function deleteImagesForPost(slug) {
+      return listImagesDir(slug).then(function(files) {
+        var list = Array.isArray(files) ? files.filter(function(f) { return f.type === "file"; }) : [];
+        return Promise.all(list.map(function(f) {
+          return deleteFile(f.path, f.sha, "删除文章图片: " + f.path);
+        }));
+      });
+    }
+    function putBase64File(path, content, message) {
+      return fetch(API + "/repos/" + CONFIG.owner + "/" + CONFIG.repo + "/contents/" + encPath(path), {
+        method: "PUT",
+        headers: Object.assign({ "Content-Type": "application/json" }, authHeaders()),
+        body: JSON.stringify({ message: message, content: content, branch: CONFIG.branch })
+      }).then(function(r) {
+        if (!r.ok) throw new Error("上传失败 HTTP " + r.status);
+        return r.json();
+      });
+    }
+    function moveImageFile(oldPath, newPath) {
+      return getFileMeta(oldPath).then(function(file) {
+        if (!file.sha || !file.content) throw new Error("读取图片失败: " + oldPath);
+        return putBase64File(newPath, file.content, "移动文章图片: " + newPath)
+          .then(function() { return deleteFile(oldPath, file.sha, "移动文章图片: " + oldPath); });
+      });
+    }
+    function moveImagesForPost(oldSlug, newSlug) {
+      return listImagesDir(oldSlug).then(function(files) {
+        var list = Array.isArray(files) ? files.filter(function(f) { return f.type === "file"; }) : [];
+        return Promise.all(list.map(function(f) {
+          var name = f.path.split("/").pop();
+          return moveImageFile(f.path, CONFIG.imagesPath + "/" + newSlug + "/" + name);
+        }));
+      });
+    }
     function savePost() {
       var title = $("title-input").value.trim();
       var body = $("content-input").value.trim();
@@ -747,11 +793,20 @@ const postsConfig = JSON.stringify(externalPostsConfig);
 
       var slug = ensureSlug();
       var newPath = CONFIG.postsPath + "/" + slug + ".md";
-      var md = buildMarkdown();
       var btn = $("save-btn");
       btn.disabled = true;
       var originalText = btn.textContent;
       btn.textContent = "保存中...";
+      var isNew = !editingPath;
+      var renamingFrom = editingPath && editingPath !== newPath ? editingPath : "";
+      var newSlug = slugFromPath(newPath);
+      if (renamingFrom) {
+        var oldImgPrefix = "/images/posts/" + slugFromPath(renamingFrom) + "/";
+        var newImgPrefix = "/images/posts/" + newSlug + "/";
+        $("cover-input").value = $("cover-input").value.split(oldImgPrefix).join(newImgPrefix);
+        $("content-input").value = $("content-input").value.split(oldImgPrefix).join(newImgPrefix);
+      }
+      var md = buildMarkdown();
 
       function finish(okMsg) {
         toast(okMsg, "ok");
@@ -763,15 +818,24 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       }
 
       function doPut(sha) {
-        putTextFile(newPath, md, sha, (editingPath ? "更新文章: " : "发布文章: ") + title)
+        putTextFile(newPath, md, sha, (renamingFrom || !isNew ? "更新文章: " : "发布文章: ") + title)
           .then(function() {
-            if (editingPath && editingPath !== newPath) {
-              return getFileMeta(editingPath).then(function(old) {
-                if (old.sha) return deleteFile(editingPath, old.sha, "文章改名: " + title);
+            editingPath = newPath;
+            if (!renamingFrom) return;
+            return moveImagesForPost(slugFromPath(renamingFrom), newSlug)
+              .catch(function(e) {
+                toast("文章已保存，但图片目录迁移失败: " + e.message, "err");
+              })
+              .then(function() {
+                return getFileMeta(renamingFrom).then(function(old) {
+                  if (old.sha) return deleteFile(renamingFrom, old.sha, "文章改名: " + title);
+                });
+              })
+              .catch(function(e) {
+                toast("文章已保存，但旧文件删除失败: " + e.message, "err");
               });
-            }
           })
-          .then(function() { finish(editingPath ? "已保存 ✓" : "发布成功 ✓"); })
+          .then(function() { finish(isNew ? "发布成功 ✓" : "已保存 ✓"); })
           .catch(function(e) {
             toast("保存失败: " + e.message, "err");
             btn.disabled = false;
@@ -799,10 +863,17 @@ const postsConfig = JSON.stringify(externalPostsConfig);
 
     // ===== 删除 =====
     function deletePost(path) {
-      if (!confirm("确定删除这篇文章？此操作会直接提交到仓库。")) return;
+      if (!confirm("确定删除这篇文章？文章图片也会一并删除。")) return;
       getFileMeta(path).then(function(file) {
         if (!file.sha) throw new Error("未找到文件");
-        return deleteFile(path, file.sha, "删除文章: " + path);
+        var slug = slugFromPath(path);
+        return deleteFile(path, file.sha, "删除文章: " + path)
+          .then(function() {
+            return deleteImagesForPost(slug).catch(function(e) {
+              toast("文章已删除，但图片清理失败: " + e.message, "err");
+              return null;
+            });
+          });
       }).then(function() {
         toast("已删除", "ok");
         if (editingPath === path) newPost();
