@@ -490,4 +490,7 @@ export const zh_CN: Translation = {
 	// 离线状态（PWA 离线兜底页）
 	[Key.offlineTitle]: "当前离线",
 	[Key.offlineDescription]: "网络连接似乎断开了。已经缓存过的内容依然可以浏览。",
+
+	// 无障碍：跳过导航直达正文
+	[Key.skipToContent]: "跳到主要内容",
 };

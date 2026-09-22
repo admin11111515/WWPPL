@@ -37,6 +37,9 @@ import "@/styles/variables.styl";
 import "@/styles/markdown-extend.styl";
 import "@rehype-callouts-theme";
 
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+
 interface Props {
 	title?: string;
 	banner?: string;
@@ -618,6 +621,14 @@ const siteLang = lang.replace("_", "-");
     ]}
   >
 
+    {/* 无障碍跳转链接：键盘访客按 Tab 后的第一个可聚焦元素。
+        站点在正文之前有导航栏、搜索、显示设置、音乐播放器等一连串控件，
+        没有它的话每换一页都要按十来次 Tab 才能读到正文。鼠标访客看不到它，
+        只有获得焦点时才从左上角滑入。 */}
+    <a href="#swup-container" class="skip-link" data-no-swup>
+      {i18n(I18nKey.skipToContent)}
+    </a>
+
     <div id="progress-bar"></div>
     <ScrollProgressBar />
     <TitleChange />
@@ -666,6 +677,43 @@ const siteLang = lang.replace("_", "-");
   @reference "../styles/main.css";
 
   @layer components {
+    /* 无障碍跳转链接：平时移出视口之外，聚焦时滑入左上角。
+       用 fixed 而非 absolute，因为页面滚动后仍要在同一位置出现。 */
+    .skip-link {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 999;
+      padding: 0.6rem 1.1rem;
+      border-bottom-right-radius: var(--radius-large);
+      background: var(--primary);
+      color: white;
+      font-size: 0.875rem;
+      font-weight: 600;
+      box-shadow: 0 4px 14px -6px color-mix(in oklch, var(--primary) 70%, transparent);
+      transform: translateY(-130%);
+      transition: transform 0.2s ease;
+    }
+
+    .skip-link:focus {
+      transform: translateY(0);
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
+
+    /* 跳转落点不画焦点框：给整块正文描边会被误读成"整段被选中"，
+       而屏幕阅读器已经通过朗读正文开头完成了位置提示。 */
+    #swup-container:focus {
+      outline: none;
+    }
+
+    /* 对动效敏感的用户关掉滑入动画，直接出现 */
+    @media (prefers-reduced-motion: reduce) {
+      .skip-link {
+        transition: none;
+      }
+    }
+
     .enable-banner #wallpaper-wrapper {
       height: var(--banner-height-home);
       transform: translateY(var(--banner-height-extend));

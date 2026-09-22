@@ -464,4 +464,7 @@ export const en: Translation = {
 	[Key.offlineTitle]: "You are offline",
 	[Key.offlineDescription]:
 		"The network connection seems to be down. Content that has already been cached is still available.",
+
+	// Accessibility: skip navigation and jump to the main content
+	[Key.skipToContent]: "Skip to main content",
 };

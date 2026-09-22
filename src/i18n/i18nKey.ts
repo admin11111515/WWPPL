@@ -486,6 +486,9 @@ enum I18nKey {
 	// 离线状态（PWA 离线兜底页）
 	offlineTitle = "offlineTitle",
 	offlineDescription = "offlineDescription",
+
+	// 无障碍：跳过导航直达正文
+	skipToContent = "skipToContent",
 }
 
 export default I18nKey;

@@ -463,4 +463,7 @@ export const ja: Translation = {
 	[Key.offlineTitle]: "オフラインです",
 	[Key.offlineDescription]:
 		"ネットワーク接続が切れているようです。キャッシュ済みの内容は引き続き閲覧できます。",
+
+	// アクセシビリティ：ナビゲーションを飛ばして本文へ
+	[Key.skipToContent]: "メインコンテンツへスキップ",
 };
