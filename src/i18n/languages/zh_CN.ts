@@ -486,4 +486,8 @@ export const zh_CN: Translation = {
 	[Key.videoPrev]: "上一个视频",
 	[Key.videoNext]: "下一个视频",
 	[Key.videoLoadError]: "视频加载失败",
+
+	// 离线状态（PWA 离线兜底页）
+	[Key.offlineTitle]: "当前离线",
+	[Key.offlineDescription]: "网络连接似乎断开了。已经缓存过的内容依然可以浏览。",
 };

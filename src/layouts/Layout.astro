@@ -170,6 +170,17 @@ const siteLang = lang.replace("_", "-");
       href={new URL(Astro.url.pathname, Astro.site).toString()}
     />
 
+    {/* PWA：应用清单、iOS 主屏图标与浏览器主题色。
+        iOS 不读取清单里的图标，必须单独提供 apple-touch-icon 才能正确显示。 */}
+    <link rel="manifest" href={url("/manifest.webmanifest")} />
+    <link rel="apple-touch-icon" href={url("/icons/apple-touch-icon.png")} />
+    {/*
+      主题色与清单保持一致，用品牌深色。站点默认跟随系统深浅色，但浏览器
+      界面（地址栏、状态栏）只有单一取值，取品牌深色与主屏图标同源，
+      从浏览器到主屏的观感统一。
+    */}
+    <meta name="theme-color" content="#1e212b" />
+
     {/* 站点级结构化数据：帮助搜索引擎识别站点名称、语言与所属者。
         未加 potentialAction/SearchAction —— 站内搜索是 Pagefind 纯客户端实现，
         没有可用的查询参数 URL，写了反而会给搜索引擎一个不存在的搜索地址。 */}
@@ -628,6 +639,20 @@ const siteLang = lang.replace("_", "-");
 
     <!-- 复制内容提示组件 -->
     <CopyMessage client:load />
+
+    {/* PWA：注册 Service Worker，提供离线兜底与静态资源缓存。
+        放在 body 末尾以免阻塞首屏；等 load 事件后再注册，把带宽优先让给页面本身。
+        注册失败不提示也不重试 —— 没有 Service Worker 时站点功能完全不受影响，
+        只是失去离线能力，没有必要打扰访客。 */}
+    <script is:inline>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("/sw.js", { scope: "/" })
+            .catch(() => {});
+        });
+      }
+    </script>
   </body>
 </html>
 

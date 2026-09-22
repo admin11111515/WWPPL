@@ -459,4 +459,9 @@ export const en: Translation = {
 	[Key.videoPrev]: "Previous video",
 	[Key.videoNext]: "Next video",
 	[Key.videoLoadError]: "Video failed to load",
+
+	// Offline state (PWA offline fallback page)
+	[Key.offlineTitle]: "You are offline",
+	[Key.offlineDescription]:
+		"The network connection seems to be down. Content that has already been cached is still available.",
 };

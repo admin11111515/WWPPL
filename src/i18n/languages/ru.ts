@@ -461,4 +461,9 @@ export const ru: Translation = {
 	[Key.videoPrev]: "Предыдущее видео",
 	[Key.videoNext]: "Следующее видео",
 	[Key.videoLoadError]: "Не удалось загрузить видео",
+
+	// Офлайн-состояние (резервная страница PWA)
+	[Key.offlineTitle]: "Нет подключения",
+	[Key.offlineDescription]:
+		"Похоже, соединение с сетью потеряно. Ранее загруженные материалы по-прежнему доступны.",
 };

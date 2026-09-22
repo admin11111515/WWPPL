@@ -450,4 +450,8 @@ export const zh_TW: Translation = {
 	[Key.videoPrev]: "上一個影片",
 	[Key.videoNext]: "下一個影片",
 	[Key.videoLoadError]: "影片載入失敗",
+
+	// 離線狀態（PWA 離線備援頁）
+	[Key.offlineTitle]: "目前離線",
+	[Key.offlineDescription]: "網路連線似乎中斷了。已經快取過的內容仍然可以瀏覽。",
 };

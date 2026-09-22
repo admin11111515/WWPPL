@@ -205,6 +205,11 @@ export default defineConfig({
 				if (pathname.startsWith("/blog/")) {
 					return false;
 				}
+				// 离线兜底页是断网时给访客看的临时页面，不是常态内容，
+				// 不应进入 sitemap（该页同时用 robots noindex 声明不收录）
+				if (pathname === "/offline/") {
+					return false;
+				}
 
 				return true;
 			},

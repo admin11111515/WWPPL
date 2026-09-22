@@ -458,4 +458,9 @@ export const ja: Translation = {
 	[Key.videoPrev]: "前の動画",
 	[Key.videoNext]: "次の動画",
 	[Key.videoLoadError]: "動画の読み込みに失敗しました",
+
+	// オフライン状態（PWA オフライン用フォールバックページ）
+	[Key.offlineTitle]: "オフラインです",
+	[Key.offlineDescription]:
+		"ネットワーク接続が切れているようです。キャッシュ済みの内容は引き続き閲覧できます。",
 };

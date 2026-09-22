@@ -482,6 +482,10 @@ enum I18nKey {
 	videoPrev = "videoPrev",
 	videoNext = "videoNext",
 	videoLoadError = "videoLoadError",
+
+	// 离线状态（PWA 离线兜底页）
+	offlineTitle = "offlineTitle",
+	offlineDescription = "offlineDescription",
 }
 
 export default I18nKey;
