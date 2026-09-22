@@ -2,6 +2,7 @@
 import fs from "node:fs";
 import path from "path";
 import { footerConfig, profileConfig } from "@/config";
+import { getAnalyticsServicesHtml, getServiceBadgesHtml } from "@/utils/footer-services";
 import { url } from "@/utils/url-utils";
 
 const currentYear = new Date().getFullYear();
@@ -34,6 +35,10 @@ if (footerConfig.enable) {
 			/__THEME_VERSION__/g,
 			themeVersion,
 		);
+		// 替换服务徽章与统计服务说明（按实际配置生成，避免页脚写着用了其实没用的服务）
+		customFooterHtml = customFooterHtml
+			.replace(/__SERVICE_BADGES__/g, getServiceBadgesHtml())
+			.replace(/__ANALYTICS_SERVICES__/g, getAnalyticsServicesHtml());
 	} catch (error) {
 		console.warn("FooterConfig.html文件读取失败:", error.message);
 	}
