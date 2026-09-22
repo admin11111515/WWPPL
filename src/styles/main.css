@@ -8,6 +8,7 @@
 @import './mouse.css';
 @import './tags.css';
 @import './gallery.css';
+@import './cjk-typography.css';
 
 @plugin '@tailwindcss/typography';
 
