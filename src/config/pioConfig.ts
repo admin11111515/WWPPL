@@ -85,7 +85,10 @@ export const spineModelConfig: SpineModelConfig = {
 // Live2D 看板娘配置 (使用 l2d-widget 库，文档：https://l2d-widget.hacxy.cn)
 export const live2dWidgetConfig: Live2DWidgetConfig = {
 	// Live2D 看板娘开关
-	enable: false,
+	// 选用 Live2D 而非 Spine 的原因：Live2D 走 npm 本地打包（l2d-widget），
+	// 不依赖外部 CDN；Spine 组件在本地资源缺失时会回退请求 unpkg.com，
+	// 在国内网络环境下不稳定。
+	enable: true,
 	// 模型配置，支持单个模型或数组（多模型切换）
 	model: [
 		{
