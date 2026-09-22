@@ -286,14 +286,16 @@ export const ja: Translation = {
 	// サイト情報
 	[Key.siteInfo]: "サイト情報",
 	[Key.siteInfoBuildTime]: "ビルド日時",
+	[Key.siteInfoCurrentTime]: "現在時刻",
 	[Key.siteInfoBuildPlatform]: "ビルドプラットフォーム",
 	[Key.siteInfoBlogVersion]: "ブログバージョン",
 	[Key.siteInfoAstroVersion]: "Astro バージョン",
 	[Key.siteInfoNodeVersion]: "Node バージョン",
 	[Key.siteInfoPnpmVersion]: "pnpm バージョン",
 	[Key.siteInfoSystem]: "システム情報",
-	[Key.siteInfoExpand]: "ビルド情報を展開",
-	[Key.siteInfoCollapse]: "ビルド情報を折畳む",
+
+	[Key.siteInfoExpand]: "詳細を展開",
+	[Key.siteInfoCollapse]: "詳細を折畳む",
 	[Key.siteInfoDomain]: "ドメイン",
 	[Key.siteInfoLicense]: "ライセンス",
 

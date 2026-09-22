@@ -201,6 +201,10 @@ export default defineConfig({
 				if (pathname === "/gallery/" && !siteConfig.pages.gallery) {
 					return false;
 				}
+				// 遗留 /blog/ 路由已重定向到 /posts/，从 sitemap 中剔除，避免重复收录
+				if (pathname.startsWith("/blog/")) {
+					return false;
+				}
 
 				return true;
 			},

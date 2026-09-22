@@ -16,10 +16,12 @@ async function getRawSortedPosts() {
 		if (a.data.pinned && !b.data.pinned) return -1;
 		if (!a.data.pinned && b.data.pinned) return 1;
 
-		// 如果置顶状态相同，则按发布日期排序
-		const dateA = new Date(a.data.published);
-		const dateB = new Date(b.data.published);
-		return dateA > dateB ? -1 : 1;
+		// 如果置顶状态相同，则按发布日期排序（更新的在前）
+		const dateA = new Date(a.data.published).getTime();
+		const dateB = new Date(b.data.published).getTime();
+		if (dateA !== dateB) return dateB - dateA; // 日期大的（更新的）排在前面
+		// 同日文章用 id 作为稳定兜底，保证排序确定（不再每次构建随机变化）
+		return a.id.localeCompare(b.id);
 	});
 	return sorted;
 }
@@ -253,8 +255,11 @@ export async function getArchiveList(): Promise<ArchiveItem[]> {
 		},
 	);
 
-	// 获取 Bangumi 数据
-	const bangumiItems: ArchiveItem[] = await fetchBangumiArchiveData();
+	// 获取 Bangumi 数据（仅在页面开关 pages.bangumi 开启时抓取，
+	// 避免关闭 Bangumi 后归档时间线仍展示 Bangumi 条目及计数）
+	const bangumiItems: ArchiveItem[] = siteConfig.pages.bangumi
+		? await fetchBangumiArchiveData()
+		: [];
 	const lifeItems: ArchiveItem[] = [];
 
 	// 获取远程说说数据

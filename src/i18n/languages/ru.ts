@@ -288,14 +288,16 @@ export const ru: Translation = {
 	// Информация о сайте
 	[Key.siteInfo]: "Информация о сайте",
 	[Key.siteInfoBuildTime]: "Время сборки",
+	[Key.siteInfoCurrentTime]: "Текущее время",
 	[Key.siteInfoBuildPlatform]: "Платформа сборки",
 	[Key.siteInfoBlogVersion]: "Версия блога",
 	[Key.siteInfoAstroVersion]: "Astro",
 	[Key.siteInfoNodeVersion]: "Node",
 	[Key.siteInfoPnpmVersion]: "pnpm",
 	[Key.siteInfoSystem]: "Система",
-	[Key.siteInfoExpand]: "Показать информацию о сборке",
-	[Key.siteInfoCollapse]: "Скрыть информацию о сборке",
+
+	[Key.siteInfoExpand]: "Показать подробнее",
+	[Key.siteInfoCollapse]: "Свернуть подробности",
 	[Key.siteInfoDomain]: "Домен",
 	[Key.siteInfoLicense]: "Лицензия",
 

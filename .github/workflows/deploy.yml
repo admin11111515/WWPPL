@@ -1,8 +1,11 @@
-name: Deploy to GitHub Pages
+name: Deploy to GitHub Pages (manual only)
 
+# ⚠️ 部署通道说明（2026-09-21 调整）
+# 本项目正式部署目标是 Cloudflare Pages（配置见仓库根 wrangler.jsonc）。
+# 本工作流部署到 GitHub Pages，而 GitHub Pages 是纯静态托管、不支持 functions/，
+# 后台接口会 404，因此不再作为默认通道自动触发。
+# 如需临时用 GitHub Pages 预览，请在 Actions 页面手动 Run workflow。
 on:
-  push:
-    branches: [ master ]
   workflow_dispatch:
 
 # Pages 部署需要的权限

@@ -313,6 +313,7 @@ enum I18nKey {
 	// 站点信息
 	siteInfo = "siteInfo",
 	siteInfoBuildTime = "siteInfoBuildTime",
+	siteInfoCurrentTime = "siteInfoCurrentTime",
 	siteInfoBuildPlatform = "siteInfoBuildPlatform",
 	siteInfoBlogVersion = "siteInfoBlogVersion",
 	siteInfoAstroVersion = "siteInfoAstroVersion",

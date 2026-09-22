@@ -1,8 +1,29 @@
 {
+	// ============================================================
+	// Cloudflare Pages 项目配置
+	// ------------------------------------------------------------
+	// 重要：本文件是「Pages」配置，不是「Workers」配置。
+	//   关键字段 pages_build_output_dir 告诉 Cloudflare 这是一个 Pages 项目，
+	//   只有写了它，仓库根目录下的 functions/ 才会被识别并部署成 Pages Functions。
+	//   先前这里是 Workers 写法（assets.directory），导致 /api/* 全部 404。
+	//
+	//   注意：Pages 配置下不要再写 "main" 或 "assets" 字段，二者属于 Workers，会冲突。
+	// ============================================================
+
+	// Pages 项目名（需与 Cloudflare 控制台里的 Pages 项目名一致）
 	"name": "firefly",
+
+	// 构建产物目录：Astro 输出到 dist
+	"pages_build_output_dir": "./dist",
+
+	// Workerd 运行时兼容性
 	"compatibility_date": "2025-01-01",
-	"compatibility_flags": ["nodejs_compat"],
-	"assets": {
-		"directory": "./dist"
-	}
+	"compatibility_flags": ["nodejs_compat"]
+
+	// ------------------------------------------------------------
+	// 环境变量（不要把密码/密钥写进本文件！）
+	// 在 Cloudflare 控制台配置，路径：
+	//   Pages 项目 → Settings → Variables and Secrets
+	// 需要配置的变量见 docs/Cloudflare部署指南.md
+	// ------------------------------------------------------------
 }

@@ -8,7 +8,7 @@ import { licenseConfig, siteConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 import type { WidgetComponentConfig } from "@/types/config";
-import { formatDateI18nWithTime } from "@/utils/date-utils";
+import { getSiteLocale } from "@/utils/date-utils";
 
 interface Props {
 	class?: string;
@@ -49,9 +49,6 @@ const pnpmMatch = userAgent.match(/pnpm\/([\d.]+)/);
 if (pnpmMatch) {
 	pnpmVersion = `v${pnpmMatch[1]}`;
 }
-
-// 构建时间
-const buildTime = formatDateI18nWithTime(new Date());
 
 // 构建平台检测（使用 ci-info 自动识别 CI 环境）
 const unknownBuildPlatform =
@@ -98,12 +95,14 @@ const detailItems: {
 	label: string;
 	value: string;
 	fullWidth?: boolean;
+	id?: string;
 }[] = [
 	{
-		icon: "material-symbols:build-outline",
-		label: i18n(I18nKey.siteInfoBuildTime),
-		value: buildTime,
+		icon: "material-symbols:schedule-outline",
+		label: i18n(I18nKey.siteInfoCurrentTime),
+		value: "", // 由客户端实时更新
 		fullWidth: true,
+		id: "current-time",
 	},
 	{
 		icon: "material-symbols:computer-outline",
@@ -167,7 +166,7 @@ const detailItems: {
         <div class="grid grid-cols-2 gap-2">
           {
             detailItems.map(
-              (item: { icon: string; label: string; value: string; fullWidth?: boolean }) => (
+              (item: { icon: string; label: string; value: string; fullWidth?: boolean; id?: string }) => (
                 <div class:list={[
                   "flex flex-col items-center gap-1 py-2 px-1 rounded-lg bg-neutral-100/60 dark:bg-neutral-800/50",
                   { "col-span-2": item.fullWidth }
@@ -184,6 +183,7 @@ const detailItems: {
                       { "text-xs": item.fullWidth }
                     ]}
                     title={item.value}
+                    data-dynamic-id={item.id}
                   >
                     {item.value}
                   </span>
@@ -224,8 +224,8 @@ const detailItems: {
       const iconEl = this.querySelector(".site-info-toggle-icon");
       if (!btn || !detail || !textEl) return;
 
-      const expandText = this.dataset.expandText || "展开构建信息";
-      const collapseText = this.dataset.collapseText || "收起构建信息";
+      const expandText = this.dataset.expandText || "展开更多信息";
+      const collapseText = this.dataset.collapseText || "收起更多信息";
 
       // 初始状态为展开
       let expanded = true;
@@ -243,4 +243,29 @@ const detailItems: {
   if (!customElements.get("site-info-collapse")) {
     customElements.define("site-info-collapse", SiteInfoCollapse);
   }
+</script>
+
+<script is:inline define:vars={{ siteLocale: getSiteLocale(), siteTimezone: siteConfig.timezone || "" }}>
+  const timeFormatter = new Intl.DateTimeFormat(siteLocale, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    timeZone: siteTimezone || undefined,
+  });
+
+  function updateCurrentTime() {
+    const text = timeFormatter.format(new Date());
+    document.querySelectorAll('[data-dynamic-id="current-time"]').forEach((element) => {
+      element.textContent = text;
+    });
+  }
+
+  updateCurrentTime();
+  setInterval(updateCurrentTime, 1000);
+  document.addEventListener("swup:contentReplaced", () => {
+    setTimeout(updateCurrentTime, 100);
+  });
 </script>

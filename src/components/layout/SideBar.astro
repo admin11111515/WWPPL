@@ -113,7 +113,8 @@ const getAnimationDelay = (index: number): string => {
 };
 
 // 判断当前页面是否为文章页面（服务端渲染时确定）
-const isPostPage = Astro.url.pathname.includes("/blog/");
+// 规范文章路由为 /posts/，原 /blog/ 已重定向到 /posts/，故按 /posts/ 判定
+const isPostPage = Astro.url.pathname.includes("/posts/");
 
 // 判断组件在当前页面首屏是否可见（用于计算布局间距，避免隐藏组件占位）
 const isComponentInitiallyVisible = (

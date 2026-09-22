@@ -23,7 +23,13 @@ $:
             - pnpm docs:dev
 
 # 云原生构建流程和自动部署
-# main改成您实际的分支名称
+# ⚠️ 部署通道说明（2026-09-21）
+# 本项目正式部署目标是 Cloudflare Pages（见仓库根 wrangler.jsonc 与 docs/Cloudflare部署指南.md）。
+# 下面 CNB 流程里的「部署到Pages」步骤走的是腾讯 EdgeOne Pages（npx edgeone pages deploy ./dist），
+# 它只上传静态产物、不识别 Cloudflare 的 functions/ 目录，后台接口会 404。
+# 若你仍在用 CNB，请把该步骤停用（或整段注释），只保留构建。
+# 另：文件末尾「同步仓库到github」指向模板作者仓库 Seasir-Hyde/Firefly-hyde，不是你的仓库，
+# 建议一并停用，避免把代码推到别人的仓库。
 main:
   push:
     - runner:
