@@ -18,35 +18,59 @@ const bangumiCount = archiveList.filter(
 ).length;
 const lifeCount = archiveList.filter((item) => item.type === "life").length;
 const totalCount = postsCount + momentsCount + bangumiCount + lifeCount;
+
+// 统计卡片只列真的可能有内容的类别。
+// 番组计划 / 生活这两项在没有内容源时恒为 0，摆在页面上不提供任何信息，
+// 反而让人以为是站点坏了 —— 所以计数为 0 时就不渲染这一格。
+const statCards = [
+	{
+		key: "posts",
+		value: postsCount,
+		label: i18n(I18nKey.postList),
+		color: "text-amber-500",
+		always: true,
+	},
+	{
+		key: "moments",
+		value: momentsCount,
+		label: i18n(I18nKey.moments),
+		color: "text-(--primary)",
+		always: true,
+	},
+	{
+		key: "bangumi",
+		value: bangumiCount,
+		label: i18n(I18nKey.bangumi),
+		color: "text-red-500 dark:text-red-400",
+		always: false,
+	},
+	{
+		key: "life",
+		value: lifeCount,
+		label: i18n(I18nKey.archiveLife),
+		color: "text-emerald-600 dark:text-emerald-400",
+		always: false,
+	},
+].filter((card) => card.always || card.value > 0);
 ---
 
 <MainGridLayout title={i18n(I18nKey.archive)}>
       <!-- 统计信息 -->
     <div class="card-base px-8 py-6 mb-6">
         <div class="flex flex-wrap gap-6 justify-center text-center">
-            <div class="flex flex-col">
-                <span class="text-3xl font-bold text-amber-500">{postsCount}</span>
-                <span class="text-sm text-30 mt-1">{i18n(I18nKey.postList)}</span>
-            </div>
-            <div class="w-px bg-neutral-200 dark:bg-neutral-700"></div>
-            <div class="flex flex-col">
-                <span class="text-3xl font-bold text-(--primary)">{momentsCount}</span>
-                <span class="text-sm text-30 mt-1">{i18n(I18nKey.moments)}</span>
-            </div>
-            <div class="w-px bg-neutral-200 dark:bg-neutral-700"></div>
-            <div class="flex flex-col">
-                <span class="text-3xl font-bold text-red-500 dark:text-red-400">{bangumiCount}</span>
-                <span class="text-sm text-30 mt-1">{i18n(I18nKey.bangumi)}</span>
-            </div>
-            <div class="w-px bg-neutral-200 dark:bg-neutral-700"></div>
-            <div class="flex flex-col">
-                <span class="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{lifeCount}</span>
-                <span class="text-sm text-30 mt-1">生活</span>
-            </div>
+            {statCards.map((card, index) => (
+                <>
+                    {index > 0 && <div class="w-px bg-neutral-200 dark:bg-neutral-700"></div>}
+                    <div class="flex flex-col">
+                        <span class:list={["text-3xl font-bold", card.color]}>{card.value}</span>
+                        <span class="text-sm text-30 mt-1">{card.label}</span>
+                    </div>
+                </>
+            ))}
             <div class="w-px bg-neutral-200 dark:bg-neutral-700"></div>
             <div class="flex flex-col">
                 <span class="text-3xl font-bold text-(--primary)">{totalCount}</span>
-                <span class="text-sm text-30 mt-1">总计</span>
+                <span class="text-sm text-30 mt-1">{i18n(I18nKey.archiveTotal)}</span>
             </div>
         </div>
     </div>
