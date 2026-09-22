@@ -75,13 +75,27 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 			// 是否允许用户通过控制面板切换横幅标题显示
 			switchable: true,
 			// 主页横幅主标题
-			title: "WWPPL Blog 🎉",
+			title: "WWPPL Blog",
 			// 主页横幅主标题字体大小
 			titleSize: "3.8rem",
-			// 主页横幅副标题
-			subtitle: ["欲买桂花同载酒，终不似，少年游！", "花有重开日，人无再少年"],
+			// 主页横幅句子（手写，会与下面 sources 里的内容一起轮播）
+			subtitle: [
+				"记录生活，也写一点代码",
+				"不追热点，只写做完的事",
+				"写下来，才算真正想过",
+				"软件出身，机械谋生，代码是业余里的正经事",
+			],
 			// 主页横幅副标题字体大小
 			subtitleSize: "1.5rem",
+			// 轮播内容来源：除上面的手写句子外，混入本站自己的数据，全部自动生成、不用手动维护
+			sources: {
+				// 从已有文章正文里抽句子：构建时随机抽一批，写一篇自动多一批候选
+				quotes: { enable: true, limit: 48 },
+				// 站点实况：建站第几天、多少篇、多少字、更新节奏
+				stats: { enable: true },
+				// 此刻状态：按访客本地时间实时生成（现在几点、今天过了多少）
+				now: { enable: true },
+			},
 			typewriter: {
 				// 是否启用打字机效果
 				// 打字机开启 → 循环显示所有副标题

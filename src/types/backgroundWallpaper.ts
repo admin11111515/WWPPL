@@ -18,9 +18,18 @@ export type BackgroundWallpaperConfig = {
 			enable: boolean; // 是否在首页显示自定义文字（全局开关）
 			switchable?: boolean; // 是否允许用户通过控制面板切换横幅标题显示
 			title?: string; // 主标题
-			subtitle?: string | string[]; // 副标题，支持单个字符串或字符串数组
+			subtitle?: string | string[]; // 自定义句子，支持单个字符串或字符串数组（会与其他来源一起轮播）
 			titleSize?: string; // 主标题字体大小，如 "3.5rem"
 			subtitleSize?: string; // 副标题字体大小，如 "1.5rem"
+			// 轮播内容来源：除手写句子外，可混入本站自己的数据，全部自动生成，无需手动维护
+			sources?: {
+				quotes?: {
+					enable?: boolean; // 从已有文章正文里抽句子轮播（每次构建重抽，随写作自动扩充）
+					limit?: number; // 每次构建抽取多少条，默认 48
+				};
+				stats?: { enable?: boolean }; // 站点实况：建站天数、文章数、字数、更新节奏
+				now?: { enable?: boolean }; // 此刻状态：按访客本地时间实时生成
+			};
 			typewriter?: {
 				enable: boolean; // 是否启用打字机效果
 				speed: number; // 打字速度（毫秒）

@@ -1,0 +1,394 @@
+---
+/**
+ * 首页横幅的轮播文字。
+ *
+ * 与旧的打字机相比，两处关键差别：
+ *   1. 打完停一会儿，整句淡出，而不是一个字一个字往回删 —— 长句不会被拖成五六秒一条
+ *   2. 每条可以是「话」也可以是「数据」：抽句带出处小字，实时条目带呼吸点
+ *
+ * 打字速度按句长自适应，让每条的打字时长基本一致（约 1.4-1.9 秒），
+ * 节奏稳定，不会短句一闪而过、长句等到失去耐心。
+ */
+import type { BannerItem, BannerLive } from "@/types/bannerText";
+
+interface Props {
+	items: BannerItem[];
+	live?: BannerLive[];
+	speed?: number;
+	pauseTime?: number;
+	class?: string;
+}
+
+const { items, live = [], speed = 100, pauseTime = 2000, class: className = "" } = Astro.props;
+
+// 数据内联，避免额外请求；首页之外不渲染这个组件
+const itemsJson = JSON.stringify(items);
+const liveJson = JSON.stringify(live);
+---
+
+<div
+	id="banner-subtitle"
+	class={`banner-subtitle banner-rotator ${className}`}
+	data-items={itemsJson}
+	data-live={liveJson}
+	data-speed={speed}
+	data-pause={pauseTime}
+	aria-label="本站的动态与摘句"
+>
+	<span class="banner-line">
+		<span class="banner-dot" aria-hidden="true"></span>
+		<span class="banner-text" aria-hidden="true"></span>
+		<span class="banner-caret" aria-hidden="true"></span>
+	</span>
+	<span class="banner-from" aria-hidden="true"></span>
+</div>
+
+<script>
+	type Item = { kind: string; text: string; from?: string };
+
+	function pad(n: number): string {
+		return String(n).padStart(2, "0");
+	}
+
+	function greetOf(h: number): string {
+		if (h >= 23 || h < 5) return "夜深了";
+		if (h < 11) return "早上好";
+		if (h < 14) return "午间好";
+		if (h < 18) return "下午好";
+		return "晚上好";
+	}
+
+	/** 把 {{占位}} 换成访客本地此刻的真实值 */
+	function fillTemplate(tpl: string, meta: { dayNo?: number } | undefined): string {
+		const now = new Date();
+		const h = now.getHours();
+		const m = now.getMinutes();
+		const passed = h * 60 + m;
+		const leftMin = Math.max(0, 1440 - passed);
+		const lh = Math.floor(leftMin / 60);
+		const lm = leftMin % 60;
+		const left =
+			lh > 0 ? (lm > 0 ? `${lh} 小时 ${lm} 分` : `${lh} 小时`) : `${lm} 分钟`;
+		const weekday = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"][
+			now.getDay()
+		];
+		return tpl
+			.replace("{{time}}", `${pad(h)}:${pad(m)}`)
+			.replace("{{percent}}", String(Math.min(100, Math.round((passed / 1440) * 100))))
+			.replace("{{left}}", left)
+			.replace("{{greet}}", greetOf(h))
+			.replace("{{date}}", `${now.getMonth() + 1} 月 ${now.getDate()} 日`)
+			.replace("{{weekday}}", weekday)
+			.replace("{{dayNo}}", String(meta?.dayNo ?? ""))
+			.trim();
+	}
+
+	/** 静态条目 + 按访客本地时间现算的实时条目，实时条目均匀插进去 */
+	function buildSequence(el: HTMLElement): Item[] {
+		let items: Item[] = [];
+		let live: { template: string; dayNo?: number }[] = [];
+		try {
+			items = JSON.parse(el.dataset.items || "[]");
+		} catch {
+			items = [];
+		}
+		try {
+			live = JSON.parse(el.dataset.live || "[]");
+		} catch {
+			live = [];
+		}
+		if (!Array.isArray(items)) items = [];
+
+		const seq = items.slice();
+		if (Array.isArray(live) && live.length > 0) {
+			const filled = live
+				.map((t) => ({ kind: "live", text: fillTemplate(t.template, t) }))
+				.filter((t) => t.text);
+			if (filled.length > 0) {
+				const step = Math.max(1, Math.floor(seq.length / (filled.length + 1)));
+				let pos = step;
+				for (const f of filled) {
+					seq.splice(Math.min(pos, seq.length), 0, f);
+					pos += step + 1;
+				}
+			}
+		}
+		return seq;
+	}
+
+	const segmenter =
+		typeof Intl !== "undefined" && "Segmenter" in Intl
+			? new Intl.Segmenter(undefined, { granularity: "grapheme" })
+			: null;
+
+	function toGraphemes(text: string): string[] {
+		if (!segmenter) return Array.from(text);
+		return Array.from(segmenter.segment(text), (s) => s.segment);
+	}
+
+	/** 出处显示文本：标题自带书名号时不再套一层，避免《重读《小王子》》这种嵌套 */
+	function fromTextOf(item: Item): string {
+		if (!item.from) return "";
+		return item.from.includes("《") ? item.from : `《${item.from}》`;
+	}
+
+	class BannerRotator {
+		private el: HTMLElement;
+		private textEl: HTMLElement;
+		private fromEl: HTMLElement;
+		private dotEl: HTMLElement;
+		private caretEl: HTMLElement;
+		private items: Item[];
+		private index = 0;
+		private timer: number | null = null;
+		private baseSpeed: number;
+		private pause: number;
+		private dead = false;
+
+		constructor(el: HTMLElement) {
+			this.el = el;
+			this.textEl = el.querySelector(".banner-text") as HTMLElement;
+			this.fromEl = el.querySelector(".banner-from") as HTMLElement;
+			this.dotEl = el.querySelector(".banner-dot") as HTMLElement;
+			this.caretEl = el.querySelector(".banner-caret") as HTMLElement;
+			this.items = buildSequence(el);
+			this.baseSpeed = Number(el.dataset.speed) || 100;
+			this.pause = Number(el.dataset.pause) || 2000;
+			if (this.items.length > 0) this.step();
+		}
+
+		/** 换页或重新初始化时调用，避免旧的计时器继续跑 */
+		destroy() {
+			this.dead = true;
+			if (this.timer !== null) {
+				clearTimeout(this.timer);
+				this.timer = null;
+			}
+		}
+
+		private step() {
+			if (this.dead) return;
+			const item = this.items[this.index];
+			if (!item) return;
+			this.index = (this.index + 1) % this.items.length;
+
+			this.el.classList.remove("is-fading");
+			// 先把这一条的最终尺寸量出来并锁定，再开始打字。
+			// 否则药丸背景会跟着每个字一路变宽，长短句之间来回撑，非常吵。
+			this.lockSize(item);
+			this.fromEl.classList.remove("is-in");
+			this.caretEl.classList.remove("is-typing");
+			this.dotEl.classList.toggle("is-on", item.kind === "live");
+
+			this.type(item);
+		}
+
+		/**
+		 * 按完整内容（含出处）量一次宽度并固定。
+		 * 宽度切换发生在透明度为 0 的那一瞬，所以看不见跳变。
+		 */
+		private lockSize(item: Item) {
+			this.el.style.width = "";
+			this.el.style.maxWidth = "";
+			this.textEl.textContent = item.text;
+			this.fromEl.textContent = fromTextOf(item);
+			const w = this.el.offsetWidth;
+			if (w > 0) {
+				this.el.style.width = `${w}px`;
+				this.el.style.maxWidth = "100%";
+			}
+			this.textEl.textContent = "";
+			this.fromEl.textContent = "";
+		}
+
+		private type(item: Item) {
+			const chars = toGraphemes(item.text);
+			const len = Math.max(1, chars.length);
+			// 按句长反比调速度，让每条打字总时长落在 1.4-1.9 秒
+			const speed = Math.max(34, Math.min(this.baseSpeed, Math.round(1900 / len)));
+			// 停顿跟着句长走，长句给足读完的时间
+			const pause = this.pause + 35 * len;
+			let k = 0;
+
+			this.caretEl.classList.add("is-typing");
+
+			const tick = () => {
+				if (this.dead) return;
+				if (k >= chars.length) {
+					this.caretEl.classList.remove("is-typing");
+					if (item.from) {
+						this.fromEl.textContent = fromTextOf(item);
+						requestAnimationFrame(() => this.fromEl.classList.add("is-in"));
+					}
+					this.timer = window.setTimeout(() => this.fadeOut(), pause);
+					return;
+				}
+				this.textEl.textContent += chars[k++];
+				this.timer = window.setTimeout(tick, speed);
+			};
+			tick();
+		}
+
+		private fadeOut() {
+			if (this.dead) return;
+			this.el.classList.add("is-fading");
+			this.timer = window.setTimeout(() => {
+				if (this.dead) return;
+				this.el.classList.remove("is-fading");
+				this.step();
+			}, 320);
+		}
+	}
+
+	function initBannerRotators() {
+		const nodes = document.querySelectorAll<HTMLElement>(".banner-rotator");
+		for (const el of nodes) {
+			const prev = (el as HTMLElement & { __rotator?: BannerRotator }).__rotator;
+			if (prev) prev.destroy();
+			(el as HTMLElement & { __rotator?: BannerRotator }).__rotator = new BannerRotator(el);
+		}
+	}
+
+	function run() {
+		initBannerRotators();
+		// 横幅显隐可能晚于内容替换，补一次
+		setTimeout(initBannerRotators, 240);
+	}
+
+	// 视口变化后原来锁定的宽度不再合适，清掉让下一条重新量
+	window.addEventListener("resize", () => {
+		for (const el of document.querySelectorAll<HTMLElement>(".banner-rotator")) {
+			el.style.width = "";
+			el.style.maxWidth = "";
+		}
+	});
+
+	if (document.readyState === "loading") {
+		document.addEventListener("DOMContentLoaded", run);
+	} else {
+		run();
+	}
+
+	document.addEventListener("swup:contentReplaced", run);
+	document.addEventListener("swup:content:replace", run);
+	document.addEventListener("swup:page:view", run);
+	if (typeof window !== "undefined" && (window as unknown as { swup?: { hooks?: any } }).swup?.hooks) {
+		const hooks = (window as unknown as { swup: { hooks: any } }).swup.hooks;
+		hooks.on("content:replace", run);
+		hooks.on("page:view", run);
+	}
+</script>
+
+<style>
+	.banner-rotator {
+		display: block;
+		/* 换行时高度会变，但整体居中，不会推挤下方内容 */
+		min-height: 1.6em;
+		line-height: 1.45;
+		transition: opacity 0.32s ease;
+		will-change: opacity;
+	}
+
+	.banner-rotator.is-fading {
+		opacity: 0;
+	}
+
+	.banner-line {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		vertical-align: baseline;
+	}
+
+	/* 实时条目才亮起的呼吸点：比文字略小，不抢戏 */
+	.banner-dot {
+		width: 0.32em;
+		height: 0.32em;
+		margin-right: 0.45em;
+		border-radius: 50%;
+		background: currentColor;
+		opacity: 0;
+		flex: 0 0 auto;
+		transition: opacity 0.3s ease;
+	}
+
+	.banner-dot.is-on {
+		opacity: 0.9;
+		animation: banner-breathe 2.6s ease-in-out infinite;
+	}
+
+	@keyframes banner-breathe {
+		0%,
+		100% {
+			opacity: 0.35;
+			transform: scale(0.85);
+		}
+		50% {
+			opacity: 0.95;
+			transform: scale(1);
+		}
+	}
+
+	.banner-caret {
+		display: inline-block;
+		width: 0.06em;
+		height: 1.05em;
+		margin-left: 0.12em;
+		background: currentColor;
+		opacity: 0;
+		transform: translateY(0.12em);
+	}
+
+	.banner-caret.is-typing {
+		opacity: 0.7;
+		animation: banner-caret-blink 1s steps(1, end) infinite;
+	}
+
+	@keyframes banner-caret-blink {
+		0%,
+		50% {
+			opacity: 0.7;
+		}
+		51%,
+		100% {
+			opacity: 0.1;
+		}
+	}
+
+	/* 出处：极淡的小字，只在句尾出现，这是"这句是我写过的"的证据 */
+	.banner-from {
+		display: inline-block;
+		margin-left: 0.5em;
+		font-size: 0.58em;
+		font-weight: 400;
+		letter-spacing: 0.02em;
+		opacity: 0;
+		transform: translateY(-0.15em);
+		transition: opacity 0.5s ease, transform 0.5s ease;
+		white-space: nowrap;
+	}
+
+	.banner-from.is-in {
+		opacity: 0.5;
+		transform: translateY(0);
+	}
+
+	@media (max-width: 640px) {
+		.banner-from {
+			display: block;
+			margin-left: 0;
+			margin-top: 0.15em;
+			font-size: 0.62em;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.banner-rotator {
+			transition: none;
+		}
+		.banner-dot.is-on,
+		.banner-caret.is-typing {
+			animation: none;
+		}
+	}
+</style>
