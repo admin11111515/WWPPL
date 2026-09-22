@@ -2,11 +2,19 @@
 /**
  * 首页横幅的轮播文字。
  *
- * 与旧的打字机相比，两处关键差别：
- *   1. 打完停一会儿，整句淡出，而不是一个字一个字往回删 —— 长句不会被拖成五六秒一条
- *   2. 每条可以是「话」也可以是「数据」：抽句带出处小字，实时条目带呼吸点
+ * 三条要求（按优先级）：
+ *   1. 永远单行 —— 句子再长也不折行
+ *   2. 容器跟着字一起长 —— 药丸宽度就是此刻已打出来的那几个字，
+ *      而不是一上来就把整句的宽度锁死、字一个个往里填
+ *   3. 出处不参与打字 —— 句子打完它才跟容器一起出来；窄屏上实在放不下时，
+ *      让出处给正文让路，宁可少一行出处也不让文字顶出屏幕
  *
- * 打字速度按句长自适应，让每条的打字时长基本一致（约 1.4-1.9 秒），
+ * 单行靠「按可用宽度反解字号」保证：把完整句子（连出处）摆上去量两次
+ * （字号 1 与 0.5 各一次），线性解出「宽度 = 定值 + 系数 × 字号」里的两个未知数，
+ * 再解出刚好放得下的字号。量两次而不是按比例估，是因为药丸的 padding、
+ * 元素之间的空白不随字号变化，直接按比例算会偏乐观，长句子最后几个字会顶出药丸。
+ *
+ * 打字速度按句长反比调，让每条的打字时长基本一致（约 1.4-1.9 秒），
  * 节奏稳定，不会短句一闪而过、长句等到失去耐心。
  */
 import type { BannerItem, BannerLive } from "@/types/bannerText";
@@ -45,6 +53,20 @@ const liveJson = JSON.stringify(live);
 
 <script>
 	type Item = { kind: string; text: string; from?: string };
+	type RotatorEl = HTMLElement & { __rotator?: BannerRotator };
+
+	/** 字号下限：再小就没人看得清了，宁可让药丸稍微宽过文字栏 */
+	const MIN_FONT_PX = 9;
+	/** 相对设计字号的下限，防止桌面上长句子被压得太小 */
+	const MIN_SCALE = 0.6;
+	/** 出处字号是正文的 0.58 倍，与样式里保持一致 */
+	const FROM_RATIO = 0.58;
+	/**
+	 * 有了出处之后，正文若还要缩到这个字号以下，就让出处退场。
+	 * 只在小屏上会触发：那时候「一句三十个汉字 + 出处」横着根本排不下，
+	 * 留着出处等于把正文压成蝇头小字。桌面上一行放得下，出处照常显示。
+	 */
+	const FROM_MIN_PX = 12;
 
 	function pad(n: number): string {
 		return String(n).padStart(2, "0");
@@ -134,6 +156,7 @@ const liveJson = JSON.stringify(live);
 
 	class BannerRotator {
 		private el: HTMLElement;
+		private lineEl: HTMLElement;
 		private textEl: HTMLElement;
 		private fromEl: HTMLElement;
 		private dotEl: HTMLElement;
@@ -144,9 +167,15 @@ const liveJson = JSON.stringify(live);
 		private baseSpeed: number;
 		private pause: number;
 		private dead = false;
+		private current: Item | null = null;
+		/** 这一条的出处放得下吗；放不下就只显示句子 */
+		private showFrom = false;
+		/** 用户要求减少动态效果时不做逐字打字，直接整句淡入淡出 */
+		private calm = false;
 
 		constructor(el: HTMLElement) {
 			this.el = el;
+			this.lineEl = el.querySelector(".banner-line") as HTMLElement;
 			this.textEl = el.querySelector(".banner-text") as HTMLElement;
 			this.fromEl = el.querySelector(".banner-from") as HTMLElement;
 			this.dotEl = el.querySelector(".banner-dot") as HTMLElement;
@@ -154,6 +183,9 @@ const liveJson = JSON.stringify(live);
 			this.items = buildSequence(el);
 			this.baseSpeed = Number(el.dataset.speed) || 100;
 			this.pause = Number(el.dataset.pause) || 2000;
+			this.calm =
+				typeof window.matchMedia === "function" &&
+				window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 			if (this.items.length > 0) this.step();
 		}
 
@@ -166,39 +198,152 @@ const liveJson = JSON.stringify(live);
 			}
 		}
 
+		/**
+		 * 视口变了要重量一次：设计字号是媒体查询给的，宽度也变了。
+		 * 只换字号不重打，当前这条接着往下打。
+		 */
+		refit() {
+			if (this.dead || !this.current) return;
+			this.fitTo(this.current, this.textEl.textContent || "", !!this.fromEl.textContent);
+		}
+
 		private step() {
 			if (this.dead) return;
 			const item = this.items[this.index];
 			if (!item) return;
 			this.index = (this.index + 1) % this.items.length;
+			this.current = item;
 
 			this.el.classList.remove("is-fading");
-			// 先把这一条的最终尺寸量出来并锁定，再开始打字。
-			// 否则药丸背景会跟着每个字一路变宽，长短句之间来回撑，非常吵。
-			this.lockSize(item);
-			this.fromEl.classList.remove("is-in");
 			this.caretEl.classList.remove("is-typing");
 			this.dotEl.classList.toggle("is-on", item.kind === "live");
+
+			// 出处瞬间隐掉再换文案，免得淡出的一瞬露出下一条的出处
+			this.fromEl.style.transition = "none";
+			this.fromEl.classList.remove("is-in");
+			this.fromEl.textContent = "";
+			requestAnimationFrame(() => {
+				this.fromEl.style.transition = "";
+			});
+
+			// 摆上完整句子定字号；定完立刻把正文清空，药丸从一个小小的空壳
+			// 随着一个字一个字打出来往外长。出处不占位，等句子打完再跟容器一起出来。
+			this.fitTo(item, "", false);
 
 			this.type(item);
 		}
 
+		/** 清掉内联字号，拿回媒体查询给的设计字号 */
+		private designFont(): number {
+			this.lineEl.style.fontSize = "";
+			this.fromEl.style.fontSize = "";
+			return parseFloat(getComputedStyle(this.lineEl).fontSize) || 16;
+		}
+
+		/** 正文与出处按同一个比例缩放，两行字一起变小、比例不变 */
+		private applyScale(base: number, s: number) {
+			this.lineEl.style.fontSize = `${(base * s).toFixed(2)}px`;
+			this.fromEl.style.fontSize = `${(base * FROM_RATIO * s).toFixed(2)}px`;
+		}
+
 		/**
-		 * 按完整内容（含出处）量一次宽度并固定。
-		 * 宽度切换发生在透明度为 0 的那一瞬，所以看不见跳变。
+		 * 临时解开宽度约束，量一次「这条完整摆上来有多宽」。
+		 * 量之前先把过渡关掉：只要以后有人给宽度加了过渡，
+		 * 这里读到的就会是过渡途中的中间值，解出的字号会变成随机数 —— 先堵上。
 		 */
-		private lockSize(item: Item) {
-			this.el.style.width = "";
-			this.el.style.maxWidth = "";
+		private naturalWidth(): number {
+			const el = this.el;
+			el.style.setProperty("transition", "none", "important");
+			el.style.setProperty("width", "max-content", "important");
+			el.style.setProperty("max-width", "none", "important");
+			const w = el.getBoundingClientRect().width;
+			el.style.removeProperty("width");
+			el.style.removeProperty("max-width");
+			el.style.removeProperty("transition");
+			return w;
+		}
+
+		/** 文字栏的可用宽度：药丸外面那一圈盒子的宽度 */
+		private available(): number {
+			const box = this.el.parentElement;
+			return box ? box.clientWidth : 0;
+		}
+
+		/** 给定字体基准下允许的最小缩放：取「相对下限」与「绝对字号下限」里更狠的那个 */
+		private floorFor(base: number): number {
+			return Math.max(MIN_SCALE, MIN_FONT_PX / base);
+		}
+
+		/**
+		 * 解出「刚好放得下当前内容」的缩放，并把字号落到元素上。
+		 * 量两次（1 与 0.5）解出「宽度 = 定值 + 系数 × 缩放」，定值里含着 padding、
+		 * 元素之间的空白这些不随字号变的部分 —— 直接按比例估会偏乐观，末尾几个字会顶出去。
+		 */
+		private solveScale(base: number, avail: number): number {
+			// 第一次量必须在「设计字号」下量，否则解出的斜率是错的
+			// （这里被调用两次：一次含出处，一次不带出处）
+			this.applyScale(base, 1);
+			const w1 = this.naturalWidth();
+			if (avail <= 0 || w1 <= 0) {
+				this.applyScale(base, 1);
+				return 1;
+			}
+			this.applyScale(base, 0.5);
+			const wHalf = this.naturalWidth();
+			const k = (w1 - wHalf) / 0.5;
+			const fixed = w1 - k;
+			const floor = this.floorFor(base);
+			let s = k > 0 ? (avail - fixed) / k : 1;
+			s = Math.min(1, Math.max(floor, s));
+			this.applyScale(base, s);
+
+			// 兜一次：小数取整可能还剩一两像素，按实际比例再收一次
+			const check = this.naturalWidth();
+			if (check > avail && s > floor) {
+				s = Math.max(floor, (s * avail) / check);
+				this.applyScale(base, s);
+			}
+			return s;
+		}
+
+		/**
+		 * 定下这一条的字号，然后把正文/出处摆回 keep 状态。
+		 * 打字时 keepText 传空串 —— 正文从零开始逐个长出来；
+		 * 视口变化重排时传当前已打出的进度、keepFrom 传出处此刻是否已经露出来。
+		 * 量不到（比如横幅被隐藏）就退化成设计字号，下一条再试。
+		 */
+		private fitTo(item: Item, keepText: string, keepFrom: boolean) {
+			const base = this.designFont();
+			const avail = this.available();
+			const floor = this.floorFor(base);
+			// 量的是「整条完整摆上来」，所以出处无论此刻露没露都要一并算进宽度
 			this.textEl.textContent = item.text;
 			this.fromEl.textContent = fromTextOf(item);
-			const w = this.el.offsetWidth;
-			if (w > 0) {
-				this.el.style.width = `${w}px`;
-				this.el.style.maxWidth = "100%";
+
+			const sWith = this.solveScale(base, avail);
+			let showFrom = !!item.from;
+
+			/*
+			 * 出处要不要留。两种情况让它退场：
+			 *   · 带上它字号已经压到下限 —— 那是真放不下
+			 *   · 带上它正文会掉到 FROM_MIN_PX 以下 —— 窄屏上很常见，
+			 *     这时宁可少一行「出自哪篇」，也别把正文缩到看不清
+			 */
+			if (showFrom && (sWith <= floor + 1e-6 || base * sWith < FROM_MIN_PX)) {
+				this.fromEl.textContent = "";
+				const sWithout = this.solveScale(base, avail);
+				if (sWithout > sWith + 1e-3 || this.naturalWidth() > avail + 1) {
+					showFrom = false;
+				} else {
+					// 去掉出处也换不来更大的字，那就留着
+					this.fromEl.textContent = fromTextOf(item);
+					this.solveScale(base, avail);
+				}
 			}
-			this.textEl.textContent = "";
-			this.fromEl.textContent = "";
+			this.showFrom = showFrom;
+
+			this.textEl.textContent = keepText;
+			if (!keepFrom || !showFrom) this.fromEl.textContent = "";
 		}
 
 		private type(item: Item) {
@@ -208,18 +353,22 @@ const liveJson = JSON.stringify(live);
 			const speed = Math.max(34, Math.min(this.baseSpeed, Math.round(1900 / len)));
 			// 停顿跟着句长走，长句给足读完的时间
 			const pause = this.pause + 35 * len;
-			let k = 0;
 
+			if (this.calm) {
+				this.textEl.textContent = item.text;
+				if (this.showFrom) this.revealFrom(item);
+				this.timer = window.setTimeout(() => this.fadeOut(), pause);
+				return;
+			}
+
+			let k = 0;
 			this.caretEl.classList.add("is-typing");
 
 			const tick = () => {
 				if (this.dead) return;
 				if (k >= chars.length) {
 					this.caretEl.classList.remove("is-typing");
-					if (item.from) {
-						this.fromEl.textContent = fromTextOf(item);
-						requestAnimationFrame(() => this.fromEl.classList.add("is-in"));
-					}
+					if (this.showFrom) this.revealFrom(item);
 					this.timer = window.setTimeout(() => this.fadeOut(), pause);
 					return;
 				}
@@ -227,6 +376,12 @@ const liveJson = JSON.stringify(live);
 				this.timer = window.setTimeout(tick, speed);
 			};
 			tick();
+		}
+
+		/** 句子打完了，出处淡进来 —— 它一进来容器再宽一点，两件事同步发生 */
+		private revealFrom(item: Item) {
+			this.fromEl.textContent = fromTextOf(item);
+			requestAnimationFrame(() => this.fromEl.classList.add("is-in"));
 		}
 
 		private fadeOut() {
@@ -240,13 +395,15 @@ const liveJson = JSON.stringify(live);
 		}
 	}
 
+	function eachRotator(fn: (el: RotatorEl) => void) {
+		for (const el of document.querySelectorAll<RotatorEl>(".banner-rotator")) fn(el);
+	}
+
 	function initBannerRotators() {
-		const nodes = document.querySelectorAll<HTMLElement>(".banner-rotator");
-		for (const el of nodes) {
-			const prev = (el as HTMLElement & { __rotator?: BannerRotator }).__rotator;
-			if (prev) prev.destroy();
-			(el as HTMLElement & { __rotator?: BannerRotator }).__rotator = new BannerRotator(el);
-		}
+		eachRotator((el) => {
+			if (el.__rotator) el.__rotator.destroy();
+			el.__rotator = new BannerRotator(el);
+		});
 	}
 
 	function run() {
@@ -255,13 +412,20 @@ const liveJson = JSON.stringify(live);
 		setTimeout(initBannerRotators, 240);
 	}
 
-	// 视口变化后原来锁定的宽度不再合适，清掉让下一条重新量
+	// 视口变化后设计字号和可用宽度都变了，重量一次（当前这条不重打）
+	let resizeTimer = 0;
 	window.addEventListener("resize", () => {
-		for (const el of document.querySelectorAll<HTMLElement>(".banner-rotator")) {
-			el.style.width = "";
-			el.style.maxWidth = "";
-		}
+		clearTimeout(resizeTimer);
+		resizeTimer = window.setTimeout(() => eachRotator((el) => el.__rotator?.refit()), 180);
 	});
+
+	/**
+	 * 站内字体会晚于首屏就绪，字体一换字的宽度就变了。
+	 * 不重量的话长句子会顶出药丸，所以字体就绪后再校一次。
+	 */
+	if (document.fonts?.ready) {
+		document.fonts.ready.then(() => eachRotator((el) => el.__rotator?.refit()));
+	}
 
 	if (document.readyState === "loading") {
 		document.addEventListener("DOMContentLoaded", run);
@@ -282,17 +446,26 @@ const liveJson = JSON.stringify(live);
 <style>
 	.banner-rotator {
 		display: block;
-		/* 换行时高度会变，但整体居中，不会推挤下方内容 */
+		/* 单行：句子再长也不折行；宽度就是此刻这一行的实际宽度，随打字长出来 */
+		white-space: nowrap;
+		width: fit-content;
+		max-width: none;
+		/* 居中靠左右 auto：宽度往外长时两边同时推开，不会往一边偏 */
+		margin-left: auto;
+		margin-right: auto;
+		/* 空壳时就靠它撑住高度，免得文字清空的那一瞬高度塌下去、下方内容跟着跳 */
 		min-height: 1.6em;
 		line-height: 1.45;
 		transition: opacity 0.32s ease;
 		will-change: opacity;
 	}
 
-	.banner-rotator.is-fading {
-		opacity: 0;
-	}
-
+	/*
+	 * 药丸宽度不写死、也不补过渡：宽度就是「此刻这一行文字」的实际宽度，
+	 * 打一个字长一格 —— 这就是要的打字机手感。
+	 * （试过给 width 加过渡让它滑动，但宽度是 fit-content，
+	 *   内容变了计算值没变，过渡根本不会触发，加了也只是白写。）
+	 */
 	.banner-line {
 		display: inline-flex;
 		align-items: center;
@@ -373,13 +546,9 @@ const liveJson = JSON.stringify(live);
 		transform: translateY(0);
 	}
 
-	@media (max-width: 640px) {
-		.banner-from {
-			display: block;
-			margin-left: 0;
-			margin-top: 0.15em;
-			font-size: 0.62em;
-		}
+	/* 打字期间出处是空的，这时不该白占一段左边距，否则句子看着不居中 */
+	.banner-from:empty {
+		margin-left: 0;
 	}
 
 	@media (prefers-reduced-motion: reduce) {
