@@ -4,7 +4,7 @@ published: 2026-08-12
 tags: ["生活", "随笔", "路上"]
 category: "生活"
 description: "三个半小时，靠窗，一路上记了几段。"
-image: "api"
+image: "/images/covers/life-on-the-train-back.jpg"
 ---
 坐火车回学校，三个半小时，靠窗的位置。
 

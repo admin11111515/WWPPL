@@ -4,7 +4,7 @@ published: 2026-08-28
 tags: ["生活", "随笔", "季节"]
 category: "生活"
 description: "白天还是热，但早晚的温差变了。"
-image: "api"
+image: "/images/covers/life-end-of-august.jpg"
 ---
 这两天有变化。
 

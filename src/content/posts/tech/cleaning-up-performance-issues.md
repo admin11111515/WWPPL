@@ -4,7 +4,7 @@ published: 2026-09-16
 tags: ["性能优化", "构建", "博客"]
 category: "技术"
 description: "查出来三个问题，两个改了，一个决定不改。"
-image: "api"
+image: "/images/covers/tech-cleaning-up-performance-issues.jpg"
 ---
 花了一晚上把博客的性能过了一遍。记一下过程和结论。
 

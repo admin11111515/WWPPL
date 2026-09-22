@@ -4,7 +4,7 @@ published: 2026-08-17
 tags: ["音乐", "老歌", "歌单"]
 category: "音乐"
 description: "有几首存在歌单里好几年，很少听，但从来没删。"
-image: "api"
+image: "/images/covers/music-old-songs-i-cant-delete.jpg"
 ---
 整理歌单的时候发现，有几首歌躺在里面三四年了，播放次数是 1 或者 0。
 

@@ -4,7 +4,7 @@ published: 2026-09-13
 tags: ["前端", "表单", "交互"]
 category: "技术"
 description: "什么时候提示、提示放哪儿，比校验规则本身更难。"
-image: "api"
+image: "/images/covers/tech-form-validation.jpg"
 ---
 一个表单，字段不多，五个输入框。校验规则很简单，难的是"什么时候告诉用户他填错了"。
 

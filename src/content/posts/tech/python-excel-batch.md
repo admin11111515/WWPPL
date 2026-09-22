@@ -4,7 +4,7 @@ published: 2026-07-21
 tags: ["Python", "Excel", "自动化"]
 category: "技术"
 description: "五百个表格文件，用四十行代码处理完。"
-image: "api"
+image: "/images/covers/tech-python-excel-batch.jpg"
 ---
 帮人处理一批表格：五百多个 Excel 文件，每个是一天的订单，需要汇总成一张总表，还要按客户分组统计。
 

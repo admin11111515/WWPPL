@@ -4,7 +4,7 @@ published: 2026-09-07
 tags: ["正则", "工具", "JavaScript"]
 category: "技术"
 description: "不追求万能，够用就行，附上具体用法和注意点。"
-image: "api"
+image: "/images/covers/tech-three-regex-i-use-often.jpg"
 ---
 平时处理文本，翻来覆去用的就这几个。
 

@@ -4,7 +4,7 @@ published: 2026-08-09
 tags: ["生活", "猫", "记录"]
 category: "生活"
 description: "一只花色很杂的猫，和它在不同时间的四种状态。"
-image: "api"
+image: "/images/covers/life-the-cat-downstairs.jpg"
 ---
 宿舍楼下有一只猫，花色很杂，白的黄的都有，尾巴尖是黑的。看体型大概两三岁。
 

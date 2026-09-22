@@ -4,7 +4,7 @@ published: 2026-08-07
 tags: ["Node.js", "数据处理", "踩坑"]
 category: "技术"
 description: "内存、编码、日期格式，一个比一个阴险。"
-image: "api"
+image: "/images/covers/tech-nodejs-5000-rows-pitfalls.jpg"
 ---
 接手一个活：把五千行订单表格读进来，做筛选和分类，再导出。数据量不大，本来以为半小时的事，做了一下午。
 

@@ -4,7 +4,7 @@ published: 2026-07-10
 tags: ["生活", "汕头", "夏天"]
 category: "生活"
 description: "热到空调外机声成了背景音，记一点夏天的碎片。"
-image: "api"
+image: "/images/covers/life-shantou-summer-night.jpg"
 ---
 汕头正式入夏了。
 

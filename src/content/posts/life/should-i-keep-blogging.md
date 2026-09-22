@@ -4,7 +4,7 @@ published: 2026-09-09
 tags: ["生活", "随笔", "写博客"]
 category: "生活"
 description: "写了大半年，问自己三个问题。"
-image: "api"
+image: "/images/covers/life-should-i-keep-blogging.jpg"
 ---
 写博客这件事，中间有几次想停下来。这次认真问自己几个问题。
 

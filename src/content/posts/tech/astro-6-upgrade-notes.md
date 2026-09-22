@@ -4,7 +4,7 @@ published: 2026-09-10
 tags: ["Astro", "升级", "踩坑"]
 category: "技术"
 description: "升级本身的步骤很少，出问题的地方都在周边。"
-image: "api"
+image: "/images/covers/tech-astro-6-upgrade-notes.jpg"
 ---
 把博客升到了 Astro 6。升级命令只跑了一次，但后面修了一晚上。
 

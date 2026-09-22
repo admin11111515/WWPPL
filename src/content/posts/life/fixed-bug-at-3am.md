@@ -4,7 +4,7 @@ published: 2026-07-14
 tags: ["生活", "随笔", "代码"]
 category: "生活"
 description: "十个字符的错误，让我熬到了天亮前。"
-image: "api"
+image: "/images/covers/life-fixed-bug-at-3am.jpg"
 ---
 昨天从下午开始查一个问题。
 

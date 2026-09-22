@@ -4,7 +4,7 @@ published: 2026-07-23
 tags: ["生活", "随笔", "运动"]
 category: "生活"
 description: "本来想跑五公里，第三公里就不行了。"
-image: "api"
+image: "/images/covers/life-stopped-running-to-watch-sunset.jpg"
 ---
 昨天傍晚去跑步，目标是五公里。
 

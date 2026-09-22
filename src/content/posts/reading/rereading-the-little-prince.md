@@ -4,7 +4,7 @@ published: 2026-09-03
 tags: ["读书", "小说", "重读"]
 category: "读书"
 description: "小时候当童话看，这次看得有点难受。"
-image: "api"
+image: "/images/covers/reading-rereading-the-little-prince.jpg"
 ---
 这本书我大概小学看过一次，当时觉得是个挺奇怪的童话：一个小孩在星球之间跑来跑去，遇到一堆怪人，还有一只会说话的狐狸。
 

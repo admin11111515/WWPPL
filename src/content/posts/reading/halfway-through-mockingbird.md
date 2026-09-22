@@ -4,7 +4,7 @@ published: 2026-08-05
 tags: ["读书", "小说", "美国文学"]
 category: "读书"
 description: "用一个小孩的眼睛看大人的世界，看得更清楚。"
-image: "api"
+image: "/images/covers/reading-halfway-through-mockingbird.jpg"
 ---
 读到一半了，先记一下。
 

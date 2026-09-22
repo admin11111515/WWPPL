@@ -4,7 +4,7 @@ published: 2026-07-20
 tags: ["生活", "汕头", "吃"]
 category: "生活"
 description: "三块五一份，老板记得所有人的口味。"
-image: "api"
+image: "/images/covers/life-the-rice-noodle-shop.jpg"
 ---
 楼下那家肠粉店，我大概去了五十次。
 

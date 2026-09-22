@@ -4,7 +4,7 @@ published: 2026-09-06
 tags: ["音乐", "雨天", "歌单"]
 category: "音乐"
 description: "下雨的时候，有些歌会突然变得好听。"
-image: "api"
+image: "/images/covers/music-what-to-listen-to-on-rainy-days.jpg"
 ---
 这几天雨多，整理了一份雨天歌单，说说为什么是这几首。
 

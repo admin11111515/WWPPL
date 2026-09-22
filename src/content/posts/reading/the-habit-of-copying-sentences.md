@@ -4,7 +4,7 @@ published: 2026-09-16
 tags: ["读书", "抄写", "随笔"]
 category: "读书"
 description: "抄了两年，抄满了两本，说说这件事到底有什么用。"
-image: "api"
+image: "/images/covers/reading-the-habit-of-copying-sentences.jpg"
 ---
 从去年开始，看到喜欢的句子就抄下来。到现在抄满了两本。
 

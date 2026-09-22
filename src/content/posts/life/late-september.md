@@ -4,7 +4,7 @@ published: 2026-09-19
 tags: ["生活", "随笔", "记录"]
 category: "生活"
 description: "记几件这个月的小事。"
-image: "api"
+image: "/images/covers/life-late-september.jpg"
 ---
 九月快过完了，记几件小事。
 

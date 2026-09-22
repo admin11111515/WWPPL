@@ -4,7 +4,7 @@ published: 2026-07-11
 tags: ["正则", "踩坑", "JavaScript"]
 category: "技术"
 description: "想匹配中文字符，结果把标点也一起匹配进去了。"
-image: "api"
+image: "/images/covers/tech-a-regex-cost-me-two-hours.jpg"
 ---
 需求很简单：从一段文本里把姓名挑出来。姓名都是中文，两到四个字。
 

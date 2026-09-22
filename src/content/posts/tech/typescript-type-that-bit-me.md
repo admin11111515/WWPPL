@@ -4,7 +4,7 @@ published: 2026-07-24
 tags: ["TypeScript", "类型系统", "踩坑"]
 category: "技术"
 description: "看起来完全正确的代码，编译通过，运行时炸了。"
-image: "api"
+image: "/images/covers/tech-typescript-type-that-bit-me.jpg"
 ---
 事情是这样的。我写了一个函数，从一组数据里取出某个字段，加了一层防御：
 

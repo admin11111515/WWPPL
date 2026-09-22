@@ -252,6 +252,11 @@ const remoteReferrerPolicy =
 		display: flex;
 	}
 
+	/* 本地图出错就静默回退，不弹那句英文提示 */
+	.cover-image-container[data-notice="off"] .error-message {
+		display: none;
+	}
+
 	.cover-image-container[data-error="true"] .fallback-image {
 		display: block;
 	}
@@ -302,18 +307,19 @@ const remoteReferrerPolicy =
 				if (placeholder) placeholder.classList.add('loaded');
 			};
 
-			const showError = () => {
+			// 加载失败：停掉加载动画、换上回退图。
+			// 提示语只对远程图显示 —— 本地图挂了说「Image API Error」没有意义。
+			const showError = (withNotice: boolean) => {
 				container.setAttribute('data-loading', 'false');
 				container.setAttribute('data-error', 'true');
+				if (!withNotice) container.setAttribute('data-notice', 'off');
 				const placeholder = container.querySelector('.lqip-placeholder') as HTMLElement | null;
 				if (placeholder) placeholder.classList.add('loaded');
 			};
 
-			// 远程图片加载失败：换成回退图并给出提示
+			// 不管图在哪，失败都要走这里：以前本地图出错不处理，加载动画会一直转
 			const onError = () => {
-				if (img.dataset.remote === 'true') {
-					showError();
-				}
+				showError(img.dataset.remote === 'true');
 			};
 
 			if (img.complete) {

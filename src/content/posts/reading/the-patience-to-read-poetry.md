@@ -4,7 +4,7 @@ published: 2026-08-25
 tags: ["读书", "诗", "随笔"]
 category: "读书"
 description: "诗集扉页上写着「愿你永远有读诗的耐心」，我确实快没了。"
-image: "api"
+image: "/images/covers/reading-the-patience-to-read-poetry.jpg"
 ---
 上次那本旧诗集的扉页上，写着"愿你永远有读诗的耐心"。
 

@@ -4,7 +4,7 @@ published: 2026-06-28
 tags: ["Astro", "内容管理", "Zod"]
 category: "Astro"
 description: "深入理解 Astro 的 Content Collections，让你的内容管理更安全、更高效。"
-image: "auto"
+image: "/images/covers/astro-astro-content-collections.jpg"
 ---
 
 ## 什么是 Content Collections？

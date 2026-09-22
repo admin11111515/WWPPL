@@ -4,7 +4,7 @@ published: 2026-07-28
 tags: ["生活", "汕头", "天气"]
 category: "生活"
 description: "天空是很奇怪的颜色，风里已经有水汽。"
-image: "api"
+image: "/images/covers/life-before-the-typhoon.jpg"
 ---
 天气预报说明天有台风，外围已经影响到了。
 

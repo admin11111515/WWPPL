@@ -4,7 +4,7 @@ published: 2026-09-20
 tags: ["工程化", "自动化", "检查"]
 category: "技术"
 description: "把每次都靠人记的事，变成每次都自动跑一次。"
-image: "api"
+image: "/images/covers/tech-automated-checks.jpg"
 ---
 有些问题我反复犯，每次都是"这次忘了"。解决方式是别再靠记性。
 

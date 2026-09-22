@@ -4,7 +4,7 @@ published: 2026-08-20
 tags: ["重构", "代码质量", "实践"]
 category: "技术"
 description: "一个函数干六件事，拆完之后从 300 行变成 4 个文件。"
-image: "api"
+image: "/images/covers/tech-refactoring-300-lines.jpg"
 ---
 有个函数，三百多行，我三个月前写的。当时是"先能跑"的思路，一层层往里加，加到后来自己都懒得看。
 

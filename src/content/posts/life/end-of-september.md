@@ -4,7 +4,7 @@ published: 2026-09-22
 tags: ["生活", "月度总结"]
 category: "生活"
 description: "这个月安静一些，做的事也比较碎。"
-image: "api"
+image: "/images/covers/life-end-of-september.jpg"
 ---
 九月过完了。
 

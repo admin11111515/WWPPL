@@ -4,7 +4,7 @@ published: 2026-07-31
 tags: ["生活", "月度总结"]
 category: "生活"
 description: "热、搬了次家、修了很多次 bug。"
-image: "api"
+image: "/images/covers/life-july-recap.jpg"
 ---
 七月过完了，记一下。
 

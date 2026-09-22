@@ -4,7 +4,7 @@ published: 2026-07-31
 tags: ["构建", "工程化", "Node.js"]
 category: "技术"
 description: "从敲五条命令到敲一条，中间踩了几个坑。"
-image: "api"
+image: "/images/covers/tech-one-command-build.jpg"
 ---
 博客的构建原来是这样：先跑图标生成，再跑图片占位图生成，然后构建，然后处理代码块的高亮，最后跑字体子集化和搜索索引。五条命令，顺序不能错。
 

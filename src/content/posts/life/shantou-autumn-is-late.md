@@ -4,7 +4,7 @@ published: 2026-09-02
 tags: ["生活", "汕头", "季节"]
 category: "生活"
 description: "朋友圈都在穿外套，我还开着空调。"
-image: "api"
+image: "/images/covers/life-shantou-autumn-is-late.jpg"
 ---
 刷到北方的朋友发的照片，都穿上外套了，树也开始黄。
 

@@ -4,7 +4,7 @@ published: 2026-07-13
 tags: ["音乐", "网易云", "歌单"]
 category: "音乐"
 description: "记一下七月一直在听的几首，和听它们的时候在做什么。"
-image: "api"
+image: "/images/covers/music-this-month-on-repeat.jpg"
 ---
 七月一直在听的歌不多，来来回回就那几首。
 

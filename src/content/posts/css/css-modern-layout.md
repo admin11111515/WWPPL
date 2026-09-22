@@ -4,7 +4,7 @@ published: 2026-06-30
 tags: ["CSS", "布局", "前端"]
 category: "CSS"
 description: "现代 CSS 布局方案完全指南，从 Flexbox 到 Grid 到 Container Queries，告别 float 时代。"
-image: "auto"
+image: "/images/covers/css-css-modern-layout.jpg"
 ---
 
 ## 前言

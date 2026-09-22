@@ -4,7 +4,7 @@ published: 2026-09-11
 tags: ["番剧", "追番", "新番"]
 category: "番剧"
 description: "看了六部的第一集，留下两部。"
-image: "api"
+image: "/images/covers/anime-autumn-anime-first-episodes.jpg"
 ---
 秋季新番的第一集基本都出了，挑了几部看，说下感受。
 

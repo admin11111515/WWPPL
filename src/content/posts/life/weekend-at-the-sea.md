@@ -4,7 +4,7 @@ published: 2026-09-14
 tags: ["生活", "汕头", "海边"]
 category: "生活"
 description: "骑车四十分钟，在防波堤上坐了三个小时。"
-image: "api"
+image: "/images/covers/life-weekend-at-the-sea.jpg"
 ---
 周六下午骑车去了海边，四十分钟。
 

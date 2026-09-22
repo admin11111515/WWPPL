@@ -4,7 +4,7 @@ published: 2026-09-15
 tags: ["代码质量", "重构", "实践"]
 category: "技术"
 description: "不追求优雅，追求半年后还能改。"
-image: "api"
+image: "/images/covers/tech-thoughts-on-clean-code.jpg"
 ---
 看了一些讲代码整洁的文章，观点差别很大。我把自己实际用下来的几条记一下。
 

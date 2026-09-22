@@ -4,7 +4,7 @@ published: 2026-07-07
 tags: ["Svelte", "前端", "状态管理"]
 category: "技术"
 description: "从 store 换到 runes，哪些地方变顺了，哪些地方还在别扭。"
-image: "api"
+image: "/images/covers/tech-svelte-5-runes-one-month.jpg"
 ---
 之前一直用 Svelte 4 的 store，升到 5 之后把手上一个两三屏的小项目整个改用 runes 重写了一遍。写了一个月，说说真实的感受。
 

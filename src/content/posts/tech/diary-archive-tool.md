@@ -4,7 +4,7 @@ published: 2026-08-04
 tags: ["工具", "Node.js", "脚本"]
 category: "技术"
 description: "四十行代码，解决一个天天要做的手工活。"
-image: "api"
+image: "/images/covers/tech-diary-archive-tool.jpg"
 ---
 我的日记是按天写的，文件名是日期，像这样：
 

@@ -4,7 +4,7 @@ published: 2026-08-18
 tags: ["AI", "数据清洗", "自动化"]
 category: "技术"
 description: "把规则的活交给代码，把判断的活交给模型。"
-image: "api"
+image: "/images/covers/tech-ai-for-data-cleaning.jpg"
 ---
 有批订单数据要清洗：每一行是一张订单，里面有客服备注、买家留言、商品列表几列，需要从这些文本里提取出「定制的名字」和「额外要求」。
 

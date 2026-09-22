@@ -4,7 +4,7 @@ published: 2026-07-29
 tags: ["CSS", "暗色模式", "主题"]
 category: "技术"
 description: "只写两套颜色是不够的，还要处理这几件事。"
-image: "api"
+image: "/images/covers/tech-css-variables-dark-theme.jpg"
 ---
 暗色主题看着简单——把背景改黑、字改白不就行了。实际做起来发现有一堆细节，都是同一个原因：颜色不是孤立的。
 

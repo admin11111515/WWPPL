@@ -4,7 +4,7 @@ published: 2026-08-31
 tags: ["生活", "月度总结"]
 category: "生活"
 description: "这个月做了不少整理，也学了几件新东西。"
-image: "api"
+image: "/images/covers/life-august-recap.jpg"
 ---
 八月结束了。这个月比七月规律很多。
 

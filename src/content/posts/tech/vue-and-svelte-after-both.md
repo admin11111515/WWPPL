@@ -4,7 +4,7 @@ published: 2026-08-13
 tags: ["Vue", "Svelte", "前端"]
 category: "技术"
 description: "同一个小组件写两遍，说说差别在哪。"
-image: "api"
+image: "/images/covers/tech-vue-and-svelte-after-both.jpg"
 ---
 两个框架我都用过来做实际项目。不比较谁更好，只说写的时候手感上的差别。
 

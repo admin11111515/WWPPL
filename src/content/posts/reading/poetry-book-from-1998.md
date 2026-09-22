@@ -4,7 +4,7 @@ published: 2026-07-26
 tags: ["读书", "诗", "旧书"]
 category: "读书"
 description: "扉页上有人写了一行字，落款是 2001 年。"
-image: "api"
+image: "/images/covers/reading-poetry-book-from-1998.jpg"
 ---
 路过一家旧书店，进去随便看。在最下面一排找到一本诗集，1998 年出版，封面是浅绿色的，纸已经黄了，边角有点卷。
 

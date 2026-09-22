@@ -4,7 +4,7 @@ published: 2026-07-09
 tags: ["读书", "散文", "史铁生"]
 category: "读书"
 description: "在地坛那片园子里，看见一个人怎么和自己和解。"
-image: "api"
+image: "/images/covers/reading-after-reading-wo-yu-di-tan.jpg"
 ---
 这本书看了很久，不是因为难读，是不敢快读。
 

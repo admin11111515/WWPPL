@@ -4,7 +4,7 @@ published: 2026-08-02
 tags: ["Astro", "前端", "架构"]
 category: "技术"
 description: "为什么有的页面首屏特别快，有的却要等一大坨脚本。"
-image: "api"
+image: "/images/covers/tech-what-is-islands-architecture.jpg"
 ---
 这个概念我第一次听也懵。用一个具体页面讲会清楚很多。
 

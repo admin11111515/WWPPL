@@ -4,7 +4,7 @@ published: 2026-09-21
 tags: ["音乐", "写代码", "专注"]
 category: "音乐"
 description: "试了很多种，最后留下的只有两类。"
-image: "api"
+image: "/images/covers/music-what-to-listen-while-coding-at-night.jpg"
 ---
 晚上写代码的时候听什么，我试了挺久才找到规律。
 

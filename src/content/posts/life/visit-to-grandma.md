@@ -4,7 +4,7 @@ published: 2026-08-22
 tags: ["生活", "家人", "记录"]
 category: "生活"
 description: "她问我怎么又瘦了，我说没有，她说她不戴眼镜也看得清。"
-image: "api"
+image: "/images/covers/life-visit-to-grandma.jpg"
 ---
 上周去了一趟外婆家。
 

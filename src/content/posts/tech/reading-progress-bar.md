@@ -4,7 +4,7 @@ published: 2026-07-27
 tags: ["前端", "交互", "CSS"]
 category: "技术"
 description: "顶部那条细线，看着简单，做对不容易。"
-image: "api"
+image: "/images/covers/tech-reading-progress-bar.jpg"
 ---
 博客顶上加了一条细线，滚到哪儿它就长到哪儿。看着是个小东西，实际做的时候有几个点要想清楚。
 

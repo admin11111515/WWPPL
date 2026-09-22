@@ -4,7 +4,7 @@ published: 2026-07-06
 tags: ["生活", "记录", "汕头"]
 category: "生活"
 description: "住满一个月，记一下这边的天气、吃食和作息。"
-image: "api"
+image: "/images/covers/life-first-month-here.jpg"
 ---
 搬来这边住满一个月了。
 

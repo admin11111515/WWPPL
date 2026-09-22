@@ -4,7 +4,7 @@ published: 2026-08-10
 tags: ["番剧", "观后感", "悬疑"]
 category: "番剧"
 description: "前半段是谜题，后半段是拼命。"
-image: "api"
+image: "/images/covers/anime-finished-summer-time-rendering.jpg"
 ---
 补完了，二十五集，用了三个晚上。
 

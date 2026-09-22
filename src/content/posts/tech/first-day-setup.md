@@ -4,7 +4,7 @@ published: 2026-09-01
 tags: ["环境配置", "工具", "踩坑"]
 category: "技术"
 description: "换了台机器，光是让项目跑起来就花了半天。"
-image: "api"
+image: "/images/covers/tech-first-day-setup.jpg"
 ---
 换了个地方写代码，第一件事是把项目跑起来。本来以为十分钟的事，实际花了大半个上午。
 

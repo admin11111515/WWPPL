@@ -4,7 +4,7 @@ published: 2026-08-24
 tags: ["性能优化", "图片", "前端"]
 category: "技术"
 description: "加了 loading=“lazy” 之后，有两类图反而变慢了。"
-image: "api"
+image: "/images/covers/tech-lazy-loading-two-pitfalls.jpg"
 ---
 给站内图片加懒加载，当时想的是"这是标准做法，加上就行"。加完有两个地方出了问题。
 

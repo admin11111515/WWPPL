@@ -4,7 +4,7 @@ published: 2026-08-16
 tags: ["排查", "后端", "日志"]
 category: "技术"
 description: "每次调用都在 3 秒左右卡一下，最后发现问题不在接口本身。"
-image: "api"
+image: "/images/covers/tech-api-timeout-investigation.jpg"
 ---
 现象：有段代码调用外部接口，稳定地慢。每次差不多三秒，不快不慢，特别规律。
 

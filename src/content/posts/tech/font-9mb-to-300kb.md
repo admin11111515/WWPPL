@@ -4,7 +4,7 @@ published: 2026-07-19
 tags: ["性能优化", "字体", "构建"]
 category: "技术"
 description: "查了很久才发现，问题不是字体太大，是压缩那一步根本没跑。"
-image: "api"
+image: "/images/covers/tech-font-9mb-to-300kb.jpg"
 ---
 前几天看博客的加载情况，发现首屏会先卡一下，然后字体突然全部换掉，文字跳一遍。
 

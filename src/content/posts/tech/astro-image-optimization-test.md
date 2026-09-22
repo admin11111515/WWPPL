@@ -4,7 +4,7 @@ published: 2026-07-08
 tags: ["Astro", "性能优化", "图片"]
 category: "技术"
 description: "给六张封面图做了转换和压缩，实测前后的体积差。"
-image: "api"
+image: "/images/covers/tech-astro-image-optimization-test.jpg"
 ---
 一直知道 Astro 的 Image 组件能自动做图片优化，但没认真测过到底省多少。这次拿博客里的封面图做了个对比。
 

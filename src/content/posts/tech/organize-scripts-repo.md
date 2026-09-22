@@ -4,7 +4,7 @@ published: 2026-08-26
 tags: ["工具", "工程化", "整理"]
 category: "技术"
 description: "散落各处的二十几个小脚本，收进一个地方之后好用了不少。"
-image: "api"
+image: "/images/covers/tech-organize-scripts-repo.jpg"
 ---
 我写的小脚本很多，散在各个项目目录里、桌面上、甚至临时文件夹里。这次花了一晚上整理。
 

@@ -4,7 +4,7 @@ published: 2026-07-30
 tags: ["音乐", "歌单", "记录"]
 category: "音乐"
 description: "一首用来早上醒，一首用来走路，一首用来睡不着。"
-image: "api"
+image: "/images/covers/music-three-songs-one-week.jpg"
 ---
 这周听的歌很少，几乎只有三首。说一下它们分别在什么时候出现。
 

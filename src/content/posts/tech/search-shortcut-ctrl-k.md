@@ -4,7 +4,7 @@ published: 2026-08-10
 tags: ["前端", "交互", "搜索"]
 category: "技术"
 description: "一个键盘快捷键，第一次用的人的猜中率差别很大。"
-image: "api"
+image: "/images/covers/tech-search-shortcut-ctrl-k.jpg"
 ---
 博客的搜索原来只能点导航栏的放大镜图标。我一直在用，没觉得有问题。直到有人在留言板问"搜索在哪"。
 

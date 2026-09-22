@@ -4,7 +4,7 @@ published: 2026-08-14
 tags: ["读书", "散文", "写作"]
 category: "读书"
 description: "小说可以编，散文编不了——这大概就是难的地方。"
-image: "api"
+image: "/images/covers/reading-why-essays-are-hard.jpg"
 ---
 最近读了不少散文，也在试着写一点，越写越觉得这体裁难。
 

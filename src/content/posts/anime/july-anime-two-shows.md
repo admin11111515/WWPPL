@@ -4,7 +4,7 @@ published: 2026-07-18
 tags: ["番剧", "追番", "治愈"]
 category: "番剧"
 description: "一部日常，一部悬疑，聊聊为什么留下来的是这两部。"
-image: "api"
+image: "/images/covers/anime-july-anime-two-shows.jpg"
 ---
 七月新番看了不少第一集，最后追下来的只有两部。
 

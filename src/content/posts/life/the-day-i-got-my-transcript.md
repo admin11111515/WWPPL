@@ -4,7 +4,7 @@ published: 2026-08-03
 tags: ["生活", "随笔", "学校"]
 category: "生活"
 description: "比预想的好一点，但没有想象中那么高兴。"
-image: "api"
+image: "/images/covers/life-the-day-i-got-my-transcript.jpg"
 ---
 成绩单出来了。
 

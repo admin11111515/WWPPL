@@ -4,7 +4,7 @@ published: 2026-09-05
 tags: ["Svelte", "SVG", "组件"]
 category: "技术"
 description: "一个圆环，几行数学，加两个容易忘的属性。"
-image: "api"
+image: "/images/covers/tech-svelte-progress-ring.jpg"
 ---
 需要一个环形进度显示，看着简单，写的时候有两个地方卡了一下。
 
