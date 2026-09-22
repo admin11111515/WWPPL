@@ -27,6 +27,7 @@ export const expressiveCodeConfig: ExpressiveCodeConfig = {
 	// 语言徽章插件配置
 	pluginLanguageBadge: {
 		// 是否启用语言徽章插件
-		enable: false,
+		// 开启后代码块右上角显示语言名，长代码块滚动时更容易辨认语言。
+		enable: true,
 	},
 };
