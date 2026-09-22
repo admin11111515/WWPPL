@@ -259,6 +259,32 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
       .container { padding: 2rem 1.5rem 4rem; }
       .card { padding: 1.5rem; }
     }
+    /* 上次未保存就离开时的恢复提示 */
+    .restore-bar {
+      display: flex; align-items: center; gap: 0.625rem; flex-wrap: wrap;
+      margin-bottom: 1rem; padding: 0.625rem 0.875rem;
+      border: 1px solid var(--border); border-radius: 6px;
+      background: var(--hover);
+      font-size: 0.8125rem; color: var(--text-2);
+    }
+    .restore-bar .restore-icon { flex: none; }
+    .restore-bar .restore-text { flex: 1; min-width: 12rem; line-height: 1.6; }
+    .restore-bar .restore-actions { display: flex; gap: 0.375rem; flex: none; }
+
+    /* 编辑器底部的字数与快捷键提示 */
+    .editor-footer {
+      display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+      flex-wrap: wrap; padding: 0.375rem 0.625rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.6875rem; color: var(--text-3);
+    }
+    .editor-footer .editor-hint { opacity: 0.75; }
+
+    /* 保存按钮一行，右侧显示本地草稿的保存时刻 */
+    .save-row { display: flex; align-items: center; gap: 0.75rem; }
+    .save-row .btn-primary { flex: 1; width: auto; }
+    .draft-hint { font-size: 0.6875rem; color: var(--text-3); white-space: nowrap; }
+
     @media (max-width: 480px) {
       .navbar-inner { padding: 0 0.75rem; }
       .container { padding: 1rem 0.75rem 3rem; }
@@ -292,6 +318,16 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
       <div class="status-bar" id="status-bar">
         <span class="status-dot" id="status-dot"></span>
         <span id="status-text">正在连接...</span>
+      </div>
+
+      {/* 上次没有保存就离开时，把本地留存的草稿提示出来 */}
+      <div class="restore-bar hidden" id="restore-bar">
+        <span class="restore-icon">🕘</span>
+        <span class="restore-text" id="restore-text"></span>
+        <div class="restore-actions">
+          <button class="btn btn-sm" onclick="restoreDraft()">恢复</button>
+          <button class="btn btn-sm" onclick="discardDraft()">丢弃</button>
+        </div>
       </div>
 
 
@@ -346,6 +382,10 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
                 </div>
               </div>
               <textarea class="editor-textarea" id="content-input" placeholder="用 Markdown 写下你的笔记..."></textarea>
+              <div class="editor-footer">
+                <span id="content-counter">0 字</span>
+                <span class="editor-hint">Ctrl+B 加粗 · Ctrl+S 保存 · Tab 缩进</span>
+              </div>
             </div>
             <div class="editor-pane">
               <div class="editor-pane-header"><span>预览</span></div>
@@ -355,9 +395,12 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
             </div>
           </div>
         </div>
-        <button class="btn btn-primary" id="submit-btn" onclick="submitEntry()">保存笔记</button>
+        <div class="save-row">
+          <button class="btn btn-primary" id="submit-btn" onclick="submitEntry()">保存笔记</button>
+          <span class="draft-hint" id="draft-hint"></span>
+        </div>
         <div class="hidden" id="edit-bar" style="display:flex;gap:0.5rem;margin-top:0.5rem;">
-          <button class="btn btn-sm" onclick="cancelEdit()" style="flex:1;">取消编辑</button>
+          <button class="btn btn-sm" onclick="confirmCancelEdit()" style="flex:1;">取消编辑</button>
         </div>
       </div>
 
@@ -377,6 +420,7 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
   <button class="dark-fab" onclick="toggleDark()" title="切换暗色模式">🌙</button>
   <div class="toast" id="toast"></div>
 
+  <script is:inline src="/js/editor-commons.js"></script>
   <script is:inline
     data-gists={JSON.stringify(externalNotebooksConfig.notebookGists || {})}
     data-templates={JSON.stringify(externalNotebooksConfig.templates || [])}>
@@ -389,6 +433,11 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
     var currentNotebook = "";
     var editingEntryId = null;
     var allEntries = [];
+    // 登录校验是否已完成（恢复草稿后要拉列表，得等校验通过）
+    var authed = false;
+    // 本地草稿与"是否有未保存改动"的判定基线
+    var draftStore = WBEditor.createDraftStore("notebook");
+    var cleanSnapshot = "";
 
     function $(id) { return document.getElementById(id); }
     function esc(t) { var d = document.createElement("div"); d.textContent = t; return d.innerHTML; }
@@ -409,13 +458,24 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
 
     // ===== 笔记本标签切换 =====
     var tabs = document.querySelectorAll(".notebook-tab");
+    /** 选中某个笔记本；恢复草稿时也要走这里，不然写的东西不知道该进哪一本 */
+    function activateNotebook(name) {
+      var wanted = null;
+      tabs.forEach(function(t) {
+        var on = t.getAttribute("data-notebook") === name;
+        t.classList.toggle("active", on);
+        if (on) wanted = t;
+      });
+      if (!wanted) return false;
+      currentNotebook = name;
+      $("target-notebook").textContent = currentNotebook;
+      $("list-title").textContent = currentNotebook + " 的笔记";
+      return true;
+    }
     tabs.forEach(function(tab) {
       tab.addEventListener("click", function() {
-        tabs.forEach(function(t) { t.classList.remove("active"); });
-        tab.classList.add("active");
-        currentNotebook = tab.getAttribute("data-notebook");
-        $("target-notebook").textContent = currentNotebook;
-        $("list-title").textContent = currentNotebook + " 的笔记";
+        if (!confirmDiscardIfDirty("切换到另一个笔记本")) return;
+        if (!activateNotebook(tab.getAttribute("data-notebook"))) return;
         loadEntries();
       });
     });
@@ -574,6 +634,7 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
 
     // ===== 编辑 =====
     function editEntry(id) {
+      if (!confirmDiscardIfDirty("切换到另一条")) return;
       var entry = allEntries.find(function(e) { return e.id === id; });
       if (!entry) { toast("未找到", "err"); return; }
       editingEntryId = id;
@@ -583,6 +644,8 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
       $("submit-btn").textContent = "保存修改";
       $("edit-bar").classList.remove("hidden");
       updatePreview();
+      updateCounter();
+      markClean();
       window.scrollTo({ top: 0, behavior: "smooth" });
       toast("正在编辑: " + (entry.title || "无标题"), "ok");
     }
@@ -595,6 +658,13 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
       $("submit-btn").textContent = "保存笔记";
       $("edit-bar").classList.add("hidden");
       updatePreview();
+      updateCounter();
+      markClean();
+    }
+    // 点“取消编辑”时先问一句；保存成功后内部的收尾不走这个口
+    function confirmCancelEdit() {
+      if (!confirmDiscardIfDirty("取消编辑")) return;
+      cancelEdit();
     }
 
     // ===== 提交 =====
@@ -603,10 +673,15 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
       var content = $("content-input").value.trim();
       if (!content) { toast("请输入内容", "err"); return; }
 
+      // 先把本地这份写下来：万一这次没存进仓库，内容也还在
+      saveDraftNow();
+      clearTimeout(autosaveTimer);
+
       var title = $("entry-title").value.trim();
       var date = $("entry-date").value || new Date().toISOString().split("T")[0];
       var btn = $("submit-btn");
       var isEdit = !!editingEntryId;
+      var saved = false;
       btn.disabled = true; btn.textContent = "保存中...";
 
       var gistId = NOTEBOOK_GISTS[currentNotebook];
@@ -623,12 +698,13 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
 
           if (isEdit) {
             var idx = entries.findIndex(function(e) { return e.id === editingEntryId; });
-            if (idx !== -1) {
-              entries[idx].title = title;
-              entries[idx].date = date;
-              entries[idx].content = content;
-              entries[idx].updatedAt = new Date().toISOString();
-            }
+            // 找不到就直接报错收手。原先这里什么都不做，然后照样把原内容提交回去
+            // 并提示"已保存"，用户写的东西会悄无声息地丢掉
+            if (idx === -1) throw new Error("这条笔记在远端已经不存在了，请刷新后重试");
+            entries[idx].title = title;
+            entries[idx].date = date;
+            entries[idx].content = content;
+            entries[idx].updatedAt = new Date().toISOString();
           } else {
             entries.push({
               id: "nb-" + Date.now(),
@@ -650,6 +726,9 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
             body: body
           }).then(function(r) {
             if (!r.ok) throw new Error("保存失败");
+            saved = true;
+            // 内容已经进了仓库，本地那份临时草稿就没用了
+            clearDraft();
             return r.json();
           }).then(function(result) {
             if (!gid) {
@@ -672,7 +751,10 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
         }).catch(function(e) {
           toast("保存失败: " + e.message, "err");
         }).finally(function() {
-          btn.disabled = false; btn.textContent = isEdit ? "保存修改" : "保存笔记";
+          btn.disabled = false;
+          // 成功时 cancelEdit 已把文字复位；失败时也要复位，
+          // 否则编辑态保存失败后按钮会一直停在“保存中...”
+          if (!saved) btn.textContent = isEdit ? "保存修改" : "保存笔记";
         });
       }
 
@@ -708,11 +790,129 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
         .catch(function(e) { toast("删除失败: " + e.message, "err"); });
     }
 
+    // ===== 字数 =====
+    function updateCounter() {
+      var s = WBEditor.summarize($("content-input").value);
+      $("content-counter").textContent = "正文 " + s.chars + " 字 · 约 " + s.minutes + " 分钟读完";
+    }
+    $("content-input").addEventListener("input", updateCounter);
+
+    // ===== 本地草稿：写到一半也不会丢 =====
+    // 只存在这台浏览器里，不上传任何地方。正式内容仍然以存进仓库的为准。
+    var pendingDraft = null;
+    var autosaveTimer = null;
+
+    function snapshot() {
+      return {
+        id: editingEntryId,
+        notebook: currentNotebook,
+        title: $("entry-title").value,
+        date: $("entry-date").value,
+        content: $("content-input").value,
+      };
+    }
+    function isDirty() {
+      return JSON.stringify(snapshot()) !== cleanSnapshot;
+    }
+    function markClean() {
+      cleanSnapshot = JSON.stringify(snapshot());
+    }
+    function pad2(n) { return String(n).padStart(2, "0"); }
+    function fmtTime(ts) {
+      var d = new Date(ts);
+      return pad2(d.getMonth() + 1) + "月" + pad2(d.getDate()) + "日 " + pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+    }
+    function clearDraft() {
+      draftStore.clear();
+      pendingDraft = null;
+      $("draft-hint").textContent = "";
+      $("restore-bar").classList.add("hidden");
+    }
+    function saveDraftNow() {
+      var s = snapshot();
+      // 没选笔记本或内容为空时不写草稿，免得把上一份还有用的顶掉
+      if (!s.notebook || !String(s.content || "").trim()) return;
+      if (draftStore.save(s)) $("draft-hint").textContent = "本地草稿 " + fmtTime(Date.now());
+    }
+    function scheduleDraftSave() {
+      clearTimeout(autosaveTimer);
+      autosaveTimer = setTimeout(saveDraftNow, 900);
+    }
+    ["entry-title", "entry-date", "content-input"].forEach(function(id) {
+      $(id).addEventListener("input", scheduleDraftSave);
+    });
+
+    function applySnapshot(s) {
+      if (s.notebook) activateNotebook(s.notebook);
+      editingEntryId = s.id || null;
+      $("entry-title").value = s.title || "";
+      $("entry-date").value = s.date || "";
+      $("content-input").value = s.content || "";
+      $("submit-btn").textContent = editingEntryId ? "保存修改" : "保存笔记";
+      $("edit-bar").classList.toggle("hidden", !editingEntryId);
+      updatePreview();
+      updateCounter();
+    }
+    function showRestoreBar() {
+      var draft = draftStore.load();
+      if (!draft || !draft.data) return;
+      var d = draft.data;
+      if (!String(d.content || "").trim()) {
+        draftStore.clear();
+        return;
+      }
+      pendingDraft = draft;
+      var preview = String(d.content).trim().replace(/\s+/g, " ");
+      if (preview.length > 24) preview = preview.slice(0, 24) + "…";
+      $("restore-text").textContent =
+        "上次有内容没保存（" + fmtTime(draft.at) + "）：" +
+        (d.notebook ? "【" + d.notebook + "】" : "") + (d.title || preview);
+      $("restore-bar").classList.remove("hidden");
+    }
+    function restoreDraft() {
+      if (!pendingDraft) return;
+      applySnapshot(pendingDraft.data);
+      $("restore-bar").classList.add("hidden");
+      $("draft-hint").textContent = "本地草稿 " + fmtTime(pendingDraft.at);
+      if (currentNotebook && authed) loadEntries();
+      markClean();
+      toast("已恢复上次未保存的内容", "ok");
+    }
+    function discardDraft() {
+      clearDraft();
+      toast("已丢弃本地草稿", "ok");
+    }
+    function confirmDiscardIfDirty(action) {
+      if (!isDirty()) return true;
+      return confirm(
+        "当前内容还没保存，确定要" + action + "吗？\n" +
+        "未保存的内容仍留在本地草稿里，之后可以点“恢复”取回。"
+      );
+    }
+
+    // 关标签页或刷新时拦一下，避免手滑丢掉正在写的内容
+    WBEditor.guardUnsavedChanges(isDirty);
+
+    // ===== 快捷键 =====
+    WBEditor.installTabIndent($("content-input"));
+    WBEditor.installShortcuts($("content-input"), {
+      bold: function() { insertMd("**", "**"); },
+      italic: function() { insertMd("*", "*"); },
+      link: function() { insertMd("[", "](url)"); },
+      save: submitEntry,
+      submit: submitEntry,
+    });
+
     // ===== 初始化 =====
     (function() {
+      // 先落好默认日期再对齐基线，否则刚打开页面就会被当成"有未保存改动"
+      $("entry-date").value = new Date().toISOString().split("T")[0];
+      updateCounter();
+      markClean();
+      showRestoreBar();
       checkAuth().then(function(ok) {
         if (!ok) return;
-        $("entry-date").value = new Date().toISOString().split("T")[0];
+        authed = true;
         $("content-input").addEventListener("input", updatePreview);
         validateAndLoad();
       });
