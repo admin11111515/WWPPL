@@ -19,6 +19,7 @@ import {
 	live2dWidgetConfig,
 	sidebarLayoutConfig,
 	siteConfig,
+	spineModelConfig,
 } from "@/config";
 import {
 	BANNER_HEIGHT,
@@ -1001,7 +1002,9 @@ const fullscreenCarouselInterval = Math.max(
             </div>
         </div>
 
-        <SpineModel></SpineModel>
+        {/* 看板娘：两个组件的开关都在 pioConfig 里，关掉的那个不应再渲染，
+            否则它的整段脚本（约 14 KB）会照旧写进每个页面 */}
+        {spineModelConfig.enable && <SpineModel />}
         {live2dWidgetConfig.enable && <Live2DWidget config={live2dWidgetConfig} />}
     </div>
 </div>
