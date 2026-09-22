@@ -333,7 +333,9 @@ export default defineConfig({
 		// 性能优化配置
 		optimizeDeps: {
 			// 强制预构建依赖
-			include: ["@fancyapps/ui", "katex", "marked"],
+			// 注意：不要在这里写没被当作模块引入的包。marked 只在笔记页运行时按需取用，
+			// 它既不是依赖也没装，写在这里只会让每次启动都报一句解析失败的警告。
+			include: ["@fancyapps/ui", "katex"],
 		},
 	},
 });

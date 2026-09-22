@@ -269,6 +269,9 @@ const description = "查看笔记全文";
 
 <script>
 	const ENTRY_LIST_PAGE = "/life/notebooks/";
+	// 渲染库优先用站内副本：它本来就在产物里，跟着页面一起分发，
+	// 不依赖第三方 CDN（国内访问 jsdelivr 经常超时）；取不到再退回 CDN。
+	const MARKED_LOCAL = "/assets/js/marked.min.js";
 	const MARKED_CDN = "https://cdn.jsdelivr.net/npm/marked/marked.min.js";
 
 	interface NotebookEntry {
@@ -322,13 +325,24 @@ const description = "查看笔记全文";
 		const w = window as unknown as { marked?: unknown };
 		if (w.marked) return Promise.resolve(w.marked);
 		if (markedPromise) return markedPromise;
-		markedPromise = new Promise((resolve, reject) => {
-			const el = document.createElement("script");
-			el.src = MARKED_CDN;
-			el.onload = () => resolve((window as unknown as { marked?: unknown }).marked);
-			el.onerror = () => reject(new Error("渲染库加载失败"));
-			document.head.appendChild(el);
-		});
+		/** 依次尝试给定的地址，全部失败才算失败 */
+		const load = (sources: string[]): Promise<unknown> =>
+			new Promise((resolve, reject) => {
+				const [src, ...rest] = sources;
+				if (!src) {
+					reject(new Error("渲染库加载失败"));
+					return;
+				}
+				const el = document.createElement("script");
+				el.src = src;
+				el.onload = () => resolve((window as unknown as { marked?: unknown }).marked);
+				el.onerror = () => {
+					el.remove();
+					load(rest).then(resolve, reject);
+				};
+				document.head.appendChild(el);
+			});
+		markedPromise = load([MARKED_LOCAL, MARKED_CDN]);
 		return markedPromise;
 	}
 
