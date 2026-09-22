@@ -492,6 +492,15 @@ enum I18nKey {
 
 	// 遗留路由的跳转提示页
 	pageMoved = "pageMoved",
+
+	// 空集合页面：一项内容都还没有
+	projectsEmpty = "projectsEmpty",
+
+	// 无障碍：屏幕上不显示、只给读屏软件听的两处按钮
+	backToTop = "backToTop",
+	calendarBackToToday = "calendarBackToToday",
+	calendarPrevMonth = "calendarPrevMonth",
+	calendarNextMonth = "calendarNextMonth",
 }
 
 export default I18nKey;

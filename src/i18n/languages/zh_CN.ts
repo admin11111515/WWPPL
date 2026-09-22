@@ -496,4 +496,11 @@ export const zh_CN: Translation = {
 
 	// 遗留路由的跳转提示页
 	[Key.pageMoved]: "这个页面已经搬到新地址，正在为你跳转",
+
+	[Key.projectsEmpty]: "还没有添加项目",
+
+	[Key.backToTop]: "返回顶部",
+	[Key.calendarBackToToday]: "回到今天",
+	[Key.calendarPrevMonth]: "上一月",
+	[Key.calendarNextMonth]: "下一月",
 };

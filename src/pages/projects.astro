@@ -68,6 +68,8 @@ const filterTabs = [
 
 const title = i18n(I18nKey.projects);
 const subtitle = i18n(I18nKey.projectsSubtitle);
+// 一项都还没有的时候，不摆一个"全部 (0)"的筛选栏和一个空网格
+const hasProjects = projectsData.length > 0;
 ---
 
 <MainGridLayout title={title} description={subtitle}>
@@ -85,9 +87,11 @@ const subtitle = i18n(I18nKey.projectsSubtitle);
 		<div class="card-base z-10 px-6 sm:px-9 py-6 relative w-full">
 			<PageHeader title={title} subtitle={subtitle} />
 
-			<div class="mb-8">
-				<FilterTabs tabs={filterTabs} dataAttr="category" />
-			</div>
+			{hasProjects && (
+				<div class="mb-8">
+					<FilterTabs tabs={filterTabs} dataAttr="category" />
+				</div>
+			)}
 
 			<div
 				id="projects-grid"
@@ -100,13 +104,27 @@ const subtitle = i18n(I18nKey.projectsSubtitle);
 				}
 			</div>
 
+			{
+				!hasProjects && (
+					<div class="text-center py-16">
+						<Icon
+							name="material-symbols:folder-open-rounded"
+							class="text-6xl text-black/15 dark:text-white/15 mb-4"
+						/>
+						<p class="text-black/40 dark:text-white/40 text-lg">
+							{i18n(I18nKey.projectsEmpty)}
+						</p>
+					</div>
+				)
+			}
+
 			<div id="no-results" class="hidden text-center py-16">
 				<Icon
 					name="material-symbols:search-off-rounded"
 					class="text-6xl text-black/15 dark:text-white/15 mb-4"
 				/>
 				<p class="text-black/40 dark:text-white/40 text-lg">
-					No matching projects
+					{i18n(I18nKey.noData)}
 				</p>
 			</div>
 		</div>

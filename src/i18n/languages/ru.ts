@@ -472,4 +472,11 @@ export const ru: Translation = {
 
 	// Страница-перенаправление для старых путей
 	[Key.pageMoved]: "Эта страница переехала на новый адрес, сейчас вы будете перенаправлены",
+
+	[Key.projectsEmpty]: "Проектов пока нет",
+
+	[Key.backToTop]: "Наверх",
+	[Key.calendarBackToToday]: "Вернуться к сегодня",
+	[Key.calendarPrevMonth]: "Предыдущий месяц",
+	[Key.calendarNextMonth]: "Следующий месяц",
 };

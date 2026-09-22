@@ -470,4 +470,11 @@ export const en: Translation = {
 
 	// Redirect notice for legacy routes
 	[Key.pageMoved]: "This page has moved to a new address, taking you there now",
+
+	[Key.projectsEmpty]: "No projects yet",
+
+	[Key.backToTop]: "Back to top",
+	[Key.calendarBackToToday]: "Back to today",
+	[Key.calendarPrevMonth]: "Previous month",
+	[Key.calendarNextMonth]: "Next month",
 };

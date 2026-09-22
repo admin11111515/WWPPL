@@ -460,4 +460,11 @@ export const zh_TW: Translation = {
 
 	// 遺留路由的跳轉提示頁
 	[Key.pageMoved]: "這個頁面已經搬到新網址，正在為你跳轉",
+
+	[Key.projectsEmpty]: "還沒有新增專案",
+
+	[Key.backToTop]: "回到頂端",
+	[Key.calendarBackToToday]: "回到今天",
+	[Key.calendarPrevMonth]: "上一月",
+	[Key.calendarNextMonth]: "下一月",
 };

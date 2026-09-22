@@ -74,6 +74,8 @@ const initialBatch = list ? list.slice(0, BATCH_SIZE) : [];
 const hasMore = totalCount > BATCH_SIZE;
 
 import { Icon } from "astro-icon/components";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
 ---
 
 <!-- ========== 播放器主容器 ========== -->
@@ -134,8 +136,8 @@ import { Icon } from "astro-icon/components";
 
           <!-- 歌曲标题和歌手名 -->
           <div class="text-center space-y-1.5 w-full max-w-[260px]">
-            <h2 id="player-title" class="text-lg font-bold text-gray-700 dark:text-gray-300 tracking-tight truncate">{currentTitle || "Loading..."}</h2>
-            <p id="player-artist" class="font-mono text-sm font-bold uppercase tracking-widest truncate" style="color: var(--primary); text-shadow: 0 0 15px color-mix(in oklch, var(--primary) 50%, transparent);">{currentArtist || "Loading..."}</p>
+            <h2 id="player-title" class="text-lg font-bold text-gray-700 dark:text-gray-300 tracking-tight truncate">{currentTitle || i18n(I18nKey.musicNoPlaying)}</h2>
+            <p id="player-artist" class="font-mono text-sm font-bold uppercase tracking-widest truncate" style="color: var(--primary); text-shadow: 0 0 15px color-mix(in oklch, var(--primary) 50%, transparent);">{currentArtist || i18n(I18nKey.musicNoPlaying)}</p>
           </div>
         </div>
 

@@ -469,4 +469,11 @@ export const ja: Translation = {
 
 	// 旧ルートの転送案内ページ
 	[Key.pageMoved]: "このページは新しいアドレスに移動しました。まもなく移動します",
+
+	[Key.projectsEmpty]: "プロジェクトはまだありません",
+
+	[Key.backToTop]: "トップへ戻る",
+	[Key.calendarBackToToday]: "今日に戻る",
+	[Key.calendarPrevMonth]: "前の月",
+	[Key.calendarNextMonth]: "次の月",
 };
