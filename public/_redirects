@@ -1,0 +1,12 @@
+# Cloudflare Pages / Netlify 边缘重定向规则
+# 文档：https://developers.cloudflare.com/pages/configuration/redirects/
+#
+# 站点规范路由已由 /blog/ 合并到 /posts/，此文件把旧链接做成真正的 301，
+# 相比 Astro 生成的 meta-refresh 跳转桩页面，301 对搜索引擎更规范（传递权重、
+# 不会被视为软 404），而且无需为每条旧链接单独构建一个 HTML。
+#
+# 注意：此文件的规则由托管平台在边缘执行，优先级高于静态文件。
+# 仓库里同时保留了 src/pages/blog/[...slug].astro 的跳转桩作为兜底 ——
+# 万一站点换到不支持 _redirects 的托管平台，旧链接依然不会失效。
+
+/blog/*  /posts/:splat  301
