@@ -489,6 +489,9 @@ enum I18nKey {
 
 	// 无障碍：跳过导航直达正文
 	skipToContent = "skipToContent",
+
+	// 遗留路由的跳转提示页
+	pageMoved = "pageMoved",
 }
 
 export default I18nKey;

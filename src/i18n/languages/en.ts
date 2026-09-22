@@ -467,4 +467,7 @@ export const en: Translation = {
 
 	// Accessibility: skip navigation and jump to the main content
 	[Key.skipToContent]: "Skip to main content",
+
+	// Redirect notice for legacy routes
+	[Key.pageMoved]: "This page has moved to a new address, taking you there now",
 };

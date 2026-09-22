@@ -210,6 +210,11 @@ export default defineConfig({
 				if (pathname === "/offline/") {
 					return false;
 				}
+				// 后台各页是站长自用界面，收录进搜索结果是纯粹的干扰，
+				// 也不该让访客从搜索结果点进来（各页同时声明 robots noindex）
+				if (pathname.startsWith("/admin/")) {
+					return false;
+				}
 
 				return true;
 			},

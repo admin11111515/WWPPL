@@ -1,17 +1,99 @@
 ---
+import { siteConfig } from "@/config";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
 import { getSortedPosts } from "@utils/content-utils";
 import { removeFileExtension } from "@utils/url-utils";
 
-// 遗留路由 /blog/<slug>/ 重定向到规范路由 /posts/<slug>/
-// 保留旧外链与已收录链接，避免重复内容（SEO canonical 冲突）与每篇文章重复构建两遍
+// 遗留路由 /blog/<slug>/ 的重定向页，指向规范路由 /posts/<slug>/
+//
+// 正式部署（Cloudflare Pages）上，public/_redirects 会在边缘把这批旧链接
+// 直接 301 到新地址，这张页面不会被访客看到。它在这里的原因有两个：
+//   1. 万一站点换到不支持 _redirects 的托管平台，旧链接依然能跳到新地址；
+//   2. 顺带作为"这个地址已迁移"的说明页，而不是一个空白页。
+// 页面声明 noindex + canonical 指向新地址，避免被当成重复内容收录。
+
 export async function getStaticPaths() {
 	const blogEntries = await getSortedPosts();
 	return blogEntries.map((entry) => {
 		const slug = removeFileExtension(entry.id);
 		return {
 			params: { slug },
-			redirect: `/posts/${slug}/`,
+			props: { target: `/posts/${slug}/` },
 		};
 	});
 }
+
+interface Props {
+	target: string;
+}
+
+const { target } = Astro.props;
+const targetUrl = new URL(target, Astro.site).toString();
+const lang = siteConfig.lang.replace("_", "-");
 ---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{target} — {siteConfig.title}</title>
+    <meta name="robots" content="noindex, follow" />
+    <link rel="canonical" href={targetUrl} />
+    {/* 延迟一秒再跳转，让"页面已迁移"这句话有机会被看清；
+        正常速度下访客几乎察觉不到这一秒。 */}
+    <meta http-equiv="refresh" content={`1; url=${target}`} />
+    <style is:inline>
+      :root {
+        color-scheme: light dark;
+        --bg: #f8f8f8;
+        --text: #1a1a1a;
+        --muted: #6b7280;
+        --link: #8b5cf6;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #16181f;
+          --text: #e8e8ea;
+          --muted: #9ca3af;
+          --link: #a78bfa;
+        }
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+          "Noto Sans SC", sans-serif;
+        padding: 1.5rem;
+      }
+      main {
+        max-width: 26rem;
+        text-align: center;
+      }
+      p {
+        margin: 0 0 1rem;
+        line-height: 1.7;
+      }
+      .muted {
+        color: var(--muted);
+        font-size: 0.875rem;
+      }
+      a {
+        color: var(--link);
+        word-break: break-all;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p>{i18n(I18nKey.pageMoved)}</p>
+      <p class="muted"><a href={target}>{targetUrl}</a></p>
+    </main>
+  </body>
+</html>

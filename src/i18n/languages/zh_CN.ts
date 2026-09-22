@@ -493,4 +493,7 @@ export const zh_CN: Translation = {
 
 	// 无障碍：跳过导航直达正文
 	[Key.skipToContent]: "跳到主要内容",
+
+	// 遗留路由的跳转提示页
+	[Key.pageMoved]: "这个页面已经搬到新地址，正在为你跳转",
 };

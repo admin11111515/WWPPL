@@ -457,4 +457,7 @@ export const zh_TW: Translation = {
 
 	// 無障礙：跳過導覽直達正文
 	[Key.skipToContent]: "跳到主要內容",
+
+	// 遺留路由的跳轉提示頁
+	[Key.pageMoved]: "這個頁面已經搬到新網址，正在為你跳轉",
 };

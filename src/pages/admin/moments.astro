@@ -8,6 +8,8 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>写说说</title>
+  {/* 后台是站长自用界面，不该出现在搜索结果里（sitemap 中同样已剔除） */}
+  <meta name="robots" content="noindex, nofollow" />
   <style is:inline>
     :root {
       --bg: #fff; --card: transparent; --border: #d9d9d9; --text: #1a1a1a;
