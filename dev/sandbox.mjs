@@ -186,6 +186,12 @@ switch (cmd) {
 				args: ["./node_modules/astro/bin/astro.mjs", "build"],
 			},
 			{
+				// 便宜且属于 HTML 收尾，--fast 也照跑
+				name: "本地化代码块复制按钮 -> dist/**/*.html",
+				cmd: "npx",
+				args: ["--yes", "tsx", "scripts/localize-code-blocks.ts"],
+			},
+			{
 				name: "字体子集化 -> dist/_astro/fonts/",
 				cmd: "npx",
 				args: ["--yes", "tsx", "scripts/subset-fonts.ts"],
