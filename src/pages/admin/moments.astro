@@ -259,6 +259,31 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
     .hidden { display: none !important; }
 
     /* ===== 响应式 ===== */
+    /* 上次未保存就离开时的恢复提示 */
+    .restore-bar {
+      display: flex; align-items: center; gap: 0.625rem; flex-wrap: wrap;
+      margin-bottom: 0.75rem; padding: 0.625rem 0.875rem;
+      border: 1px solid var(--border); border-radius: 6px;
+      background: var(--hover);
+      font-size: 0.8125rem; color: var(--text-2);
+    }
+    .restore-bar .restore-icon { flex: none; }
+    .restore-bar .restore-text { flex: 1; min-width: 12rem; line-height: 1.6; }
+    .restore-bar .restore-actions { display: flex; gap: 0.375rem; flex: none; }
+
+    /* 输入框下方的字数与快捷键提示 */
+    .field-footer {
+      display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+      flex-wrap: wrap; margin-top: 0.25rem;
+      font-size: 0.6875rem; color: var(--text-3);
+    }
+    .field-footer .hint { opacity: 0.75; }
+
+    /* 发布按钮一行，右侧显示本地草稿的保存时刻 */
+    .submit-row { display: flex; align-items: center; gap: 0.75rem; }
+    .submit-row .btn-primary { flex: 1; width: auto; }
+    .draft-hint { font-size: 0.6875rem; color: var(--text-3); white-space: nowrap; }
+
     @media (min-width: 640px) {
       .container { padding: 2rem 1.5rem 4rem; }
       .card { padding: 1.5rem; }
@@ -300,12 +325,26 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
         <span id="status-text">正在连接...</span>
       </div>
 
+      {/* 上次没有保存就离开时，把本地留存的草稿提示出来 */}
+      <div class="restore-bar hidden" id="restore-bar">
+        <span class="restore-icon">🕘</span>
+        <span class="restore-text" id="restore-text"></span>
+        <div class="restore-actions">
+          <button class="btn btn-sm" onclick="restoreDraft()">恢复</button>
+          <button class="btn btn-sm" onclick="discardDraft()">丢弃</button>
+        </div>
+      </div>
+
 
       <!-- 写说说 -->
       <div class="card">
         <div class="field">
           <div class="field-label"><span class="icon">✍️</span> 内容</div>
           <textarea id="content-input" placeholder="分享此刻的想法..."></textarea>
+          <div class="field-footer">
+            <span id="content-counter">0 字</span>
+            <span class="hint">Ctrl+Enter 发布 · Ctrl+S 保存 · Tab 缩进</span>
+          </div>
         </div>
         <div class="field">
           <div class="field-label"><span class="icon">🖼️</span> 图片</div>
@@ -351,9 +390,12 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
             <span class="toggle-switch"></span>
           </label>
         </div>
-        <button class="btn btn-primary" id="submit-btn" onclick="submitMoment()">发布</button>
+        <div class="submit-row">
+          <button class="btn btn-primary" id="submit-btn" onclick="submitMoment()">发布</button>
+          <span class="draft-hint" id="draft-hint"></span>
+        </div>
         <div class="hidden" id="edit-bar" style="display:flex;gap:0.5rem;margin-top:0.5rem;">
-          <button class="btn btn-sm" onclick="cancelEdit()" style="flex:1;">取消编辑</button>
+          <button class="btn btn-sm" onclick="confirmCancelEdit()" style="flex:1;">取消编辑</button>
         </div>
       </div>
 
@@ -373,6 +415,7 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
   <button class="dark-fab" onclick="toggleDark()" title="切换暗色模式">🌙</button>
   <div class="toast" id="toast"></div>
 
+  <script is:inline src="/js/editor-commons.js"></script>
   <script is:inline
     data-gist={externalMomentsConfig.gistId || ""}
     data-file={externalMomentsConfig.fileName || "moments.json"}>
@@ -380,11 +423,18 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
     var GIST_ID = _script.getAttribute("data-gist") || "";
     var FILE_NAME = _script.getAttribute("data-file") || "moments.json";
     var API = "/api/github";
+    // 本地草稿与"是否有未保存改动"的判定基线
+    var draftStore = WBEditor.createDraftStore("moment");
+    var cleanSnapshot = "";
 
     // ===== 工具 =====
     function $(id) { return document.getElementById(id); }
     function getImages() { try { return JSON.parse(localStorage.getItem("moment_imgs") || "[]"); } catch(e) { return []; } }
-    function setImages(v) { localStorage.setItem("moment_imgs", JSON.stringify(v)); }
+    function setImages(v) {
+      localStorage.setItem("moment_imgs", JSON.stringify(v));
+      // 图片也算草稿的一部分，改动后跟着存一份
+      scheduleDraftSave();
+    }
     function esc(t) { var d = document.createElement("div"); d.textContent = t; return d.innerHTML; }
 
     function toast(msg, type) {
@@ -603,6 +653,7 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
     var editingId = null;
 
     function editMoment(id) {
+      if (!confirmDiscardIfDirty("切换到另一条")) return;
       fetch(API + "/gists/" + GIST_ID, {
         headers: { "Accept": "application/vnd.github+json" }
       }).then(function(r) { return r.json(); }).then(function(gist) {
@@ -631,6 +682,8 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
         $("edit-bar").classList.remove("hidden");
         $("content-input").focus();
         $("content-input").scrollIntoView({ behavior: "smooth", block: "center" });
+        updateCounter();
+        markClean();
         toast("正在编辑（ID: " + id.slice(-6) + "）", "ok");
       }).catch(function() { toast("加载失败", "err"); });
     }
@@ -647,12 +700,23 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
       setImages([]); renderImgs();
       $("submit-btn").textContent = "发布";
       $("edit-bar").classList.add("hidden");
+      updateCounter();
+      markClean();
+    }
+    // 点“取消编辑”时先问一句；发布成功后内部的收尾不走这个口
+    function confirmCancelEdit() {
+      if (!confirmDiscardIfDirty("取消编辑")) return;
+      cancelEdit();
     }
 
     // ===== 发布/更新 =====
     function submitMoment() {
       var content = $("content-input").value.trim();
       if (!content) { toast("请输入内容", "err"); return; }
+
+      // 先把本地这份写下来：万一这次没发出去，内容也还在
+      saveDraftNow();
+      clearTimeout(autosaveTimer);
 
       var images = getImages();
       var tags = $("tags-input").value.split(",").map(function(s) { return s.trim(); }).filter(Boolean);
@@ -661,6 +725,7 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
       var published = getPublishedTime();
       var btn = $("submit-btn");
       var isEdit = !!editingId;
+      var saved = false;
       btn.disabled = true;
       btn.textContent = isEdit ? "保存中..." : (images.length ? "发布中...（含 " + images.length + " 张图）" : "发布中...");
 
@@ -697,13 +762,21 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
           body: JSON.stringify({ files: { [FILE_NAME]: { content: JSON.stringify(moments, null, 2) } } })
         });
       }).then(function(r) {
-        if (r.ok) {
-          toast(isEdit ? "已保存 ✓" : "发布成功 ✓", "ok");
-          cancelEdit();
-          loadMoments();
-        } else { toast(isEdit ? "保存失败" : "发布失败", "err"); }
-      }).catch(function() { toast("网络错误", "err"); })
-      .finally(function() { btn.disabled = false; if (!editingId) btn.textContent = "发布"; });
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        saved = true;
+        // 已经进了仓库，本地那份临时草稿就没用了
+        clearDraft();
+        toast(isEdit ? "已保存 ✓" : "发布成功 ✓", "ok");
+        cancelEdit();
+        loadMoments();
+      }).catch(function(e) {
+        toast((isEdit ? "保存失败" : "发布失败") + "：" + (e && e.message ? e.message : "网络错误"), "err");
+      }).finally(function() {
+        btn.disabled = false;
+        // 成功时 cancelEdit 已把文字复位；失败时也要复位，
+        // 否则一次失败之后按钮会一直停在“保存中...”
+        if (!saved) btn.textContent = isEdit ? "保存修改" : "发布";
+      });
     }
 
     // ===== 删除 =====
@@ -726,7 +799,130 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
       }).catch(function() { toast("网络错误", "err"); });
     }
 
+    // ===== 字数 =====
+    function updateCounter() {
+      var s = WBEditor.summarize($("content-input").value);
+      $("content-counter").textContent = "正文 " + s.chars + " 字 · 约 " + s.minutes + " 分钟读完";
+    }
+    $("content-input").addEventListener("input", updateCounter);
+
+    // ===== 本地草稿：写到一半也不会丢 =====
+    // 只存在这台浏览器里，不上传任何地方。正式内容仍然以发布出去的为准。
+    var pendingDraft = null;
+    var autosaveTimer = null;
+
+    function snapshot() {
+      return {
+        id: editingId,
+        content: $("content-input").value,
+        tags: $("tags-input").value,
+        location: $("location-input").value,
+        pinned: $("pinned-input").checked,
+        customTime: $("custom-time-toggle").checked,
+        time: $("time-input").value,
+        images: getImages(),
+      };
+    }
+    function isDirty() {
+      return JSON.stringify(snapshot()) !== cleanSnapshot;
+    }
+    function markClean() {
+      cleanSnapshot = JSON.stringify(snapshot());
+    }
+    function pad2(n) { return String(n).padStart(2, "0"); }
+    function fmtTime(ts) {
+      var d = new Date(ts);
+      return pad2(d.getMonth() + 1) + "月" + pad2(d.getDate()) + "日 " + pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+    }
+    function clearDraft() {
+      draftStore.clear();
+      pendingDraft = null;
+      $("draft-hint").textContent = "";
+      $("restore-bar").classList.add("hidden");
+    }
+    function saveDraftNow() {
+      var s = snapshot();
+      // 空内容不写草稿，免得把上一份还有用的顶掉
+      if (!String(s.content || "").trim() && !s.images.length) return;
+      if (draftStore.save(s)) $("draft-hint").textContent = "本地草稿 " + fmtTime(Date.now());
+    }
+    function scheduleDraftSave() {
+      clearTimeout(autosaveTimer);
+      autosaveTimer = setTimeout(saveDraftNow, 900);
+    }
+    ["content-input", "tags-input", "location-input", "time-input"].forEach(function(id) {
+      $(id).addEventListener("input", scheduleDraftSave);
+    });
+    ["pinned-input", "custom-time-toggle"].forEach(function(id) {
+      $(id).addEventListener("change", scheduleDraftSave);
+    });
+
+    function applySnapshot(s) {
+      editingId = s.id || null;
+      $("content-input").value = s.content || "";
+      $("tags-input").value = s.tags || "日常";
+      $("location-input").value = s.location || "";
+      $("pinned-input").checked = !!s.pinned;
+      $("custom-time-toggle").checked = !!s.customTime;
+      $("time-input").value = s.time || "";
+      $("custom-time-panel").classList.toggle("hidden", !s.customTime);
+      setImages(s.images || []);
+      renderImgs();
+      $("submit-btn").textContent = editingId ? "保存修改" : "发布";
+      $("edit-bar").classList.toggle("hidden", !editingId);
+      updateCounter();
+    }
+    function showRestoreBar() {
+      var draft = draftStore.load();
+      if (!draft || !draft.data) return;
+      var d = draft.data;
+      var hasImages = (d.images || []).length > 0;
+      if (!String(d.content || "").trim() && !hasImages) {
+        draftStore.clear();
+        return;
+      }
+      pendingDraft = draft;
+      var preview = String(d.content || "").trim().replace(/\s+/g, " ");
+      if (preview.length > 24) preview = preview.slice(0, 24) + "…";
+      $("restore-text").textContent =
+        "上次有内容没保存（" + fmtTime(draft.at) + "）：" +
+        (preview || (d.images || []).length + " 张图片");
+      $("restore-bar").classList.remove("hidden");
+    }
+    function restoreDraft() {
+      if (!pendingDraft) return;
+      applySnapshot(pendingDraft.data);
+      $("restore-bar").classList.add("hidden");
+      $("draft-hint").textContent = "本地草稿 " + fmtTime(pendingDraft.at);
+      markClean();
+      toast("已恢复上次未保存的内容", "ok");
+    }
+    function discardDraft() {
+      clearDraft();
+      toast("已丢弃本地草稿", "ok");
+    }
+    function confirmDiscardIfDirty(action) {
+      if (!isDirty()) return true;
+      return confirm(
+        "当前内容还没保存，确定要" + action + "吗？\n" +
+        "未保存的内容仍留在本地草稿里，之后可以点“恢复”取回。"
+      );
+    }
+
+    // 关标签页或刷新时拦一下，避免手滑丢掉正在写的内容
+    WBEditor.guardUnsavedChanges(isDirty);
+
+    // ===== 快捷键 =====
+    WBEditor.installTabIndent($("content-input"));
+    WBEditor.installShortcuts($("content-input"), {
+      submit: submitMoment,
+      save: submitMoment,
+    });
+
     // ===== 初始化 =====
+    updateCounter();
+    markClean();
+    showRestoreBar();
     (function() {
       checkAuth().then(function(ok) {
         if (!ok) return;
