@@ -10,15 +10,20 @@
  * 在 Temp 下建一个沙箱目录做依赖安装与构建验证。
  *
  * 用法：
- *   node dev/sandbox.mjs sync    仅同步源码到沙箱
- *   node dev/sandbox.mjs build   同步后执行构建
- *   node dev/sandbox.mjs clean   删除沙箱（含 node_modules）
- *   node dev/sandbox.mjs info    查看沙箱状态
+ *   node dev/sandbox.mjs sync         仅同步源码到沙箱
+ *   node dev/sandbox.mjs build        按 package.json 的完整链路构建
+ *   node dev/sandbox.mjs build --fast 只跑 astro build，跳过内容生成与字体子集化
+ *   node dev/sandbox.mjs clean        删除沙箱（含 node_modules）
+ *   node dev/sandbox.mjs info         查看沙箱状态
+ *
+ * 关于 build 的完整性：package.json 里的 build 是五个步骤的链条，
+ * 只跑 astro build 会得到一个"缺字体子集、缺搜索索引"的半成品 dist，
+ * 据此验证会把正常产物误判成缺文件。所以这里默认跑完整链路。
  */
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
-import { execFileSync, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 
 const SRC = "C:\\project\\ppl_blog\\WWPPL";
 const SANDBOX_ROOT = path.join(os.tmpdir(), "wwppl-dev");
@@ -152,23 +157,70 @@ switch (cmd) {
 		doInfo();
 		break;
 	case "build": {
+		const fast = process.argv.includes("--fast");
 		doSync();
-		process.chdir(DST);
-		log("[build] 开始构建（npx astro build）");
-		const res = spawnSync(process.execPath, ["./node_modules/astro/bin/astro.mjs", "build"], {
-			cwd: DST,
-			env: {
-				...process.env,
-				http_proxy: "",
-				https_proxy: "",
-				HTTP_PROXY: "",
-				HTTPS_PROXY: "",
+		const env = {
+			...process.env,
+			http_proxy: "",
+			https_proxy: "",
+			HTTP_PROXY: "",
+			HTTPS_PROXY: "",
+		};
+		// 与 package.json 的 build 脚本逐条对应，顺序不可换
+		const steps = [
+			{
+				name: "生成图标常量 -> src/constants/icons.ts",
+				cmd: process.execPath,
+				args: ["scripts/generate-icons.js"],
+				fast: true,
 			},
-			stdio: "inherit",
-		});
-		log(`[build] 退出码 ${res.status}`);
-		process.exit(res.status ?? 1);
+			{
+				name: "生成图片占位色 -> src/constants/lqips.json",
+				cmd: "npx",
+				args: ["--yes", "tsx", "scripts/generate-lqips.ts"],
+				fast: true,
+			},
+			{
+				name: "构建页面 -> dist/",
+				cmd: process.execPath,
+				args: ["./node_modules/astro/bin/astro.mjs", "build"],
+			},
+			{
+				name: "字体子集化 -> dist/_astro/fonts/",
+				cmd: "npx",
+				args: ["--yes", "tsx", "scripts/subset-fonts.ts"],
+				fast: true,
+			},
+			{
+				name: "生成站内搜索索引 -> dist/pagefind/",
+				cmd: process.execPath,
+				args: ["scripts/build-search-index.mjs"],
+			},
+		];
+
+		const t0 = Date.now();
+		for (const step of steps) {
+			if (fast && step.fast) {
+				log(`[build] 跳过（--fast）：${step.name}`);
+				continue;
+			}
+			log(`[build] 开始：${step.name}`);
+			const res = spawnSync(step.cmd, step.args, {
+				cwd: DST,
+				env,
+				stdio: "inherit",
+				shell: process.platform === "win32",
+			});
+			if (res.status !== 0) {
+				log(`[build] 失败：${step.name}（退出码 ${res.status}）`);
+				log("[build] 链条已中断，后续步骤不再执行");
+				process.exit(res.status ?? 1);
+			}
+			log(`[build] 完成：${step.name}`);
+		}
+		log(`[build] 全部步骤完成，总耗时 ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+		process.exit(0);
 	}
 	default:
-		log("用法: node dev/sandbox.mjs [sync|build|clean|info]");
+		log("用法: node dev/sandbox.mjs [sync|build|build --fast|clean|info]");
 }
