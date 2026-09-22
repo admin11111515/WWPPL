@@ -112,8 +112,8 @@ export const live2dWidgetConfig: Live2DWidgetConfig = {
 			y: 0,
 		},
 	],
-	// 显示位置：bottom-left 或 bottom-right
-	position: "bottom-left" as const,
+	// 显示位置：bottom-left 或 bottom-right。默认放右下角，可拖动后位置会记住
+	position: "bottom-right" as const,
 	// 画布尺寸（px）
 	size: { width: 200, height: 200 },
 	// 主题色，用于菜单、状态条等 UI 元素的背景色，默认 'rgba(96,165,250,0.9)'
@@ -147,13 +147,18 @@ export const live2dWidgetConfig: Live2DWidgetConfig = {
 				action: "switchModel",
 			},
 			{
+				icon: "mdi:restore",
+				label: "复位位置",
+				action: "resetPosition",
+			},
+			{
 				icon: "mdi:github",
 				label: "GitHub",
 				action: "github",
 			},
 		],
-		// 菜单对齐方式
-		align: "right" as const,
+		// 菜单对齐方式：桌宠在右下角，菜单朝页面内侧展开
+		align: "left" as const,
 	},
 	// 提示气泡配置
 	tips: {

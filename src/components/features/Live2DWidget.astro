@@ -127,12 +127,215 @@ function serializeMenus(menus: Props["config"]["menus"]) {
 	});
 	tipObserver.observe(document.body, { childList: true, subtree: true });
 
+	// ---------------- 桌宠拖动 ----------------
+	// l2d-widget 把桌宠的界面直接挂到 document.body 上（画布 9999、状态条 9998），
+	// 位置写死在元素自己的 left/right/bottom 上，而且这两个元素的内联 transform
+	// 被库的入场动画占用了，直接改它们会和动画打架。
+	// 这里不动库的元素样式，另建一个 fixed 图层把两个元素收进去：图层一旦带
+	// transform 就成为 fixed 子元素的包含块，拖动图层等于整体拖动桌宠，
+	// 位置变而库的内部逻辑完全不知情。
+	const PET_OFFSET_KEY = "wwppl:l2d-pet-offset";
+	const PET_DRAG_THRESHOLD = 4;
+	const PET_LAYER_ID = "l2d-pet-drag-layer";
+
+	interface PetOffset {
+		dx: number;
+		dy: number;
+	}
+
+	// 菜单里的“复位位置”需要能改到拖动状态，用这个变量把入口暴露出去
+	let resetPetPosition: (() => void) | null = null;
+
+	function readPetOffset(): PetOffset | null {
+		try {
+			const raw = localStorage.getItem(PET_OFFSET_KEY);
+			if (!raw) return null;
+			const parsed = JSON.parse(raw) as Partial<PetOffset>;
+			const dx = Number(parsed?.dx);
+			const dy = Number(parsed?.dy);
+			if (Number.isFinite(dx) && Number.isFinite(dy)) return { dx, dy };
+		} catch {
+			// 读不到就当作没拖过，用默认位置
+		}
+		return null;
+	}
+
+	function savePetOffset(offset: PetOffset) {
+		try {
+			localStorage.setItem(PET_OFFSET_KEY, JSON.stringify(offset));
+		} catch {
+			// 无痕模式下写不进去，忽略
+		}
+	}
+
+	/** 找出库刚挂到 body 上的那两处界面：画布 9999、状态条 9998 */
+	function findPetParts() {
+		const parts = Array.from(document.body.children).filter(
+			(el): el is HTMLElement => el instanceof HTMLElement,
+		);
+		return {
+			root: parts.find((el) => el.style.zIndex === "9999"),
+			strip: parts.find((el) => el.style.zIndex === "9998"),
+		};
+	}
+
+	function mountPetDrag() {
+		if (document.getElementById(PET_LAYER_ID)) return;
+
+		const { root, strip } = findPetParts();
+		if (!root) return;
+
+		const layer = document.createElement("div");
+		layer.id = PET_LAYER_ID;
+		Object.assign(layer.style, {
+			position: "fixed",
+			inset: "0",
+			// 压在页面内容之上，但低于悬浮按钮（1000）：桌宠拖到右下角时不会挡住返回顶部
+			zIndex: "998",
+			pointerEvents: "none",
+			cursor: "grab",
+			// 触摸设备上按在桌宠身上应当是拖动，而不是滚动页面
+			touchAction: "none",
+		});
+		document.body.appendChild(layer);
+		layer.append(root);
+		if (strip) layer.append(strip);
+
+		/** 未加偏移时桌宠的原始位置（库给的锚点），换算偏移就是相对它算 */
+		function baseBox() {
+			const style = getComputedStyle(root as HTMLElement);
+			return {
+				left: Number.parseFloat(style.left),
+				top: Number.parseFloat(style.top),
+				width: (root as HTMLElement).offsetWidth,
+				height: (root as HTMLElement).offsetHeight,
+			};
+		}
+
+		/** 偏移量限制在视口内，桌宠不会被拖到看不见的地方 */
+		function normalize(next: PetOffset): PetOffset {
+			const { left, top, width, height } = baseBox();
+			// 用 clientWidth/clientHeight：不含滚动条，和 fixed 元素的锚定范围一致
+			const viewWidth = document.documentElement.clientWidth;
+			const viewHeight = document.documentElement.clientHeight;
+			const minDx = -left;
+			const maxDx = viewWidth - width - left;
+			const minDy = -top;
+			const maxDy = viewHeight - height - top;
+			return {
+				dx: Math.min(Math.max(next.dx, minDx), maxDx),
+				dy: Math.min(Math.max(next.dy, minDy), maxDy),
+			};
+		}
+
+		/**
+		 * 默认位置：右下角，但横向要给页面的悬浮按钮那一列让开，
+		 * 否则桌宠会盖住返回顶部按钮。按钮列宽度按实际量，量不到用经验值。
+		 */
+		function defaultPetOffset(): PetOffset {
+			const { left, width } = baseBox();
+			const petRight = left + width;
+			const gap = 8;
+			const controls = document.querySelector<HTMLElement>(".floating-controls-container");
+			const rect = controls?.getBoundingClientRect();
+			// 按钮列收起时量出来是 0 宽，退回到：48 按钮 + 16 右边距
+			const controlsLeft = rect && rect.width >= 8 && rect.height >= 8 ? rect.left : petRight - 64;
+			const overlap = petRight - controlsLeft;
+			if (overlap <= 0) return { dx: 0, dy: 0 };
+			return { dx: -Math.min(overlap + gap, 120), dy: 0 };
+		}
+
+		let offset = normalize(readPetOffset() ?? defaultPetOffset());
+
+		function apply(next: PetOffset, animate = false) {
+			layer.style.transition = animate ? "transform 0.18s ease-out" : "none";
+			layer.style.transform = `translate3d(${next.dx}px, ${next.dy}px, 0)`;
+		}
+
+		apply(offset);
+
+		layer.addEventListener("pointerdown", (event: PointerEvent) => {
+			if (event.pointerType === "mouse" && event.button !== 0) return;
+
+			const startX = event.clientX;
+			const startY = event.clientY;
+			const origin = offset;
+			let dragging = false;
+			let latest = offset;
+
+			const onMove = (moveEvent: PointerEvent) => {
+				const dx = moveEvent.clientX - startX;
+				const dy = moveEvent.clientY - startY;
+				if (!dragging) {
+					// 位移太小当作点击，交给桌宠自己的交互
+					if (Math.abs(dx) < PET_DRAG_THRESHOLD && Math.abs(dy) < PET_DRAG_THRESHOLD) return;
+					dragging = true;
+					layer.style.cursor = "grabbing";
+					document.body.style.userSelect = "none";
+				}
+				latest = normalize({ dx: origin.dx + dx, dy: origin.dy + dy });
+				apply(latest);
+				moveEvent.preventDefault();
+			};
+
+			const onEnd = () => {
+				window.removeEventListener("pointermove", onMove, true);
+				window.removeEventListener("pointerup", onEnd, true);
+				window.removeEventListener("pointercancel", onEnd, true);
+				if (!dragging) return;
+				offset = latest;
+				layer.style.cursor = "grab";
+				document.body.style.userSelect = "";
+				savePetOffset(offset);
+				// 松手后浏览器还会补一个 click，落在桌宠身上的第一个要吞掉，
+				// 免得顺手触发桌宠自己的点击动作；只吞一个，之后的正常点击不受影响
+				let swallowed = false;
+				const swallowClick = (clickEvent: Event) => {
+					if (swallowed) return;
+					const target = clickEvent.target;
+					if (!(target instanceof Node) || !layer.contains(target)) return;
+					swallowed = true;
+					clickEvent.stopPropagation();
+					clickEvent.preventDefault();
+				};
+				window.addEventListener("click", swallowClick, { capture: true });
+				window.setTimeout(
+					() => window.removeEventListener("click", swallowClick, true),
+					400,
+				);
+			};
+
+			window.addEventListener("pointermove", onMove, true);
+			window.addEventListener("pointerup", onEnd, true);
+			window.addEventListener("pointercancel", onEnd, true);
+		});
+
+		// 视口变化后重新收进可见范围；没拖过的按新视口重算默认位置
+		window.addEventListener("resize", () => {
+			if (layer.style.display === "none") return;
+			offset = normalize(readPetOffset() ?? defaultPetOffset());
+			apply(offset);
+		});
+
+		resetPetPosition = () => {
+			// 复位 = 忘掉拖过的位置，回到默认的右下角
+			try {
+				localStorage.removeItem(PET_OFFSET_KEY);
+			} catch {
+				// 拿不到存储就只挪位置
+			}
+			offset = normalize(defaultPetOffset());
+			apply(offset, true);
+		};
+	}
+
 	// 菜单动作映射
 	let currentModelIndex = 0;
 	const menuActions: Record<string, (widget: any) => void> = {
 		home: () => (window.location.href = "/"),
 		scrollToTop: () => window.scrollTo({ top: 0, behavior: "smooth" }),
 		sleep: (widget) => widget.sleep(),
+		resetPosition: () => resetPetPosition?.(),
 		github: () => window.open("https://github.com/admin11111515/WWPPL", "_blank"),
 		switchModel: (widget) => {
 			const container = document.getElementById("l2d-widget-container");
@@ -226,6 +429,7 @@ function serializeMenus(menus: Props["config"]["menus"]) {
 			}
 
 			createWidget(options);
+			mountPetDrag();
 		} catch (e) {
 			console.error("Failed to initialize Live2D widget:", e);
 		}
@@ -239,19 +443,19 @@ function serializeMenus(menus: Props["config"]["menus"]) {
 	}
 
 	// 响应式处理：窗口大小变化时显示/隐藏
+	// 桌宠本体是库自己挂到 body 上的，隐藏容器没有用，要连同拖动图层一起收起来
 	function handleResponsive() {
 		const container = document.getElementById("l2d-widget-container");
 		if (!container) return;
 
 		const responsive = JSON.parse(container.dataset.responsive || "{}");
-		if (responsive.hideOnMobile) {
-			const breakpoint = responsive.mobileBreakpoint || 768;
-			if (window.innerWidth <= breakpoint) {
-				container.style.display = "none";
-			} else {
-				container.style.display = "";
-			}
-		}
+		if (!responsive.hideOnMobile) return;
+
+		const breakpoint = responsive.mobileBreakpoint || 768;
+		const shouldHide = window.innerWidth <= breakpoint;
+		container.style.display = shouldHide ? "none" : "";
+		const layer = document.getElementById(PET_LAYER_ID);
+		if (layer) layer.style.display = shouldHide ? "none" : "";
 	}
 
 	window.addEventListener("resize", handleResponsive);
