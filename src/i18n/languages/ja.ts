@@ -5,6 +5,8 @@ export const ja: Translation = {
 	[Key.home]: "ホーム",
 	[Key.about]: "について",
 	[Key.archive]: "アーカイブ",
+	[Key.archiveTotal]: "合計",
+	[Key.archiveLife]: "暮らし",
 	[Key.search]: "検索",
 	[Key.searchNoResults]: "結果が見つかりません。",
 	[Key.searchTypeSomething]: "検索キーワードを入力してください。",
@@ -263,6 +265,10 @@ export const ja: Translation = {
 	[Key.sponsorAnonymous]: "匿名",
 	[Key.scanToSponsor]: "スキャンしてスポンサー",
 	[Key.sponsorGoTo]: "スポンサーへ",
+	[Key.umamiStats]: "統計",
+	[Key.umamiTotalPageviews]: "総閲覧数",
+	[Key.umamiVisits]: "訪問数",
+	[Key.umamiVisitors]: "訪問者数",
 	[Key.sponsorButton]: "サポートと共有",
 	[Key.sponsorButtonText]:
 		"この記事が役に立ったなら、共有またはサポートをお願いします！",
@@ -327,6 +333,7 @@ export const ja: Translation = {
 	[Key.generatingPoster]: "ポスター生成中...",
 	[Key.copied]: "コピーしました",
 	[Key.copyLink]: "リンクをコピー",
+	[Key.codeCopyTooltip]: "クリップボードにコピー",
 	[Key.savePoster]: "ポスターを保存",
 	[Key.scanToRead]: "QRコードで読む",
 

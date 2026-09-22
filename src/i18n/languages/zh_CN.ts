@@ -5,6 +5,8 @@ export const zh_CN: Translation = {
 	[Key.home]: "主页",
 	[Key.about]: "关于我",
 	[Key.archive]: "归档",
+	[Key.archiveTotal]: "总计",
+	[Key.archiveLife]: "生活",
 	[Key.search]: "搜索",
 	[Key.searchNoResults]: "找不到相关结果。",
 	[Key.searchTypeSomething]: "请输入搜索关键词。",
@@ -294,6 +296,10 @@ export const zh_CN: Translation = {
 	[Key.sponsorAnonymous]: "匿名",
 	[Key.scanToSponsor]: "扫码打赏",
 	[Key.sponsorGoTo]: "前往打赏",
+	[Key.umamiStats]: "统计",
+	[Key.umamiTotalPageviews]: "总浏览量",
+	[Key.umamiVisits]: "访问数",
+	[Key.umamiVisitors]: "游客数",
 	[Key.sponsorButton]: "支持与分享",
 	[Key.sponsorButtonText]:
 		"如果这篇文章对你有帮助，欢迎分享给更多人或打赏支持！",
@@ -357,6 +363,7 @@ export const zh_CN: Translation = {
 	[Key.generatingPoster]: "海报生成中...",
 	[Key.copied]: "已复制",
 	[Key.copyLink]: "复制链接",
+	[Key.codeCopyTooltip]: "复制到剪贴板",
 	[Key.savePoster]: "保存海报",
 	[Key.scanToRead]: "扫码阅读文章",
 

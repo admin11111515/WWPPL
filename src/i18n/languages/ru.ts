@@ -5,6 +5,8 @@ export const ru: Translation = {
 	[Key.home]: "Главная",
 	[Key.about]: "О нас",
 	[Key.archive]: "Архив",
+	[Key.archiveTotal]: "Всего",
+	[Key.archiveLife]: "Жизнь",
 	[Key.search]: "Поиск",
 	[Key.searchNoResults]: "Результаты не найдены.",
 	[Key.searchTypeSomething]: "Введите ключевое слово для поиска...",
@@ -265,6 +267,10 @@ export const ru: Translation = {
 	[Key.sponsorAnonymous]: "Анонимно",
 	[Key.scanToSponsor]: "Сканировать для поддержки",
 	[Key.sponsorGoTo]: "Перейти к спонсору",
+	[Key.umamiStats]: "Статистика",
+	[Key.umamiTotalPageviews]: "Всего просмотров",
+	[Key.umamiVisits]: "Визиты",
+	[Key.umamiVisitors]: "Посетители",
 	[Key.sponsorButton]: "Поддержка и Поделиться",
 	[Key.sponsorButtonText]:
 		"Если эта статья помогла вам, пожалуйста, поделитесь или поддержите!",
@@ -329,6 +335,7 @@ export const ru: Translation = {
 	[Key.generatingPoster]: "Создание постера...",
 	[Key.copied]: "Скопировано",
 	[Key.copyLink]: "Копировать ссылку",
+	[Key.codeCopyTooltip]: "Скопировать в буфер обмена",
 	[Key.savePoster]: "Сохранить постер",
 	[Key.scanToRead]: "Сканируйте, чтобы прочитать",
 

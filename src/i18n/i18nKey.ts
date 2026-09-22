@@ -2,6 +2,8 @@ enum I18nKey {
 	home = "home",
 	about = "about",
 	archive = "archive",
+	archiveTotal = "archiveTotal",
+	archiveLife = "archiveLife",
 	search = "search",
 	searchNoResults = "searchNoResults",
 	searchTypeSomething = "searchTypeSomething",
@@ -292,6 +294,12 @@ enum I18nKey {
 	sponsorAnonymous = "sponsorAnonymous",
 	scanToSponsor = "scanToSponsor",
 	sponsorGoTo = "sponsorGoTo",
+
+	// 侧边栏访客统计组件
+	umamiStats = "umamiStats",
+	umamiTotalPageviews = "umamiTotalPageviews",
+	umamiVisits = "umamiVisits",
+	umamiVisitors = "umamiVisitors",
 	sponsorButton = "sponsorButton",
 	sponsorButtonText = "sponsorButtonText",
 
@@ -353,6 +361,7 @@ enum I18nKey {
 	generatingPoster = "generatingPoster",
 	copied = "copied",
 	copyLink = "copyLink",
+	codeCopyTooltip = "codeCopyTooltip",
 	savePoster = "savePoster",
 	scanToRead = "scanToRead",
 

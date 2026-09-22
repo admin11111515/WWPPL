@@ -5,6 +5,8 @@ export const zh_TW: Translation = {
 	[Key.home]: "首頁",
 	[Key.about]: "關於我",
 	[Key.archive]: "歸檔",
+	[Key.archiveTotal]: "總計",
+	[Key.archiveLife]: "生活",
 	[Key.search]: "搜尋",
 	[Key.searchNoResults]: "找不到相關結果。",
 	[Key.searchTypeSomething]: "請輸入搜尋關鍵字。",
@@ -258,6 +260,10 @@ export const zh_TW: Translation = {
 	[Key.sponsorAnonymous]: "匿名",
 	[Key.scanToSponsor]: "掃碼打賞",
 	[Key.sponsorGoTo]: "前往打賞",
+	[Key.umamiStats]: "統計",
+	[Key.umamiTotalPageviews]: "總瀏覽量",
+	[Key.umamiVisits]: "訪問數",
+	[Key.umamiVisitors]: "訪客人數",
 	[Key.sponsorButton]: "支持與分享",
 	[Key.sponsorButtonText]:
 		"如果這篇文章對你有幫助，歡迎分享給更多人或打賞支持！",
@@ -321,6 +327,7 @@ export const zh_TW: Translation = {
 	[Key.generatingPoster]: "海報生成中...",
 	[Key.copied]: "已複製",
 	[Key.copyLink]: "複製連結",
+	[Key.codeCopyTooltip]: "複製到剪貼簿",
 	[Key.savePoster]: "保存海報",
 	[Key.scanToRead]: "掃碼閱讀文章",
 

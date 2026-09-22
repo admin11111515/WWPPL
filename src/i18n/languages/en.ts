@@ -5,6 +5,8 @@ export const en: Translation = {
 	[Key.home]: "Home",
 	[Key.about]: "About",
 	[Key.archive]: "Archive",
+	[Key.archiveTotal]: "Total",
+	[Key.archiveLife]: "Life",
 	[Key.search]: "Search",
 	[Key.searchNoResults]: "No results found.",
 	[Key.searchTypeSomething]: "Type something to search...",
@@ -264,6 +266,10 @@ export const en: Translation = {
 	[Key.sponsorAnonymous]: "Anonymous",
 	[Key.scanToSponsor]: "Scan to Sponsor",
 	[Key.sponsorGoTo]: "Go to Sponsor",
+	[Key.umamiStats]: "Statistics",
+	[Key.umamiTotalPageviews]: "Total views",
+	[Key.umamiVisits]: "Visits",
+	[Key.umamiVisitors]: "Visitors",
 	[Key.sponsorButton]: "Support & Share",
 	[Key.sponsorButtonText]:
 		"If this article helped you, please share or support!",
@@ -328,6 +334,7 @@ export const en: Translation = {
 	[Key.generatingPoster]: "Generating Poster...",
 	[Key.copied]: "Copied",
 	[Key.copyLink]: "Copy Link",
+	[Key.codeCopyTooltip]: "Copy to clipboard",
 	[Key.savePoster]: "Save Poster",
 	[Key.scanToRead]: "Scan to Read",
 
