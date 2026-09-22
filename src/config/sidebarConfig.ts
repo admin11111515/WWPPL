@@ -171,7 +171,8 @@ export const sidebarLayoutConfig: SidebarLayoutConfig = {
 			specificConfig: {
 				siteInfo: {
 					// 未能识别的构建平台回退显示文本，可自定义
-					unknownBuildPlatform: "EdgeOne",
+					// 本站部署在 Cloudflare Pages，识别不出来时按实际平台显示
+					unknownBuildPlatform: "Cloudflare Pages",
 				},
 			},
 		},
@@ -338,7 +339,8 @@ export const sidebarLayoutConfig: SidebarLayoutConfig = {
 			specificConfig: {
 				siteInfo: {
 					// 未能识别的构建平台回退显示文本，可自定义
-					unknownBuildPlatform: "EdgeOne",
+					// 本站部署在 Cloudflare Pages，识别不出来时按实际平台显示
+					unknownBuildPlatform: "Cloudflare Pages",
 				},
 			},
 		},
