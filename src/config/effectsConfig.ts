@@ -4,7 +4,9 @@ import type { SakuraConfig } from "../types/effectsConfig";
 
 export const sakuraConfig: SakuraConfig = {
 	// 是否启用樱花特效
-	enable: false,
+	// 默认开启；switchable 为 true，访客仍可在「显示设置」里自行关闭。
+	// 只影响视觉、不阻塞内容渲染，移动端由组件内部按性能策略降级。
+	enable: true,
 
 	// 是否允许用户在设置中切换
 	switchable: true,
