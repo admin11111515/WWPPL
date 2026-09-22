@@ -6,7 +6,22 @@ import Comment from "@/components/comment/index.astro";
 import MomentCard from "@/components/moments/MomentCard.astro";
 import MomentsCover from "@/components/moments/MomentsCover.astro";
 import { externalMomentsConfig } from "@/config/externalMomentsConfig";
+import { commentConfig } from "@/config/commentConfig";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
+
+// 访客浏览数只有特定评论系统才提供，而且各自的元素选择器不同。
+// 原先这里写死了 Waline 的计数位，而本站评论用的是 giscus ——
+// 结果每位访客看到的都是一个永远填不上的「- 次浏览」。
+const pageViewTarget: { className: string; id?: string } | null =
+	commentConfig.type === "twikoo" && commentConfig.twikoo?.visitorCount
+		? { className: "text-50 text-sm font-medium", id: "twikoo_visitors" }
+		: commentConfig.type === "waline" && commentConfig.waline?.visitorCount
+			? { className: "waline-pageview-count text-50 text-sm font-medium" }
+			: commentConfig.type === "artalk" && commentConfig.artalk?.visitorCount
+				? { className: "artalk-pv-count text-50 text-sm font-medium" }
+				: null;
 
 const moments = await getCollection("moments");
 const sortedMoments = moments
@@ -125,12 +140,14 @@ const pinnedData = pinnedMoments.map((m) => ({
     <Comment customPath="/moments/" />
   </div>
 
-  <!-- 访客统计 -->
-  <div class="wx-visitor">
-    <Icon name="material-symbols:visibility-outline" class="wx-visitor-icon" />
-    <span class="waline-count" data-path="/moments/">-</span>
-    <span>次浏览</span>
-  </div>
+  <!-- 访客统计：只有真的能提供浏览数的评论系统才显示这一块 -->
+  {pageViewTarget && (
+    <div class="wx-visitor">
+      <Icon name="material-symbols:visibility-outline" class="wx-visitor-icon" />
+      <span>{i18n(I18nKey.pageViews)}</span>
+      <span class={pageViewTarget.className} id={pageViewTarget.id} data-path="/moments/">-</span>
+    </div>
+  )}
 
   <!-- 外部朋友圈数据获取配置 -->
   {externalMomentsConfig.enable && externalMomentsConfig.gistId && (
