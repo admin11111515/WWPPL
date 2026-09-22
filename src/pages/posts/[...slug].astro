@@ -108,22 +108,76 @@ if (posterAvatarUrl) {
 
 dayjs.extend(utc);
 
+// 文章的规范地址。站点启用 trailingSlash: 'always'，此处保持一致的结尾斜杠，
+// 与 Layout 中 canonical / og:url 的写法对齐。
+const postUrl = new URL(`/posts/${entry.id}/`, Astro.site).toString();
+
+// 分享配图地址，与 Layout 中 og:image 的推导保持一致（同为 /og/<entry.id>.png）
+const ogImageUrl = siteConfig.post.generateOgImages
+	? new URL(`/og/${entry.id}.png`, Astro.site).toString()
+	: undefined;
+
 const jsonLd = {
 	"@context": "https://schema.org",
 	"@type": "BlogPosting",
+	"@id": `${postUrl}#article`,
 	headline: entry.data.title,
 	description: entry.data.description || entry.data.title,
 	keywords: entry.data.tags,
+	url: postUrl,
+	mainEntityOfPage: { "@type": "WebPage", "@id": postUrl },
 	author: {
 		"@type": "Person",
 		name: profileConfig.name,
 		url: Astro.site,
 	},
+	publisher: {
+		"@type": "Person",
+		name: profileConfig.name,
+		url: Astro.site,
+	},
+	// 有分享配图时才带上，避免输出不确定的字段
+	image: ogImageUrl ? [ogImageUrl] : undefined,
 	datePublished: formatDateToYYYYMMDD(entry.data.published),
+	// updated 为可选字段，未填写时回落到发布日期
+	dateModified: formatDateToYYYYMMDD(entry.data.updated || entry.data.published),
 	inLanguage: entry.data.lang
 		? entry.data.lang.replace("_", "-")
 		: siteConfig.lang.replace("_", "-"),
-	// TODO include cover image here
+};
+
+// 面包屑结构化数据：首页 → 分类 → 文章。影响搜索结果里展示的路径层级。
+// 无分类的文章只输出两级，position 相应前移。
+const breadcrumbLd = {
+	"@context": "https://schema.org",
+	"@type": "BreadcrumbList",
+	itemListElement: [
+		{
+			"@type": "ListItem",
+			position: 1,
+			name: i18n(I18nKey.home),
+			item: new URL("/", Astro.site).toString(),
+		},
+		...(entry.data.category
+			? [
+					{
+						"@type": "ListItem",
+						position: 2,
+						name: entry.data.category,
+						item: new URL(
+							`/categories/${entry.data.category}/`,
+							Astro.site,
+						).toString(),
+					},
+				]
+			: []),
+		{
+			"@type": "ListItem",
+			position: entry.data.category ? 3 : 2,
+			name: entry.data.title,
+			item: postUrl,
+		},
+	],
 };
 
 const relatedPosts = await getRelatedPosts(entry, 5);
@@ -148,6 +202,12 @@ const relatedPosts = await getRelatedPosts(entry, 5);
     slot="head"
     type="application/ld+json"
     set:html={JSON.stringify(jsonLd)}
+  />
+  <script
+    is:inline
+    slot="head"
+    type="application/ld+json"
+    set:html={JSON.stringify(breadcrumbLd)}
   />
   <div
     class="flex w-full rounded-(--radius-large) overflow-hidden relative mb-4"

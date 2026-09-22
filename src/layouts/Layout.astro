@@ -161,6 +161,37 @@ const siteLang = lang.replace("_", "-");
 
     <meta name="viewport" content="width=device-width" />
     <meta name="generator" content={Astro.generator} />
+
+    {/* 规范链接：声明本页面的唯一地址。站点启用了 trailingSlash: 'always'，
+        分页页与文章页都以自身路径为准（自引用 canonical），避免同一内容
+        被多个地址收录。旧 /blog/ 路径另由 public/_redirects 做 301。 */}
+    <link
+      rel="canonical"
+      href={new URL(Astro.url.pathname, Astro.site).toString()}
+    />
+
+    {/* 站点级结构化数据：帮助搜索引擎识别站点名称、语言与所属者。
+        未加 potentialAction/SearchAction —— 站内搜索是 Pagefind 纯客户端实现，
+        没有可用的查询参数 URL，写了反而会给搜索引擎一个不存在的搜索地址。 */}
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "@id": `${siteConfig.site_url}/#website`,
+        name: siteConfig.title,
+        alternateName: siteConfig.subtitle,
+        url: new URL("/", Astro.site).toString(),
+        description: siteConfig.description,
+        inLanguage: siteConfig.lang.replace("_", "-"),
+        publisher: {
+          "@type": "Person",
+          name: profileConfig.name,
+          url: new URL("/", Astro.site).toString(),
+        },
+      })}
+    />
     {
       favicons.map((favicon) => (
         <link
