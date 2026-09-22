@@ -3,6 +3,10 @@ export type { AnnouncementConfig } from "./announcementConfig";
 export type { BackgroundWallpaperConfig } from "./backgroundWallpaper";
 export type { CommentConfig } from "./commentConfig";
 export type { CoverImageConfig } from "./coverImageConfig";
+export type {
+	GeneratedCoverConfig,
+	GeneratedCoverPalette,
+} from "./generatedCover";
 export type { SakuraConfig } from "./effectsConfig";
 export type {
 	ExpressiveCodeConfig,

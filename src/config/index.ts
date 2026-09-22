@@ -35,6 +35,7 @@ export { backgroundWallpaper } from "./backgroundWallpaper"; // 背景壁纸配�
 // 功能配置
 export { commentConfig } from "./commentConfig"; // 评论系统配置
 export { coverImageConfig } from "./coverImageConfig"; // 封面图配置
+export { generatedCoverConfig } from "./generatedCoverConfig"; // 封面（本地生成）配置
 export { sakuraConfig } from "./effectsConfig"; // 动画特效配置（樱花等）
 export { expressiveCodeConfig } from "./expressiveCodeConfig"; // 代码高亮配置
 export { fontConfig } from "./fontConfig"; // 字体配置

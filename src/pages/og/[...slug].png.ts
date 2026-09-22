@@ -3,6 +3,7 @@ import { getCollection } from "astro:content";
 import * as fs from "node:fs";
 import type { APIContext, GetStaticPaths } from "astro";
 import satori from "satori";
+import subsetFont from "subset-font";
 import { removeFileExtension } from "@/utils/url-utils";
 
 import { profileConfig } from "../../config/profileConfig";
@@ -40,57 +41,75 @@ export const getStaticPaths: GetStaticPaths = async () => {
 
 let fontCache: { regular: Buffer | null; bold: Buffer | null } | null = null;
 
-async function fetchNotoSansSCFonts() {
+/**
+ * 分享配图用的字体
+ *
+ * 原实现是从 Google Fonts 下载：先取 CSS，再按 CSS 里的地址下载字体文件。
+ * 这条链路有两个问题：
+ * 1. fonts.gstatic.com 在国内网络下经常连不上，一旦失败，原代码会把字体置空，
+ *    而 satori 只要零个字体就直接抛 "No fonts are loaded"，整个构建当场中断；
+ * 2. Node 默认请求头拿到的 CSS 指向的是完整版 TTF（两个字重约 20 MB），
+ *    每次构建都要重新下载。
+ *
+ * 现在改为直接用仓库里自带的字体（与站内正文同款）：本地读取 + 裁到用得到的字符。
+ * satori 只认 ttf/otf、读不了 woff2，所以裁剪时顺便把格式转成 truetype。
+ * 实测 9.3 MB 的 woff2 裁完约 40 KB，构建不再需要外网，也快得多。
+ */
+const LOCAL_FONT_FILE = "./public/fonts/Chikushi-A-maru.woff2";
+
+/** 配图上的字体名，需与模板里的 font-family 一致 */
+const OG_FONT_FAMILY = "Chikushi A Rd Gothic";
+
+/** 固定文案的字符池：标点、日期用字、西文与数字，避免动态文案缺字形 */
+const FIXED_CHARS = [
+	"\u3001\u3002\uff0c\uff1a\uff1b\uff01\uff1f\uff08\uff09\u300a\u300b\u300c\u300d\u2014\u2026\u00b7\u5e74\u6708\u65e5\u5468",
+	"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
+	"~!@#$%^&*()-_=+[]{}\\|;:'\",.<>/? ",
+].join("");
+
+/** 收集配图上会画到的所有字符：站名、作者、以及每篇文章的标题与摘要 */
+async function collectOgChars(): Promise<string> {
+	const set = new Set(FIXED_CHARS);
+	const add = (value?: string | null) => {
+		if (!value) return;
+		for (const ch of value) set.add(ch);
+	};
+
+	add(siteConfig.title);
+	add(siteConfig.description);
+	add(profileConfig.name);
+
+	for (const post of await getCollection("posts")) {
+		add(post.data.title);
+		add(post.data.description);
+		add(post.data.category);
+		for (const tag of post.data.tags ?? []) add(tag);
+	}
+
+	return [...set].join("");
+}
+
+async function loadOgFonts() {
 	if (fontCache) return fontCache;
+
 	try {
-		const cssResp = await fetch(
-			"https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap",
+		if (!fs.existsSync(LOCAL_FONT_FILE)) {
+			throw new Error(`找不到字体文件 ${LOCAL_FONT_FILE}`);
+		}
+
+		const raw = fs.readFileSync(LOCAL_FONT_FILE);
+		const chars = await collectOgChars();
+		const ttf = await subsetFont(raw, chars, { targetFormat: "truetype" });
+
+		console.log(
+			`[og] 字体：${LOCAL_FONT_FILE} 裁到 ${(ttf.length / 1024).toFixed(1)} KB（${chars.length} 个字符）`,
 		);
-		if (!cssResp.ok) throw new Error("Failed to fetch Google Fonts CSS");
-		const cssText = await cssResp.text();
-
-		const getUrlForWeight = (weight: number) => {
-			const blockRe = new RegExp(
-				`@font-face\\s*{[^}]*font-weight:\\s*${weight}[^}]*}`,
-				"g",
-			);
-			const match = cssText.match(blockRe);
-			if (!match || match.length === 0) return null;
-			const urlMatch = match[0].match(/url\((https:[^)]+)\)/);
-			return urlMatch ? urlMatch[1] : null;
-		};
-
-		const regularUrl = getUrlForWeight(400);
-		const boldUrl = getUrlForWeight(700);
-
-		if (!regularUrl || !boldUrl) {
-			console.warn(
-				"Could not find font urls in Google Fonts CSS; falling back to no fonts.",
-			);
-			fontCache = { regular: null, bold: null };
-			return { regular: null, bold: null };
-		}
-
-		const [rResp, bResp] = await Promise.all([
-			fetch(regularUrl),
-			fetch(boldUrl),
-		]);
-		if (!rResp.ok || !bResp.ok) {
-			console.warn(
-				"Failed to download font files from Google; falling back to no fonts.",
-			);
-			fontCache = { regular: null, bold: null };
-			return { regular: null, bold: null };
-		}
-
-		const rBuf = Buffer.from(await rResp.arrayBuffer());
-		const bBuf = Buffer.from(await bResp.arrayBuffer());
-		fontCache = { regular: rBuf, bold: bBuf };
+		fontCache = { regular: ttf, bold: ttf };
 		return fontCache;
 	} catch (err) {
-		console.warn("Error fetching fonts:", err);
+		console.warn("[og] 本地字体处理失败，分享配图将无法生成：", err);
 		fontCache = { regular: null, bold: null };
-		return { regular: null, bold: null };
+		return fontCache;
 	}
 }
 
@@ -100,7 +119,7 @@ export async function GET({
 	const { post } = props;
 
 	// Try to fetch fonts from Google Fonts (woff2) at runtime.
-	const { regular: fontRegular, bold: fontBold } = await fetchNotoSansSCFonts();
+	const { regular: fontRegular, bold: fontBold } = await loadOgFonts();
 
 	// Avatar + icon: still read from disk (small assets)
 	let avatarBase64: string;
@@ -150,7 +169,7 @@ export async function GET({
 				flexDirection: "column",
 				backgroundColor: backgroundColor,
 				fontFamily:
-					'"Noto Sans SC", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+					`"${OG_FONT_FAMILY}", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif`,
 				padding: "60px",
 			},
 			children: [
@@ -321,7 +340,7 @@ export async function GET({
 	const fonts: FontOptions[] = [];
 	if (fontRegular) {
 		fonts.push({
-			name: "Noto Sans SC",
+			name: OG_FONT_FAMILY,
 			data: fontRegular,
 			weight: 400,
 			style: "normal",
@@ -329,7 +348,7 @@ export async function GET({
 	}
 	if (fontBold) {
 		fonts.push({
-			name: "Noto Sans SC",
+			name: OG_FONT_FAMILY,
 			data: fontBold,
 			weight: 700,
 			style: "normal",

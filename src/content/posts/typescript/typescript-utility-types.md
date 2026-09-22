@@ -4,7 +4,7 @@ published: 2026-06-25
 tags: ["TypeScript", "工具类型", "前端"]
 category: "TypeScript"
 description: "深入介绍 TypeScript 内置的工具类型，让你的代码更简洁、更安全。"
-image: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800"
+image: "auto"
 ---
 
 ## 前言

@@ -1,0 +1,95 @@
+---
+import {
+	buildGeneratedCoverSvg,
+	getGeneratedCoverParams,
+} from "@/utils/generated-cover";
+
+/**
+ * 按文章生成的封面。
+ * 底色由分类决定，纹样由文章标识算出的哈希决定；内容与尺寸都在构建时算好，
+ * 不请求任何外部图片，因此不会出现"转圈等待"或"每次刷新换一张"。
+ *
+ * 分两层：底层是铺满裁切的画布（底色 + 纹样 + 圆环），文字另外放在一层里。
+ * 列表模式下封面会被压成很窄的竖条，画在画布里的字会被裁掉，
+ * 所以文字层不裁切，字号按容器尺寸算（见下方样式），无论多窄都不会缺笔画。
+ */
+interface Props {
+	title?: string;
+	category?: string | null;
+	tags?: string[];
+	/** 文章标识，用于让同一页里多个封面的纹样各不相同 */
+	seed?: string;
+	id?: string;
+	class?: string;
+}
+
+const { title = "", category = null, tags = [], seed = "", id } = Astro.props;
+
+const params = getGeneratedCoverParams({ title, category, tags, seed });
+const canvas = buildGeneratedCoverSvg(params);
+---
+
+<div
+	id={id}
+	class:list={[Astro.props.class, "generated-cover select-none"]}
+	aria-hidden="true"
+>
+	<div class="generated-cover-canvas" set:html={canvas} />
+	<div class="generated-cover-text" style={`--gc-ink:${params.ink}`}>
+		{
+			params.overline && (
+				<span
+					class="generated-cover-overline"
+					style={`font-size:${params.overlineFontExpr}`}
+				>
+					{params.overline}
+				</span>
+			)
+		}
+		<span class="generated-cover-label" style={`font-size:${params.labelFontExpr}`}>
+			{params.labelLines.map((line) => <span>{line}</span>)}
+		</span>
+	</div>
+</div>
+
+<style>
+	.generated-cover {
+		display: block;
+		position: relative;
+		overflow: hidden;
+		/* 让下面 cqw / cqh 两个单位跟着封面自己的尺寸走 */
+		container-type: size;
+	}
+
+	.generated-cover-canvas {
+		position: absolute;
+		inset: 0;
+	}
+
+	.generated-cover-text {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 2.2cqh;
+		text-align: center;
+		color: var(--gc-ink, #22222a);
+		font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+		line-height: 1.16;
+	}
+
+	.generated-cover-label {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		font-weight: 500;
+		letter-spacing: 0.04em;
+	}
+
+	.generated-cover-overline {
+		letter-spacing: 0.15em;
+		opacity: 0.62;
+	}
+</style>

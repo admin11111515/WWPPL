@@ -3,11 +3,13 @@ import type { CollectionEntry } from "astro:content";
 import { render } from "astro:content";
 import { Icon } from "astro-icon/components";
 import CoverImage from "@/components/common/CoverImage.astro";
+import GeneratedCover from "@/components/common/GeneratedCover.astro";
 import PostMetadata from "@/components/layout/PostMeta.astro";
 import { siteConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
-import { getApiUrlList, processCoverImageSync } from "@/utils/image-utils";
+import { isGeneratedCover } from "@/utils/generated-cover";
+import { processCoverImageSync } from "@/utils/image-utils";
 import { getFileDirFromPath, getTagUrl } from "@/utils/url-utils";
 
 interface Props {
@@ -43,13 +45,10 @@ const {
 } = Astro.props;
 const className = Astro.props.class;
 
-// 处理随机图：如果image为"api"，则从配置的API获取随机图
-const processedImage = processCoverImageSync(image, entry.id);
-const apiUrls = getApiUrlList(image, entry.id);
-const hasCover =
-	processedImage !== undefined &&
-	processedImage !== null &&
-	processedImage !== "";
+// 封面分两种：按文章本地生成，或用 frontmatter 里给的图片
+const usesGeneratedCover = isGeneratedCover(image);
+const processedImage = processCoverImageSync(image);
+const hasCover = usesGeneratedCover || processedImage !== "";
 
 const coverWidth = "30%";
 
@@ -174,15 +173,24 @@ const descriptionText = description || remarkPluginFrontmatter.excerpt || "";
             class="transition opacity-0 group-hover:opacity-100 scale-50 group-hover:scale-100 text-white text-5xl"
           />
         </div>
-        <CoverImage
-          src={processedImage}
-          basePath={getFileDirFromPath(entry.filePath || "")}
-          alt="Cover Image of the Post"
-          class="w-full h-full transition-transform duration-300 group-hover:scale-110 group-active:scale-115"
-          preview={true}
-          loading={loading}
-          apiUrls={apiUrls}
-        />
+        {usesGeneratedCover ? (
+          <GeneratedCover
+            title={title}
+            category={category}
+            tags={tags}
+            seed={entry.id}
+            class="w-full h-full transition-transform duration-300 group-hover:scale-110 group-active:scale-115"
+          />
+        ) : (
+          <CoverImage
+            src={processedImage}
+            basePath={getFileDirFromPath(entry.filePath || "")}
+            alt="Cover Image of the Post"
+            class="w-full h-full transition-transform duration-300 group-hover:scale-110 group-active:scale-115"
+            preview={true}
+            loading={loading}
+          />
+        )}
       </a>
     )
   }

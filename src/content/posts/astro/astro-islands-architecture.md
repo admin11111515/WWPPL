@@ -4,7 +4,7 @@ published: 2026-07-05
 tags: ["Astro", "前端", "性能优化"]
 category: "Astro"
 description: "深入理解 Astro 的 Islands 架构，以及它如何让你的网站在保持交互性的同时实现极致的加载速度。"
-image: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800"
+image: "auto"
 ---
 
 ## 什么是 Islands 架构？

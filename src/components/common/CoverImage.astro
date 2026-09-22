@@ -24,7 +24,6 @@ interface Props {
 	layout?: ResponsiveImageLayout;
 	formats?: ImageFormat[];
 	loading?: "lazy" | "eager";
-	apiUrls?: string[];
 }
 
 const {
@@ -37,7 +36,6 @@ const {
 	layout = "constrained",
 	formats = getImageFormats(),
 	loading = "lazy",
-	apiUrls = [],
 } = Astro.props;
 
 const configQuality = getImageQuality();
@@ -77,7 +75,7 @@ if (isLocal) {
 
 // 加载回退图片
 let fallbackImg: ImageMetadata | null = null;
-const fallbackPath = coverImageConfig.randomCoverImage.fallback;
+const fallbackPath = coverImageConfig.fallback;
 const isFallbackPublic = fallbackPath?.startsWith("/");
 if (fallbackPath && !isLocal && !isFallbackPublic) {
 	const files = import.meta.glob<ImageMetadata>(
@@ -123,7 +121,7 @@ const getPictureSizeProps = (image: ImageMetadata) => {
 };
 
 // 是否显示加载动画
-const showLoading = coverImageConfig.randomCoverImage.showLoading ?? true;
+const showLoading = coverImageConfig.showLoading ?? true;
 
 // 检查回退图片是否需要 referrerpolicy
 const fallbackReferrerPolicy =
@@ -142,7 +140,6 @@ const remoteReferrerPolicy =
 	id={id}
 	class:list={[className, "cover-image-container overflow-hidden relative"]}
 	data-loading={showLoading ? "true" : "false"}
-	data-api-urls={apiUrls.length > 0 ? JSON.stringify(apiUrls) : undefined}
 >
 	<!-- LQIP 渐变占位 -->
 	<div class="lqip-placeholder absolute inset-0 pointer-events-none" style={lqipProps.style} aria-hidden="true"></div>
@@ -298,14 +295,6 @@ const remoteReferrerPolicy =
 			const img = container.querySelector('img[data-cover-img]') as HTMLImageElement | null;
 			if (!img) return;
 
-			// 解析API URL列表，用于按顺序重试
-			let apiUrls: string[] = [];
-			let currentApiIndex = 1; // 0号已由服务端设为img.src
-			const apiUrlsAttr = container.getAttribute('data-api-urls');
-			if (apiUrlsAttr) {
-				try { apiUrls = JSON.parse(apiUrlsAttr); } catch (_e) { /* ignore */ }
-			}
-
 			const hideLoading = () => {
 				container.setAttribute('data-loading', 'false');
 				img.style.opacity = '1';
@@ -320,17 +309,9 @@ const remoteReferrerPolicy =
 				if (placeholder) placeholder.classList.add('loaded');
 			};
 
-			// 统一的错误处理：尝试下一个API或显示回退
+			// 远程图片加载失败：换成回退图并给出提示
 			const onError = () => {
-				if (img.dataset.remote !== 'true') return;
-
-				if (currentApiIndex < apiUrls.length) {
-					// 先绑定好事件，再更换src
-					img.addEventListener('load', hideLoading, { once: true });
-					img.addEventListener('error', onError, { once: true });
-					img.src = apiUrls[currentApiIndex];
-					currentApiIndex++;
-				} else {
+				if (img.dataset.remote === 'true') {
 					showError();
 				}
 			};

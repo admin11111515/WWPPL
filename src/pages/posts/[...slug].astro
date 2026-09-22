@@ -19,6 +19,7 @@ import { Icon } from "astro-icon/components";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import CoverImage from "@/components/common/CoverImage.astro";
+import GeneratedCover from "@/components/common/GeneratedCover.astro";
 import PostMetadata from "@/components/layout/PostMeta.astro";
 import RecommendedPost from "@/components/misc/RecommendedPost.astro";
 import SharePoster from "@/components/misc/SharePoster.svelte";
@@ -28,7 +29,12 @@ import { profileConfig } from "@/config/profileConfig";
 import { siteConfig } from "@/config/siteConfig";
 import { sponsorConfig } from "@/config/sponsorConfig";
 import { formatDateToYYYYMMDD } from "@/utils/date-utils";
-import { getApiUrlList, processCoverImageSync } from "@/utils/image-utils";
+import {
+	buildGeneratedCoverDataUri,
+	getGeneratedCoverParams,
+	isGeneratedCover,
+} from "@/utils/generated-cover";
+import { processCoverImageSync } from "@/utils/image-utils";
 import { url } from "@/utils/url-utils";
 
 export async function getStaticPaths() {
@@ -54,11 +60,26 @@ const bannerPostMeta = {
 	minutes: remarkPluginFrontmatter.minutes,
 };
 
-// 处理随机图：如果image为"api"，则从配置的API获取随机图
-const processedImage = processCoverImageSync(entry.data.image, entry.id);
-const apiUrls = getApiUrlList(entry.data.image, entry.id);
+// 封面分两种：按文章本地生成，或用 frontmatter 里给的图片
+const usesGeneratedCover = isGeneratedCover(entry.data.image);
+const generatedCoverParams = usesGeneratedCover
+	? getGeneratedCoverParams({
+			title: entry.data.title,
+			category: entry.data.category,
+			tags: entry.data.tags,
+			seed: entry.id,
+		})
+	: null;
+const processedImage = usesGeneratedCover
+	? ""
+	: processCoverImageSync(entry.data.image);
+const hasPostCover = usesGeneratedCover || processedImage !== "";
 
 let posterCoverUrl = processedImage;
+if (generatedCoverParams) {
+	// 分享海报用同一张封面（转成 data URI 交给 canvas 画）
+	posterCoverUrl = buildGeneratedCoverDataUri(generatedCoverParams);
+}
 if (processedImage) {
 	const isLocal = !(
 		processedImage.startsWith("/") ||
@@ -293,7 +314,7 @@ const relatedPosts = await getRelatedPosts(entry, 5);
           id={entry.id}
         />
         {
-          !processedImage && (
+          !hasPostCover && (
             <div class="border-(--line-divider) border-dashed border-b mt-3 mb-5" />
           )
         }
@@ -302,16 +323,28 @@ const relatedPosts = await getRelatedPosts(entry, 5);
       <!-- always show cover as long as it has one -->
 
       {
-        processedImage && coverImageConfig.enableInPost && (
+        hasPostCover && coverImageConfig.enableInPost && (
           <div style="margin-top:1rem;">
-            <CoverImage
-              id="post-cover"
-              src={processedImage}
-              basePath={getFileDirFromPath(entry.filePath || '')}
-              class="mb-8 rounded-xl banner-container onload-animation"
-              preview={false}
-              apiUrls={apiUrls}
-            />
+            {generatedCoverParams ? (
+              <div class="mb-8 rounded-xl overflow-hidden aspect-2/1 banner-container onload-animation">
+                <GeneratedCover
+                  id="post-cover"
+                  title={entry.data.title}
+                  category={entry.data.category}
+                  tags={entry.data.tags}
+                  seed={entry.id}
+                  class="w-full h-full"
+                />
+              </div>
+            ) : (
+              <CoverImage
+                id="post-cover"
+                src={processedImage}
+                basePath={getFileDirFromPath(entry.filePath || '')}
+                class="mb-8 rounded-xl banner-container onload-animation"
+                preview={false}
+              />
+            )}
           </div>
         )
       }

@@ -4,7 +4,7 @@ published: 2026-06-22
 tags: ["CSS", "变量", "主题"]
 category: "CSS"
 description: "深入理解 CSS Custom Properties（CSS 变量）的高级用法，以及它如何让你的样式系统更灵活。"
-image: "https://images.unsplash.com/photo-1523437113738-bbd3cc89fb19?w=800"
+image: "auto"
 ---
 
 ## 前言

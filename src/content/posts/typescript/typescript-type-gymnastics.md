@@ -4,7 +4,7 @@ published: 2026-07-03
 tags: ["TypeScript", "类型系统", "前端"]
 category: "TypeScript"
 description: "分享几个实用的 TypeScript 高级类型技巧，让你的代码更安全、更优雅。"
-image: "https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=800"
+image: "auto"
 ---
 
 ## 前言
