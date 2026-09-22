@@ -18,10 +18,14 @@ const pageViewTarget: { className: string; id?: string } | null =
 	commentConfig.type === "twikoo" && commentConfig.twikoo?.visitorCount
 		? { className: "text-50 text-sm font-medium", id: "twikoo_visitors" }
 		: commentConfig.type === "waline" && commentConfig.waline?.visitorCount
-			? { className: "waline-pageview-count text-50 text-sm font-medium" }
+			? { className: "waline-count text-50 text-sm font-medium" }
 			: commentConfig.type === "artalk" && commentConfig.artalk?.visitorCount
 				? { className: "artalk-pv-count text-50 text-sm font-medium" }
 				: null;
+
+// 动态页原有的取数脚本是 Waline 专用的（指向一个第三方统计接口），
+// 只在真的走 Waline 浏览数时才下发；否则它是一段永远匹配不到元素的死代码。
+const usesWalinePageViews = pageViewTarget?.className.includes("waline-count") ?? false;
 
 const moments = await getCollection("moments");
 const sortedMoments = moments
@@ -165,6 +169,7 @@ const pinnedData = pinnedMoments.map((m) => ({
   import "@/data/moments.ts";
 </script>
 
+{usesWalinePageViews && (
 <script is:inline>
   var countElements = document.querySelectorAll('.waline-count[data-path="/moments/"]');
   if (countElements.length > 0) {
@@ -180,7 +185,7 @@ const pinnedData = pinnedMoments.map((m) => ({
       });
   }
 </script>
-
+)}
 
 <style>
   /* 置顶块样式在底部 <style is:global> 中，
