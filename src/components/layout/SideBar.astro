@@ -1,13 +1,11 @@
 ---
 import type { MarkdownHeading } from "astro";
-import Advertisement from "@/components/widget/Advertisement.astro";
 import Announcement from "@/components/widget/Announcement.astro";
 import Calendar from "@/components/widget/Calendar.astro";
 import Categories from "@/components/widget/Categories.astro";
 import Music from "@/components/widget/Music.astro";
 import Profile from "@/components/widget/Profile.astro";
 import QuoteOfTheDay from "@/components/widget/QuoteOfTheDay.astro"; // 引入今日一言组件
-import RelationshipTimer from "@/components/widget/RelationshipTimer.astro"; // 引入恋爱计时组件
 import Schedule from "@/components/widget/Schedule.astro";
 import SidebarTOC from "@/components/widget/SidebarTOC.astro";
 import SiteInfo from "@/components/widget/SiteInfo.astro";
@@ -52,13 +50,11 @@ const componentMap = {
 	categories: Categories,
 	tags: Tags,
 	sidebarToc: SidebarTOC,
-	advertisement: Advertisement,
 	stats: SiteStats,
 	calendar: Calendar,
 	music: Music,
 	siteInfo: SiteInfo,
 	schedule: Schedule,
-	relationship: RelationshipTimer,
 	quoteOfTheDay: QuoteOfTheDay,
 	timeGreeting: TimeGreeting,
 	umamiStats: UmamiStats,
