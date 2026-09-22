@@ -181,7 +181,9 @@ export const siteConfig: SiteConfig = {
 		// 是否开启分享海报生成功能
 		sharePoster: true,
 		// OpenGraph图片功能，注意开启后要渲染很长时间，不建议本地调试的时候开启
-		generateOgImages: false,
+		// 开启后每篇文章构建时用 satori 生成一张分享卡片图，社交平台转发时显示配图。
+		// 构建耗时随文章数线性增长：文章很少时影响可忽略，文章上百篇后需重新评估。
+		generateOgImages: true,
 	},
 
 	// bangumi配置
