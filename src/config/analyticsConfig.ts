@@ -9,6 +9,10 @@ export const analyticsConfig: AnalyticsConfig = {
 	umamiAnalytics: {
 		// Umami Website ID
 		websiteId: "",
+		// Umami 公开分享链接，形如 https://cloud.umami.is/share/xxxxxxxx
+		// 侧边栏的统计组件靠它读取总浏览量 / 访问数 / 游客数。
+		// 留空则该组件不显示 —— 宁可不显示，也不摆出没有来源的数字。
+		shareUrl: "",
 		// Umami JS地址，支持使用自建
 		scriptUrl: "https://cloud.umami.is/script.js",
 		// Umami 会话回放脚本地址，支持使用自建
