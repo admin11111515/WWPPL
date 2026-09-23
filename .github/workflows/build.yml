@@ -1,10 +1,21 @@
-name: Build and Check
+name: Build
+
+# 这个工作流的意义：把「构建到底能不能过」变成一个能看到日志的问题。
+#
+# 站点部署在 Cloudflare，构建也在那边跑；可一旦那边构建失败，日志只存在于
+# Cloudflare 控制台里，从仓库这边查不到任何原因（GitHub 只回写一个 Build ID）。
+# 这个工作流用同样的命令在 GitHub 上跑一遍：过了，说明失败是 Cloudflare 环境
+# 的问题；没过，日志就在 Actions 页面里，能直接定位。
+#
+# 注意触发分支：模板原来写的是 master，本仓库的主分支是 main，
+# 所以这个工作流此前从未触发过 —— 下面已改成 main。
 
 on:
   push:
-    branches: [ master ] # Adjust branches as needed
+    branches: [main]
   pull_request:
-    branches: [ master ] # Adjust branches as needed
+    branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -14,54 +25,77 @@ permissions:
   contents: read
 
 jobs:
-  check:
-    strategy:
-      matrix:
-        node: [ 22, 23 ]
-    runs-on: ubuntu-latest
-    name: Astro Check for Node.js ${{ matrix.node }}
-    steps:
-      - name: Setup Node.js
-        uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.3.0
-        with:
-          node-version: ${{ matrix.node }} # Use LTS
-
-      - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
-        with:
-          run_install: false # Disable auto-install
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Run Astro Check
-        run: pnpm astro check
-
   build:
-    strategy:
-      matrix:
-        node: [ 22, 23 ]
     runs-on: ubuntu-latest
-    name: Astro Build for Node.js ${{ matrix.node }} # Corrected job name
+    name: 完整构建（与 Cloudflare 同一条命令）
     steps:
-      - name: Setup Node.js
-        uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.3.0
-        with:
-          node-version: ${{ matrix.node }}
-
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup pnpm
         uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
         with:
-          run_install: false # Disable auto-install
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.3.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      # 环境信息先落地：构建失败时，第一件想知道的事就是「这里是哪个版本」
+      - name: 打印环境信息
+        run: |
+          echo "node    $(node -v)"
+          echo "pnpm    $(pnpm -v)"
+          echo "runner  ${{ runner.os }} ${{ runner.arch }}"
+          echo "ua      ${npm_config_user_agent:-未设置}"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run Astro Build
-        run: pnpm astro build
+      # 与 Cloudflare 侧一致：跑 package.json 里完整的 build 链条，
+      # 而不是只跑 astro build（那样会漏掉字体子集化、搜索索引、LQIP）
+      - name: Build
+        run: pnpm build
+
+      # 产物体检：这几个文件缺了，站点的 SEO / PWA / 缓存就会出问题
+      - name: 检查关键产物
+        run: |
+          set -e
+          for f in dist/index.html dist/robots.txt dist/sitemap-index.xml \
+                   dist/manifest.webmanifest dist/_headers dist/sw.js dist/rss.xml \
+                   dist/assets/avatar.png; do
+            if [ -f "$f" ]; then
+              echo "✓ $f"
+            else
+              echo "✗ 缺少产物 $f"
+              exit 1
+            fi
+          done
+          echo "产物总体积 $(du -sh dist | cut -f1)"
+
+  check:
+    runs-on: ubuntu-latest
+    name: 类型检查（仅供参考，不阻断）
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.3.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Astro Check
+        run: pnpm astro check
