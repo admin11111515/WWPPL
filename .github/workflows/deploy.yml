@@ -1,10 +1,11 @@
 name: Deploy to GitHub Pages (manual only)
 
-# ⚠️ 部署通道说明（2026-09-21 调整）
-# 本项目正式部署目标是 Cloudflare Pages（配置见仓库根 wrangler.jsonc）。
-# 本工作流部署到 GitHub Pages，而 GitHub Pages 是纯静态托管、不支持 functions/，
-# 后台接口会 404，因此不再作为默认通道自动触发。
-# 如需临时用 GitHub Pages 预览，请在 Actions 页面手动 Run workflow。
+# ⚠️ 部署通道说明
+# 本项目正式部署目标是一个名为 firefly 的 Cloudflare Worker（Worker + 静态资源形态，
+# 配置见仓库根 wrangler.jsonc），由 Cloudflare 自己在推送 main 后构建部署，不经过本工作流。
+# 本工作流部署到 GitHub Pages，而 GitHub Pages 是纯静态托管、不支持后台接口，
+# 且真正提供 /api/* 能力的是 Worker 入口 worker/index.js，GitHub Pages 上必然 404，
+# 因此本工作流不自动触发。如需临时用 GitHub Pages 预览纯静态页面，请手动 Run workflow。
 on:
   workflow_dispatch:
 

@@ -127,8 +127,8 @@
 
 ### 部署
 
-本站部署在 **Cloudflare Pages**：纯静态产物 `dist/` + 仓库根 `functions/` 作为 Pages Functions。
-完整操作步骤（构建配置、三个必需环境变量、后台登录）见 [`docs/Cloudflare部署指南.md`](docs/Cloudflare部署指南.md)。
+本站部署在 **Cloudflare Workers**（Worker + 静态资源形态）：静态产物 `dist/` 由资源层提供，`worker/index.js` 作为入口提供后台接口。
+完整操作步骤（构建配置、环境变量、后台登录）见 [`docs/Cloudflare部署指南.md`](docs/Cloudflare部署指南.md)。
 
 ### 社区教程
 Cloudflare Workers部署：[【不用服务器，无需备案，零成本搭建一个自己的个人博客】](https://www.bilibili.com/video/BV1hX9XBKEhm)

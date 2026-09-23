@@ -1,10 +1,12 @@
 name: Code quality
 
+# 触发分支：模板原本写的是 master，而本仓库主分支是 main，
+# 所以这个工作流此前从未触发过 —— 下面已改成 main。
 on:
   push:
-    branches: [ master ] # Adjust branches as needed
+    branches: [main]
   pull_request:
-    branches: [ master ] # Adjust branches as needed
+    branches: [main]
 
 jobs:
   quality:

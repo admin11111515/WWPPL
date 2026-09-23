@@ -161,8 +161,9 @@ export const sidebarLayoutConfig: SidebarLayoutConfig = {
 			specificConfig: {
 				siteInfo: {
 					// 未能识别的构建平台回退显示文本，可自定义
-					// 本站部署在 Cloudflare Pages，识别不出来时按实际平台显示
-					unknownBuildPlatform: "Cloudflare Pages",
+					// 本站部署在 Cloudflare Workers（构建时通常由 WORKERS_CI 识别为 Cloudflare Workers，
+					// 这里只是识别失败时的兜底文案）
+					unknownBuildPlatform: "Cloudflare Workers",
 				},
 			},
 		},
@@ -273,8 +274,9 @@ export const sidebarLayoutConfig: SidebarLayoutConfig = {
 			specificConfig: {
 				siteInfo: {
 					// 未能识别的构建平台回退显示文本，可自定义
-					// 本站部署在 Cloudflare Pages，识别不出来时按实际平台显示
-					unknownBuildPlatform: "Cloudflare Pages",
+					// 本站部署在 Cloudflare Workers（构建时通常由 WORKERS_CI 识别为 Cloudflare Workers，
+					// 这里只是识别失败时的兜底文案）
+					unknownBuildPlatform: "Cloudflare Workers",
 				},
 			},
 		},

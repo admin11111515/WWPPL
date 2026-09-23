@@ -1,5 +1,5 @@
 // 文章管理后台配置（基于 GitHub Contents API）
-// 文章直接写入博客仓库，保存后由 Cloudflare Pages 自动重新构建
+// 文章直接写入博客仓库，保存后由 Cloudflare 自动重新构建
 
 export const externalPostsConfig = {
 	// 是否启用文章管理后台

@@ -1,5 +1,5 @@
-# Cloudflare Pages 响应头配置
-# 文档：https://developers.cloudflare.com/pages/configuration/headers/
+# Cloudflare 响应头配置（Worker 静态资源层同样读取 dist/_headers）
+# 文档：https://developers.cloudflare.com/workers/static-assets/headers/
 
 # ─────────────────────────────────────────────────────────────
 # 只给「文件名带内容哈希」的东西发长缓存。

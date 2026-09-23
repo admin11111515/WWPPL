@@ -7,7 +7,7 @@ import { removeFileExtension } from "@utils/url-utils";
 
 // 遗留路由 /blog/<slug>/ 的重定向页，指向规范路由 /posts/<slug>/
 //
-// 正式部署（Cloudflare Pages）上，public/_redirects 会在边缘把这批旧链接
+// 正式部署（Cloudflare Workers）上，public/_redirects 会在边缘把这批旧链接
 // 直接 301 到新地址，这张页面不会被访客看到。它在这里的原因有两个：
 //   1. 万一站点换到不支持 _redirects 的托管平台，旧链接依然能跳到新地址；
 //   2. 顺带作为"这个地址已迁移"的说明页，而不是一个空白页。

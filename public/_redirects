@@ -1,5 +1,5 @@
-# Cloudflare Pages / Netlify 边缘重定向规则
-# 文档：https://developers.cloudflare.com/pages/configuration/redirects/
+# Cloudflare（Worker 静态资源层）/ Netlify 边缘重定向规则
+# 文档：https://developers.cloudflare.com/workers/static-assets/redirects/
 #
 # 站点规范路由已由 /blog/ 合并到 /posts/，此文件把旧链接做成真正的 301，
 # 相比 Astro 生成的 meta-refresh 跳转桩页面，301 对搜索引擎更规范（传递权重、
