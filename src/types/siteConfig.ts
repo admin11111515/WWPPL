@@ -153,10 +153,16 @@ export type SiteConfig = {
 		categoryOrder?: ("anime" | "game" | "book" | "music" | "real")[]; // 条目类型排序顺序
 	};
 
-	// 追番配置（Bilibili）
+	// 追番配置
 	anime?: {
 		bilibili?: {
 			uid?: string; // Bilibili用户UID
+		};
+		// TMDB 数据源（可选）。追番页会把 TMDB 与 Bilibili 的数据合并展示，
+		// apiKey 与 listId 两个都填上才会去 TMDB 取数据。
+		tmdb?: {
+			apiKey?: string; // TMDB API Key
+			listId?: string; // TMDB 列表 ID
 		};
 	};
 

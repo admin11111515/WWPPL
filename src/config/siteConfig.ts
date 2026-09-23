@@ -204,12 +204,21 @@ export const siteConfig: SiteConfig = {
 		categoryOrder: ["anime", "book", "music", "game"],
 	},
 
-	// 追番配置（Bilibili）
+	// 追番配置
 	anime: {
 		// Bilibili 配置
 		bilibili: {
 			// 你的 Bilibili 用户 UID
 			uid: "76627534",
+		},
+		// TMDB 配置（可选）：追番页读的就是下面这两个字段，
+		// 两个都填上才会去 TMDB 取数据，并与 Bilibili 的数据合并展示；
+		// 留空则只显示 Bilibili 的追番。
+		tmdb: {
+			// TMDB API Key（在 themoviedb.org 申请）
+			apiKey: "",
+			// TMDB 列表 ID
+			listId: "",
 		},
 	},
 

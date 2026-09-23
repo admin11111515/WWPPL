@@ -454,7 +454,6 @@ export const zh_CN: Translation = {
 	[Key.skillsDistribution]: "技能分布",
 	[Key.skillsByLevel]: "按等级分布",
 	[Key.skillsByCategory]: "按分类分布",
-	[Key.noData]: "暂无数据",
 
 	// 时间线页面
 	[Key.timeline]: "时间线",

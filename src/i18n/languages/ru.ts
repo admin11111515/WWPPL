@@ -1,7 +1,7 @@
 import Key from "../i18nKey";
-import type { Translation } from "../translation";
+import type { LanguagePack } from "../translation";
 
-export const ru: Translation = {
+export const ru: LanguagePack = {
 	[Key.home]: "Главная",
 	[Key.about]: "О нас",
 	[Key.archive]: "Архив",
@@ -427,7 +427,6 @@ export const ru: Translation = {
 	[Key.skillsDistribution]: "Распределение навыков",
 	[Key.skillsByLevel]: "По уровню",
 	[Key.skillsByCategory]: "По категориям",
-	[Key.noData]: "Нет данных",
 
 	// Страница временной шкалы
 	[Key.timeline]: "Временная шкала",

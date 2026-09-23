@@ -49,6 +49,7 @@ interface Props {
 	title?: string;
 	banner?: string;
 	description?: string;
+	keywords?: string[];
 	lang?: string;
 	setOGTypeArticle?: boolean;
 	postSlug?: string;
@@ -69,6 +70,7 @@ const {
 	title,
 	banner,
 	description,
+	keywords,
 	lang,
 	setOGTypeArticle,
 	postSlug,
@@ -137,6 +139,13 @@ const showBannerPostMeta =
 
 const showBannerDim = (isBannerMode || isFullscreenMode) && isBackgroundEnabled;
 const dimOpacity = backgroundWallpaper.common?.dimOpacity ?? 0.15;
+
+// 主页横幅文字的尺寸。先在顶层算好，模板里就不用反复写一串可选链 ——
+// 之前模板里是「判断时用了 ?. ，取值时又直接点下去」，类型检查会认为
+// backgroundWallpaper.common / homeText 可能是 undefined。
+const homeText = backgroundWallpaper.common?.homeText;
+const bannerTitleSize = homeText?.titleSize || "3rem";
+const bannerSubtitleSize = homeText?.subtitleSize || "1.5rem";
 
 const showBannerPageTitle =
 	(isBannerMode || isFullscreenMode) &&
@@ -718,18 +727,18 @@ const fullscreenCarouselInterval = Math.max(
         <div class={`banner-home-text-overlay absolute inset-0 z-20 flex items-center justify-center ${!showHomeText ? 'hidden' : ''}`}>
             <div class="w-4/5 lg:w-3/4 text-center mb-0">
                 <div class="flex flex-col">
-                    {backgroundWallpaper.common?.homeText?.title && (
-                        <div class="banner-title font-bold text-white mb-2 lg:mb-4 leading-tight" style={{ '--banner-title-size': backgroundWallpaper.common.homeText.titleSize || "3rem" }}>
-                            {backgroundWallpaper.common.homeText.title}
+                    {homeText?.title && (
+                        <div class="banner-title font-bold text-white mb-2 lg:mb-4 leading-tight" style={{ '--banner-title-size': bannerTitleSize }}>
+                            {homeText.title}
                         </div>
                     )}
                     {bannerText.items.length + bannerText.live.length > 0 && (
-                        <div class="text-white/90 leading-snug" style={{ fontSize: backgroundWallpaper.common.homeText.subtitleSize || "1.5rem" }}>
+                        <div class="text-white/90 leading-snug" style={{ fontSize: bannerSubtitleSize }}>
                             <BannerRotator
                                 items={bannerText.items}
                                 live={bannerText.live}
-                                speed={backgroundWallpaper.common.homeText.typewriter?.speed}
-                                pauseTime={backgroundWallpaper.common.homeText.typewriter?.pauseTime}
+                                speed={homeText?.typewriter?.speed}
+                                pauseTime={homeText?.typewriter?.pauseTime}
                             />
                         </div>
                     )}

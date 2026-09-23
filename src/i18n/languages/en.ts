@@ -1,7 +1,7 @@
 import Key from "../i18nKey";
-import type { Translation } from "../translation";
+import type { LanguagePack } from "../translation";
 
-export const en: Translation = {
+export const en: LanguagePack = {
 	[Key.home]: "Home",
 	[Key.about]: "About",
 	[Key.archive]: "Archive",
@@ -425,7 +425,6 @@ export const en: Translation = {
 	[Key.skillsDistribution]: "Skill Distribution",
 	[Key.skillsByLevel]: "By Level",
 	[Key.skillsByCategory]: "By Category",
-	[Key.noData]: "No data",
 
 	// Timeline Page
 	[Key.timeline]: "Timeline",

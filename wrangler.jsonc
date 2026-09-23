@@ -20,9 +20,15 @@
 	// Worker 名称，必须与控制台里的服务名一致
 	"name": "firefly",
 
+	// Worker 入口：只负责 /api/ 下那几个需要服务端的接口
+	// （登录、退出、登录状态、GitHub 贡献数据、GitHub 读写代理）
+	"main": "worker/index.js",
+
 	// 构建产物目录：Astro 输出到 dist
 	"assets": {
-		"directory": "./dist"
+		"directory": "./dist",
+		// 绑定名，入口里用 env.ASSETS.fetch() 把请求交回资源层
+		"binding": "ASSETS"
 	},
 
 	// Workerd 运行时兼容性
