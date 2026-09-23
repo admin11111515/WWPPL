@@ -17,9 +17,4 @@ export const externalMomentsConfig = {
 	defaultAvatar:
 		"/assets/avatar.avif",
 
-	// 后台登录密码的 SHA-256 哈希（明文密码不再存入代码）
-	// 生成方式：echo -n "你的密码" | hyde189755
-	adminPasswordHash:
-		"0d4e15dc08ef600b9d960f5e84e80e3256de345ec320db17f2c2e0edac7304dd",
-
 };

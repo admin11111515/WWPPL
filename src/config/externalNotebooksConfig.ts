@@ -72,9 +72,4 @@ export const externalNotebooksConfig = {
 		title: string;
 		content: string;
 	}>,
-
-	// 后台登录密码的 SHA-256 哈希（与说说后台共用同一密码）
-	adminPasswordHash:
-		"b5d9ded2ab2812e8653f06fc4d3246a4b13642e8371bc74a7f1003eb4fb4e637",
-
 };

@@ -23,6 +23,16 @@ Firefly is a feature-rich static blog theme built on **Astro 6** with **Svelte 5
 
 Package manager is **pnpm** (enforced). Node.js >= 22 required.
 
+## 本机操作陷阱（重要）
+
+**不要用 `git rm` 删文件。** 这台机器上 `git rm <file>` 会让整个 `src/` 从工作区消失 —— 实测复现两次：执行 `git rm src/utils/gist-api.ts` 之后，`src` 下 377 个文件全部变成「工作区已删除」，而 `git status` 里只有一个文件显示为暂存删除。这不像 git 自身的逻辑错误，更像机器上那个「按路径限速的安全软件」（见 `dev/sandbox.mjs` 顶部注释）在盯着 `C:\project` 的删除操作。
+
+删文件的正确姿势是两步：先 `rm <file>`（普通删除，实测安全，只少这一个文件），再 `git add <file>` 让 git 记录这次删除。
+
+万一 `src/` 已经空了，一条命令即可恢复：`git restore --source=HEAD --staged --worktree src/`
+
+`node dev/sandbox.mjs` 已加源码完整性检查：`src/` 下文件数少于 300 会直接拦下并打印这条恢复命令，避免拿着残缺源码构建出不可信的产物。
+
 ## Architecture
 
 ### Astro + Svelte Hybrid

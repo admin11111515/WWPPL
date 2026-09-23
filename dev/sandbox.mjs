@@ -92,7 +92,37 @@ function countFiles(dir, limit = 999999) {
 	return n;
 }
 
+/** src/ 文件数下限：低于此值说明工作区被破坏过（见 CLAUDE.md 的「git rm 陷阱」）。
+ *  此时构建产物不可信，直接拦下 —— 免得拿着残缺源码一路跑到提交。 */
+const MIN_SRC_FILES = 300;
+
+function countSrcFiles() {
+	let n = 0;
+	const walk = (d) => {
+		try {
+			for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+				if (e.isDirectory()) walk(path.join(d, e.name));
+				else n++;
+			}
+		} catch {
+			/* 目录不存在就按 0 算 */
+		}
+	};
+	walk(path.join(SRC, "src"));
+	return n;
+}
+
+function assertSourceIntact() {
+	const n = countSrcFiles();
+	if (n >= MIN_SRC_FILES) return n;
+	console.error(`[guard] 源码不完整：${SRC}\\src 下只有 ${n} 个文件（应 >= ${MIN_SRC_FILES}）。`);
+	console.error("[guard] 工作区被破坏过，此时的构建产物不可信。恢复命令：");
+	console.error(`  git -C ${SRC} restore --source=HEAD --staged --worktree src/`);
+	process.exit(1);
+}
+
 function doSync() {
+	assertSourceIntact();
 	log(`[sync] ${SRC}`);
 	log(`    -> ${DST}`);
 	ensureDir(SANDBOX_ROOT);

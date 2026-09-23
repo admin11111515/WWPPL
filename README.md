@@ -125,9 +125,10 @@
    ```
    博客将在 `http://localhost:4321` 可用
 
-### EdgeOne部署
+### 部署
 
-[![使用 EdgeOne Pages 部署](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://console.cloud.tencent.com/edgeone/pages/new?repository-url=https://cnb.cool/W3C/Hyde/Firefly-hyde)
+本站部署在 **Cloudflare Pages**：纯静态产物 `dist/` + 仓库根 `functions/` 作为 Pages Functions。
+完整操作步骤（构建配置、三个必需环境变量、后台登录）见 [`docs/Cloudflare部署指南.md`](docs/Cloudflare部署指南.md)。
 
 ### 社区教程
 Cloudflare Workers部署：[【不用服务器，无需备案，零成本搭建一个自己的个人博客】](https://www.bilibili.com/video/BV1hX9XBKEhm)

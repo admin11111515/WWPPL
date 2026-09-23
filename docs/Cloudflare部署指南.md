@@ -40,9 +40,9 @@
 
 1. `.github/workflows/deploy.yml` —— 部署到 **GitHub Pages**（纯静态，天然不支持 functions）。
    已改为**仅手动触发**，不再自动跑，避免和 Cloudflare 抢部署。
-2. `.cnb.yml` —— 走 CNB 流水线里的 `npx edgeone pages deploy ./dist`（腾讯 **EdgeOne** Pages，只传静态文件）。
-   已加警告注释。若你还在用 CNB，请停用该步骤。
-   另外该文件末尾有一步「同步仓库到 github」，目标是 `Seasir-Hyde/Firefly-hyde` —— **那是主题作者的仓库，不是你的**，建议停用。
+2. `.cnb.yml` —— 走 CNB 流水线里的 `npx edgeone pages deploy ./dist`（腾讯 **EdgeOne** Pages，只传静态文件）；
+   末尾还有一步「同步仓库到 github」，目标是 `Seasir-Hyde/Firefly-hyde` —— **那是主题作者的仓库，不是你的**。
+   **已整个移除该文件**（备份在 `C:\project\ppl_blog\.backup\`），CNB 不再触发，代码不会被推到别人仓库。
 
 ---
 
@@ -86,7 +86,7 @@ Cloudflare 控制台 → **Workers & Pages** → 选你的 Pages 项目 → **Se
 
 | 变量名 | 说明 | 必填 |
 |---|---|---|
-| `ADMIN_PASSWORD_HASH` | 后台登录密码的 **SHA-256 十六进制小写**（与前端 `externalNotebooksConfig.ts` 里那份哈希保持一致即可） | ✅ |
+| `ADMIN_PASSWORD_HASH` | 后台登录密码的 **SHA-256 十六进制小写**。密码只存这一处，前端配置里不再留哈希副本 | ✅ |
 | `AUTH_SECRET` | 任意长随机串，用于给会话 Cookie 做 HMAC 签名 | ✅ 建议 |
 | `GITHUB_TOKEN` | GitHub **Fine-grained PAT**，权限：目标仓库的 `Contents: Read and write`，用于后台通过 `/api/github/*` 读写文章 | ✅（后台发文需要） |
 
@@ -163,7 +163,7 @@ const B='https://wwppl.dpdns.org';
 |---|---|---|
 | **Cloudflare Pages** | ✅ **正式通道** | 静态站 + `functions/` 后端 |
 | GitHub Pages（`deploy.yml`） | ⏸ 已改为仅手动 | 备用预览，不支持后端 |
-| CNB → EdgeOne Pages（`.cnb.yml`） | ⚠️ 建议停用 | 只传静态，不支持后端 |
+| CNB → EdgeOne Pages（`.cnb.yml`） | ❌ **已整个移除** | 只传静态、不支持后端，且会同步到主题作者仓库 |
 
 **结论：以后只认 Cloudflare Pages 一条路，不要同时开多条，否则「到底哪个是线上版本」会失控。**
 
