@@ -1,17 +1,21 @@
 ---
-title: "TypeScript 内置工具类型：你可能不知道的 10 个"
+title: "TypeScript 工具类型，我真正用上的就 5 个"
 published: 2026-06-25
-tags: ["TypeScript", "工具类型", "前端"]
+tags: ["TypeScript", "类型", "前端"]
 category: "TypeScript"
-description: "深入介绍 TypeScript 内置的工具类型，让你的代码更简洁、更安全。"
+description: "剩下那些我背过，然后又忘了。"
 image: "/images/covers/typescript-typescript-utility-types.jpg"
 ---
 
-## 前言
+这篇本来打算写"10 个你可能不知道的工具类型"，列到一半心虚了：那 10 个里，我在项目里真正用过的只有 5 个。
 
-TypeScript 内置了很多实用的工具类型，但很多人只用过 `Partial` 和 `Required`。这篇文章介绍 10 个你可能不知道但非常有用的工具类型。
+所以下面照实写——哪些是在用的，哪些只是我读过文档。
 
-## 1. Pick — 提取部分属性
+## 每天在用的
+
+Pick 和 Omit 这两个，占我所有工具类型用量的八成。
+
+后台列表页要返回精简数据，接口契约里那张大表只想要 4 个字段：
 
 ```typescript
 interface User {
@@ -20,199 +24,71 @@ interface User {
   email: string;
   password: string;
   avatar: string;
+  createdAt: Date;
+  lastLoginAt: Date;
+  level: number;
 }
 
-// 只需要 id 和 name
-type UserPreview = Pick<User, "id" | "name">;
-// { id: string; name: string }
+type UserRow = Pick<User, "id" | "name" | "email" | "level">;
 ```
 
-使用场景：API 返回精简数据。
-
-## 2. Omit — 排除部分属性
+Omit 用得更凶，基本是冲着"别把密码发出去"这件事去的：
 
 ```typescript
-// 排除敏感字段
 type PublicUser = Omit<User, "password">;
-// { id: string; name: string; email: string; avatar: string }
 ```
 
-使用场景：创建 DTO（数据传输对象）。
+上次就是因为漏了这一个 Omit，接口把 `password` 一起返回了。页面没显示，但浏览器网络面板里能看到明文。改完之后我给自己加了条规矩：任何返回用户对象的接口，类型上先把敏感字段 Omit 掉再说。
 
-## 3. Record — 创建键值对类型
+Partial 我用在表单草稿上。用户填一半跑了，我存的是 `Partial<FormData>`，提交时再校验完整性。这样"存草稿"和"提交"能共用一套类型，不用维护两份。
+
+## 用过，但得查文档才想得起来
+
+Record 只在写权限映射的时候用过：
 
 ```typescript
-// 创建角色权限映射
-type Role = "admin" | "user" | "guest";
+type Role = "admin" | "editor" | "guest";
 type Permissions = Record<Role, string[]>;
-
-const permissions: Permissions = {
-  admin: ["read", "write", "delete"],
-  user: ["read", "write"],
-  guest: ["read"],
-};
 ```
 
-使用场景：配置对象、状态映射。
+好处是我漏写一个角色，编译就报错。以前用 `{ [key: string]: string[] }` 的时候漏了不报，线上才发现 guest 是 undefined。
 
-## 4. Exclude — 从联合类型中排除
-
-```typescript
-type Status = "pending" | "active" | "deleted" | "banned";
-
-// 排除删除和封禁状态
-type ActiveStatus = Exclude<Status, "deleted" | "banned">;
-// "pending" | "active"
-```
-
-使用场景：过滤联合类型的成员。
-
-## 5. Extract — 从联合类型中提取
-
-```typescript
-type Status = "pending" | "active" | "deleted" | "banned";
-
-// 只提取活跃状态
-type GoodStatus = Extract<Status, "active" | "pending">;
-// "active" | "pending"
-```
-
-使用场景：提取特定的联合类型成员。
-
-## 6. NonNullable — 排除 null 和 undefined
-
-```typescript
-type MaybeString = string | null | undefined;
-
-// 确保是 string
-type DefinitelyString = NonNullable<MaybeString>;
-// string
-```
-
-使用场景：处理可能为空的类型。
-
-## 7. ReturnType — 提取函数返回类型
+ReturnType 用到的次数一只手数得过来，但每次都救命——想复用某个函数的返回值类型，又不想再抄一遍。
 
 ```typescript
 function createUser() {
-  return {
-    id: crypto.randomUUID(),
-    name: "New User",
-    createdAt: new Date(),
-  };
+  return { id: crypto.randomUUID(), name: "新用户", createdAt: new Date() };
 }
 
-// 自动推断返回类型
 type User = ReturnType<typeof createUser>;
-// { id: string; name: string; createdAt: Date }
 ```
 
-使用场景：避免手动定义函数返回类型。
+起因是一个老项目里，这个函数返回的对象被 3 个文件依赖。后来改字段改漏了一处，编译没抓住，运行到那一步才炸。加了 `ReturnType` 之后改一处就全跟着变。
 
-## 8. Parameters — 提取函数参数类型
+## 读过文档，项目里一次没用过
 
-```typescript
-function greet(name: string, greeting: string = "Hello") {
-  return `${greeting}, ${name}!`;
-}
+`Exclude`、`Extract`、`NonNullable`、`Awaited`、`ConstructorParameters`。
 
-// 提取参数类型
-type GreetParams = Parameters<typeof greet>;
-// [name: string, greeting: string]
-```
+这 5 个我读的时候都点头了，之后一次都没用过。
 
-使用场景：创建包装函数或高阶函数。
+`NonNullable` 我本来以为会常用，结果发现只要在类型上排除掉 `null`，代码里就得到处写判断——不如一开始就别让它可能是 `null`。
 
-## 9. Awaited — 解包 Promise 类型
+`ConstructorParameters` 更别提。我上一个 `class` 是两年前写的，现在全是函数和对象。
+
+## 算手写的，不算内置
+
+`DeepPartial` 和 `DeepReadonly` 每个项目都要抄一遍：
 
 ```typescript
-type FetchResult = Promise<{ data: User[]; total: number }>;
-
-// 提取 Promise 内部类型
-type Result = Awaited<FetchResult>;
-// { data: User[]; total: number }
-```
-
-使用场景：处理异步函数的返回类型。
-
-## 10. ConstructorParameters — 提取构造函数参数
-
-```typescript
-class UserService {
-  constructor(
-    private apiUrl: string,
-    private timeout: number = 5000
-  ) {}
-}
-
-// 提取构造函数参数
-type UserServiceParams = ConstructorParameters<typeof UserService>;
-// [apiUrl: string, timeout?: number]
-```
-
-使用场景：工厂函数或依赖注入。
-
-## 组合使用
-
-这些工具类型可以组合使用，创建更复杂的类型：
-
-```typescript
-interface Article {
-  id: string;
-  title: string;
-  content: string;
-  author: {
-    id: string;
-    name: string;
-  };
-  tags: string[];
-  publishedAt: Date;
-  updatedAt: Date;
-}
-
-// 创建文章摘要
-type ArticleSummary = Pick<Article, "id" | "title" | "tags" | "publishedAt">;
-
-// 创建更新 DTO
-type UpdateArticle = Partial<Omit<Article, "id" | "author">>;
-
-// 创建创建 DTO
-type CreateArticle = Omit<Article, "id" | "publishedAt" | "updatedAt">;
-```
-
-## 自定义工具类型
-
-基于内置类型，可以创建自己的工具类型：
-
-```typescript
-// 深度 Partial
 type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
 };
 
-// 深度 Readonly
 type DeepReadonly<T> = {
   readonly [P in keyof T]: T[P] extends object ? DeepReadonly<T[P]> : T[P];
 };
-
-// 可为空的类型
-type Nullable<T> = T | null;
-
-// 可为空的 Record
-type NullableRecord<K extends keyof any, T> = Record<K, T | null>;
 ```
 
-## 总结
+我一般丢在 `src/types/utils.d.ts` 里，新项目初始化就拷过去。
 
-TypeScript 内置工具类型的价值：
-
-1. **减少重复** — 不用手动定义相似的类型
-2. **保持一致** — 类型之间有关联，修改一处自动更新
-3. **提高可读性** — 语义化的类型名称
-4. **编译时安全** — 类型错误在编译时被捕获
-
-掌握这些工具类型，能让你的 TypeScript 代码更简洁、更安全、更易维护。
-
----
-
-*写于一个把 200 行类型定义简化成 50 行的下午。*
+还有个教训是 `Partial<Omit<User, "id">>` 这种嵌套——一开始我写成 `Omit<Partial<User>, "id">`，看起来差不多，实际前者是"先去掉 id 再全部变可选"，后者是"全部变可选之后再去掉 id"。类型上结果是像的，但推导出来的东西不一样。我是在一个表单组件里被它咬了半小时才记住的。

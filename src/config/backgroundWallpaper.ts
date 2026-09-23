@@ -80,7 +80,7 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 			titleSize: "3.8rem",
 			// 主页横幅句子（手写，会与下面 sources 里的内容一起轮播）
 			subtitle: [
-				"记录生活，也写一点代码",
+				"本职程序员。业余折腾最新的人工智能小玩意，水平也业余。",
 				"不追热点，只写做完的事",
 				"写下来，才算真正想过",
 				"软件出身，机械谋生，代码是业余里的正经事",

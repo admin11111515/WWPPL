@@ -374,7 +374,7 @@ export const zh_CN: Translation = {
 
 	// 相册页面
 	[Key.gallery]: "相册",
-	[Key.galleryDescription]: "记录生活中的美好瞬间",
+	[Key.galleryDescription]: "随手拍的，攒着攒着就这么多了",
 	[Key.galleryPhotos]: "张照片",
 	[Key.galleryAlbums]: "本相册",
 	[Key.galleryNoAlbums]: "暂无相册",

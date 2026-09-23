@@ -9,7 +9,7 @@ export const siteConfig: SiteConfig = {
 	title: "WWPPL Blog",
 
 	// 站点副标题
-	subtitle: "记录生活，也写一点代码",
+	subtitle: "本职程序员。业余折腾最新的人工智能小玩意，水平也业余。",
 
 	// 站点 URL
 	site_url: "https://wwppl.dpdns.org",

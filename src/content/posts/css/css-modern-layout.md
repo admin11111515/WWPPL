@@ -1,104 +1,34 @@
 ---
-title: "2026 年了，别再用 float 布局了"
+title: "Flexbox、Grid，和我还在用的那点 float"
 published: 2026-06-30
 tags: ["CSS", "布局", "前端"]
 category: "CSS"
-description: "现代 CSS 布局方案完全指南，从 Flexbox 到 Grid 到 Container Queries，告别 float 时代。"
+description: "从清浮动到 grid 命名区域，布局这些年我踩的坑比写的代码多。"
 image: "/images/covers/css-css-modern-layout.jpg"
 ---
 
-## 前言
+我 2016 年学前端那会儿，布局全靠 `float`。两栏布局左边 `float: left`、右边 `float: right`，底下还得加个 `.clearfix` 清浮动，不然父容器高度塌成 0。清浮动的 hack 我写过不下一百次。
 
-如果你还在用 `float` 做页面布局，我理解你——毕竟它曾经是唯一的方案。但 2026 年了，我们有更好的选择。
-
-## Flexbox：一维布局之王
-
-Flexbox 适合**单行或单列**的布局场景。
+第一次松手是做导航栏，用 flex 一把就对了：
 
 ```css
-/* 经典的导航栏布局 */
 .navbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
-
-/* 等分布局 */
-.card-grid {
-  display: flex;
-  gap: 1rem;
-}
-
-.card {
-  flex: 1; /* 等分剩余空间 */
-}
 ```
 
-### Flexbox 最佳实践
+`gap` 代替 margin 这件事，我是被坑了才记住的。早先用 `margin-right` 加 `:last-child` 清最后一项，结果列表项动态增减时总有缝对不齐。改成 `gap: 1rem` 之后那类 bug 全没了。
 
 ```css
-/* ✅ 使用 gap 代替 margin */
-.container {
-  display: flex;
-  gap: 1rem; /* 好 */
-}
-
-/* ❌ 不要用 margin */
-.item {
-  margin-right: 1rem; /* 差 */
-}
-.item:last-child {
-  margin-right: 0; /* 多余的代码 */
-}
-
-/* ✅ 使用 flex shorthand */
-.item {
-  flex: 1; /* 等同于 flex-grow: 1; flex-shrink: 1; flex-basis: 0% */
-}
+.container { display: flex; gap: 1rem; }
+.card { flex: 1; } /* flex: 1 等同 flex-grow/shrink: 1, basis: 0% */
 ```
 
-## Grid：二维布局之王
-
-Grid 适合**行列都要控制**的布局场景。
+但要说真正让我把 float 扔了做页面骨架的，是 Grid。两栏、三栏、带页脚的两维布局，命名区域一眼能看懂：
 
 ```css
-/* 经典的博客布局 */
-.blog-layout {
-  display: grid;
-  grid-template-columns: 250px 1fr 300px;
-  grid-template-rows: auto 1fr auto;
-  gap: 1rem;
-  min-height: 100vh;
-}
-
-.header { grid-column: 1 / -1; }
-.sidebar { grid-row: 2; }
-.main { grid-column: 2; }
-.aside { grid-column: 3; }
-.footer { grid-column: 1 / -1; }
-```
-
-### 响应式 Grid
-
-```css
-/* 自动适应列数，不需要媒体查询 */
-.auto-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1rem;
-}
-
-/* 这行代码的意思：
-   - 每列最小 300px
-   - 自动计算能放几列
-   - 列与列之间 1rem 间距
-*/
-```
-
-### Grid 命名区域
-
-```css
-/* 可读性极高的布局定义 */
 .layout {
   display: grid;
   grid-template-areas:
@@ -109,7 +39,6 @@ Grid 适合**行列都要控制**的布局场景。
   grid-template-rows: auto 1fr auto;
   gap: 1rem;
 }
-
 .header { grid-area: header; }
 .nav { grid-area: nav; }
 .main { grid-area: main; }
@@ -117,85 +46,27 @@ Grid 适合**行列都要控制**的布局场景。
 .footer { grid-area: footer; }
 ```
 
-## Container Queries：组件级响应式
-
-这是 CSS 近年来最激动人心的特性之一。
+我博客现在就是这套。响应式我靠 `auto-fit` 自动算列数，不用写媒体查询：
 
 ```css
-/* 定义容器 */
-.card-container {
-  container-type: inline-size;
-  container-name: card;
-}
-
-/* 根据容器宽度调整样式 */
-@container card (min-width: 400px) {
-  .card {
-    display: flex;
-    gap: 1rem;
-  }
-}
-
-@container card (min-width: 600px) {
-  .card {
-    flex-direction: row;
-  }
-  .card-image {
-    width: 200px;
-  }
-}
-```
-
-### 为什么 Container Queries 比 Media Queries 好？
-
-```css
-/* ❌ Media Queries：基于视口宽度 */
-@media (min-width: 768px) {
-  .card { display: flex; }
-}
-
-/* ✅ Container Queries：基于容器宽度 */
-@container (min-width: 400px) {
-  .card { display: flex; }
-}
-```
-
-Container Queries 让组件真正可复用——同一个卡片组件放在侧边栏是竖排，放在主内容区是横排，不需要任何 JavaScript。
-
-## Subgrid：继承父 Grid
-
-```css
-.parent-grid {
+.auto-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 1rem;
 }
-
-.child-grid {
-  display: grid;
-  grid-template-columns: subgrid; /* 继承父级列定义 */
-  grid-row: span 2; /* 占两行 */
-}
 ```
 
-Subgrid 解决了一个长期存在的问题：让子元素对齐父 Grid 的轨道。
-
-## 实战：完整的响应式布局
+卡片列表用它，窗口从宽到窄自己从 4 列变 1 列。更细的响应式我还是在断点处重排区域：
 
 ```css
-/* 2026 年的标准博客布局 */
 .blog-layout {
   display: grid;
   grid-template-columns: 1fr;
   grid-template-areas:
-    "header"
-    "main"
-    "sidebar"
-    "footer";
+    "header" "main" "sidebar" "footer";
   gap: 1rem;
   padding: 1rem;
 }
-
 @media (min-width: 768px) {
   .blog-layout {
     grid-template-columns: 250px 1fr;
@@ -205,7 +76,6 @@ Subgrid 解决了一个长期存在的问题：让子元素对齐父 Grid 的轨
       "footer  footer";
   }
 }
-
 @media (min-width: 1200px) {
   .blog-layout {
     grid-template-columns: 250px 1fr 300px;
@@ -215,35 +85,26 @@ Subgrid 解决了一个长期存在的问题：让子元素对齐父 Grid 的轨
       "footer  footer  footer";
   }
 }
-
-.header { grid-area: header; }
-.sidebar { grid-area: sidebar; }
-.main { grid-area: main; }
-.aside { grid-area: aside; }
-.footer { grid-area: footer; }
 ```
 
-## 选择指南
+容器查询是这两年我最喜欢的。以前卡片放侧边栏是竖排，放主内容区想横排，只能写媒体查询盯视口。现在盯容器：
 
-| 场景 | 推荐方案 |
-|------|----------|
-| 导航栏、按钮组 | Flexbox |
-| 卡片列表、等分布局 | Flexbox 或 Grid |
-| 复杂的页面布局 | Grid |
-| 组件级响应式 | Container Queries |
-| 子元素对齐 | Subgrid |
+```css
+.card-container { container-type: inline-size; }
+@container (min-width: 400px) {
+  .card { display: flex; flex-direction: row; }
+}
+```
 
-## 总结
+同一个组件，侧边栏窄就竖排，主区宽就横排，零 JS。
 
-现代 CSS 布局已经非常强大：
+Subgrid 我上个月才第一次用，解决子元素对齐父 grid 轨道的问题：
 
-- **Flexbox** — 一维布局，简单直观
-- **Grid** — 二维布局，精确控制
-- **Container Queries** — 组件级响应式
-- **Subgrid** — 继承父级布局
+```css
+.parent-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.child-grid { display: grid; grid-template-columns: subgrid; grid-row: span 2; }
+```
 
-是时候告别 `float: left` 和那些清除浮动的 hack 了。
+老陈 review 我那段清除了老代码，说："你这 clearfix 终于删了，我看了三年。"
 
----
-
-*写于一个用 Grid 重构了整个项目的周末。*
+float 我没全扔。图文混排里图片左浮、文字环绕，还是 `float` 最顺手，Grid 和 flex 都干不了这个。所以我现在是页面骨架用 Grid，一行一列用 flex，图文环绕才用 float。
