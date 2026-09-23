@@ -1,4 +1,4 @@
-// GitHub 提交动态：近一年贡献热力图 + 博客仓库最近提交。
+// GitHub 动态：近一年贡献热力图 + 博客仓库最近提交。
 //
 // 这是公开接口 —— 贡献数据在 GitHub 上本来就是公开的，任何访客都能看；
 // 令牌只留在服务端，浏览器拿到的只是画图要用的数字。
@@ -9,22 +9,12 @@ import { json } from "./_lib/session.js";
 const DEFAULT_USER = "admin11111515";
 const DEFAULT_REPO = "WWPPL";
 
-export async function onRequest(context) {
-	const { env } = context;
-	if (!env.GITHUB_TOKEN) {
-		return json({ error: "服务端未配置 GITHUB_TOKEN" }, 503);
-	}
-	const username = env.GITHUB_USERNAME || DEFAULT_USER;
-	const repo = env.GITHUB_REPO || DEFAULT_REPO;
-
-	const headers = {
-		Authorization: `Bearer ${env.GITHUB_TOKEN}`,
-		Accept: "application/vnd.github+json",
-		"User-Agent": "ppl-blog",
-		"X-GitHub-Api-Version": "2022-11-28",
-	};
-
-	// 贡献日历只在 GraphQL 接口上有，取近一年
+/**
+ * 贡献日历只有 GraphQL 接口上有。
+ * 细粒度 PAT 对 GraphQL 的支持有限，取不到是可能的 —— 所以这一块单独兜住，
+ * 失败也不影响下面的提交列表（那个走 REST，Contents 读权限就够）。
+ */
+async function fetchCalendar(headers, username) {
 	const to = new Date();
 	const from = new Date(to.getTime() - 365 * 24 * 60 * 60 * 1000);
 	const query = `
@@ -43,10 +33,8 @@ export async function onRequest(context) {
 				}
 			}
 		}`;
-
-	let calendar;
 	try {
-		const gqlRes = await fetch("https://api.github.com/graphql", {
+		const res = await fetch("https://api.github.com/graphql", {
 			method: "POST",
 			headers: { ...headers, "Content-Type": "application/json" },
 			body: JSON.stringify({
@@ -54,53 +42,85 @@ export async function onRequest(context) {
 				variables: { login: username, from: from.toISOString(), to: to.toISOString() },
 			}),
 		});
-		const gql = await gqlRes.json();
-		if (gql.errors || !gql.data?.user) {
-			throw new Error(gql.errors?.[0]?.message || "GitHub 返回为空");
-		}
-		calendar = gql.data.user.contributionsCollection?.contributionCalendar;
+		const body = await res.json();
+		if (body.errors?.length) return { error: body.errors[0].message || "GitHub 返回了错误" };
+		const calendar = body.data?.user?.contributionsCollection?.contributionCalendar;
+		if (!calendar || !Array.isArray(calendar.weeks)) return { error: "贡献数据为空" };
+		return {
+			total: calendar.totalContributions,
+			days: calendar.weeks
+				.flatMap((w) => w.contributionDays)
+				.map((d) => ({ date: d.date, count: d.contributionCount })),
+		};
 	} catch (e) {
-		return json({ error: "贡献数据获取失败：" + (e.message || e) }, 502);
+		return { error: e.message || String(e) };
 	}
-	if (!calendar || !Array.isArray(calendar.weeks)) {
-		return json({ error: "贡献数据为空" }, 502);
-	}
+}
 
-	// 最近提交：博客仓库自己的提交记录，展示"自动同步"这条链路的成果。
-	// 它失败不该连累热力图，所以单独兜住。
-	let commits = [];
+/** 博客仓库最近几次提交：和后台写文章用的是同一个令牌和权限 */
+async function fetchCommits(headers, username, repo) {
 	try {
-		const r = await fetch(
+		const res = await fetch(
 			`https://api.github.com/repos/${username}/${repo}/commits?per_page=5`,
 			{ headers },
 		);
-		if (r.ok) {
-			commits = (await r.json()).map((c) => ({
+		if (!res.ok) return { error: `HTTP ${res.status}` };
+		const list = await res.json();
+		return {
+			commits: list.map((c) => ({
 				sha: c.sha,
 				url: c.html_url,
 				message: (c.commit?.message || "").split("\n")[0],
 				date: c.commit?.author?.date || "",
-			}));
-		}
-	} catch {
-		/* 提交列表拿不到就留空，前端只隐藏这一块 */
+			})),
+		};
+	} catch (e) {
+		return { error: e.message || String(e) };
+	}
+}
+
+export async function onRequest(context) {
+	const { env } = context;
+	if (!env.GITHUB_TOKEN) {
+		return json({ error: "服务端未配置 GITHUB_TOKEN" }, 503);
+	}
+	const username = env.GITHUB_USERNAME || DEFAULT_USER;
+	const repo = env.GITHUB_REPO || DEFAULT_REPO;
+	const headers = {
+		Authorization: `Bearer ${env.GITHUB_TOKEN}`,
+		Accept: "application/vnd.github+json",
+		"User-Agent": "ppl-blog",
+		"X-GitHub-Api-Version": "2022-11-28",
+	};
+
+	// 两块数据并行取，互不拖累
+	const [calendar, commits] = await Promise.all([
+		fetchCalendar(headers, username),
+		fetchCommits(headers, username, repo),
+	]);
+
+	// 两边都拿不到才算真的失败；只要有一边成，就还能显示点东西
+	if (calendar.error && commits.error) {
+		return json({ error: `GitHub 数据获取失败：${calendar.error}` }, 502);
 	}
 
 	return new Response(
 		JSON.stringify({
 			username,
 			repo,
-			total: calendar.totalContributions,
-			days: calendar.weeks
-				.flatMap((w) => w.contributionDays)
-				.map((d) => ({ date: d.date, count: d.contributionCount })),
-			commits,
+			total: calendar.total ?? null,
+			days: calendar.days || [],
+			commits: commits.commits || [],
+			// 便于排查是哪一块没取到；前端只靠上面两个数组决定画什么
+			calendarError: calendar.error || null,
+			commitsError: commits.error || null,
 		}),
 		{
 			headers: {
 				"Content-Type": "application/json",
-				// 贡献数字 5 分钟内都算新鲜，让 CDN 顶住重复访问
-				"Cache-Control": "public, max-age=300",
+				// 贡献数字 5 分钟内都算新鲜，让 CDN 顶住重复访问；
+				// 有块缺数据时缓短一点，好让它早点恢复
+				"Cache-Control": calendar.error || commits.error ? "public, max-age=60" : "public, max-age=300",
 			},
 		},
 	);

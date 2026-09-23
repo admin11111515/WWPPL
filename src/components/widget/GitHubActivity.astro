@@ -16,7 +16,7 @@ const GITHUB_USER = "admin11111515";
 		>
 	</div>
 
-	<div class="ga-stats">
+	<div class="ga-stats" id="ga-stats">
 		<div class="ga-stat">
 			<span class="ga-stat-num text-90" id="ga-total">–</span>
 			<span class="ga-stat-label">近一年提交</span>
@@ -27,7 +27,7 @@ const GITHUB_USER = "admin11111515";
 		</div>
 	</div>
 
-	<div class="ga-heatmap-scroll">
+	<div class="ga-heatmap-scroll" id="ga-heatmap-scroll">
 		<div class="ga-months" id="ga-months" aria-hidden="true"></div>
 		<div class="ga-heatmap" id="ga-heatmap" role="img" aria-label="近一年的 GitHub 贡献热力图">
 			<span class="ga-loading">正在加载 GitHub 动态…</span>
@@ -36,7 +36,7 @@ const GITHUB_USER = "admin11111515";
 
 	<div class="ga-legend">
 		<span class="ga-hint" id="ga-hint">把鼠标放到格子上，看某一天提交了几次</span>
-		<span class="ga-scale" aria-hidden="true">
+		<span class="ga-scale" id="ga-scale" aria-hidden="true">
 			少
 			<i class="ga-cell ga-l0"></i><i class="ga-cell ga-l1"></i><i class="ga-cell ga-l2"></i><i
 				class="ga-cell ga-l3"></i><i class="ga-cell ga-l4"></i>
@@ -386,6 +386,11 @@ const GITHUB_USER = "admin11111515";
 		if (streakEl && days.length) streakEl.textContent = String(streakOf(days));
 	}
 
+	function hide(id: string): void {
+		const el = document.getElementById(id);
+		if (el) el.style.display = "none";
+	}
+
 	function showFail(): void {
 		const heatmap = document.getElementById("ga-heatmap");
 		if (heatmap) {
@@ -408,10 +413,26 @@ const GITHUB_USER = "admin11111515";
 			})
 			.then((data) => {
 				const days: Day[] = Array.isArray(data.days) ? data.days : [];
-				if (!days.length) throw new Error("没有数据");
-				renderHeatmap(days);
-				renderStats(days, data.total);
-				renderCommits(Array.isArray(data.commits) ? data.commits : []);
+				const commits: Commit[] = Array.isArray(data.commits) ? data.commits : [];
+
+				// 两块数据各画各的：缺了哪块就把哪块收起来，能显示的照常显示。
+				// 贡献日历只有 GraphQL 上有，令牌权限不够时是真的取不到。
+				if (days.length) {
+					renderHeatmap(days);
+					renderStats(days, data.total);
+				} else {
+					hide("ga-heatmap-scroll");
+					hide("ga-stats");
+					hide("ga-scale");
+				}
+				if (commits.length) renderCommits(commits);
+
+				if (!days.length && !commits.length) {
+					showFail();
+				} else if (!days.length) {
+					const hint = document.getElementById("ga-hint");
+					if (hint) hint.textContent = "贡献日历暂时取不到，先看下面的最近更新";
+				}
 			})
 			.catch(showFail);
 	}

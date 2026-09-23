@@ -35,6 +35,8 @@ const opt = (name, dflt) => {
 	return i >= 0 && args[i + 1] && !args[i + 1].startsWith("--") ? args[i + 1] : dflt;
 };
 const WANT_SHOT = args.includes("--shot");
+/** 只给提交列表、不给贡献日历，用来实测降级样子 */
+const NO_CALENDAR = args.includes("--no-calendar");
 const HOST = "127.0.0.1";
 /** 实际监听的端口：默认 4322，被占了就往后找一个 */
 let PORT = Number(opt("port", 4322));
@@ -216,7 +218,15 @@ function handleApi(req, res, url) {
 	if (p === "/api/auth/logout") return json(res, { ok: true });
 
 	// 公开接口，线上由服务端带令牌去问 GitHub；预览里给一份稳定的假数据
-	if (p === "/api/contributions") return json(res, fakeContributions());
+	if (p === "/api/contributions") {
+		const data = fakeContributions();
+		if (NO_CALENDAR) {
+			data.days = [];
+			data.total = null;
+			data.calendarError = "预览：模拟贡献日历取不到";
+		}
+		return json(res, data);
+	}
 
 	// 写入类请求：明确拒绝，不假装成功
 	if (req.method !== "GET") {
