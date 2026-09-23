@@ -18,7 +18,8 @@ export const sponsorConfig: SponsorConfig = {
 	showComment: true,
 
 	// 是否在文章详情页底部显示打赏按钮
-	showButtonInPost: true,
+	// 打赏方式还没配（methods 为空），先不在文章底部挂按钮，避免点进去是空的
+	showButtonInPost: false,
 
 	// 打赏方式列表
 	methods: [],

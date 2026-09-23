@@ -101,29 +101,6 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 		],
 	});
 
-	// 自定义导航栏链接示例2：带子菜单（混用预设链接）
-	// links.push({
-	// 	name: "链接",
-	// 	url: "/links/",
-	// 	icon: "material-symbols:link",
-
-	// 	// 子菜单
-	// 	children: [
-	// 		{
-	// 			name: "GitHub",
-	// 			url: "https://github.com/CuteLeaf/Firefly",
-	// 			external: true,
-	// 			icon: "fa7-brands:github",
-	// 		},
-	// 		{
-	// 			name: "Bilibili",
-	// 			url: "https://space.bilibili.com/38932988",
-	// 			external: true,
-	// 			icon: "fa7-brands:bilibili",
-	// 		},
-	// 		LinkPreset.Friends,
-	// 	],
-	// });
 
 	// 仅返回链接，其它导航搜索相关配置在模块顶层常量中独立导出
 

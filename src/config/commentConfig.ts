@@ -79,7 +79,7 @@ export const commentConfig: CommentConfig = {
 
 	//disqus评论系统配置
 	disqus: {
-		// 获取 Disqus 评论系统
-		shortname: "firefly",
+		// Disqus 站点短名（填自己的，模板预置的是主题作者的站点，别直接用）
+		shortname: "",
 	},
 };

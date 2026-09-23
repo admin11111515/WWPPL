@@ -1,0 +1,34 @@
+# Cloudflare Pages 响应头配置
+# 文档：https://developers.cloudflare.com/pages/configuration/headers/
+
+# ─────────────────────────────────────────────────────────────
+# 只给「文件名带内容哈希」的东西发长缓存。
+#
+# _astro/ 下的 js/css/字体，文件名里那串随机字符就是内容摘要 —— 内容一变
+# 文件名就变，所以可以让浏览器缓存一年、永不回源校验，这能省掉每次访问
+# 一百多次 304 往返。
+#
+# 反过来，public/ 下的资源文件名是固定的（avatar.png、封面图、相册图），
+# 换了图文件名不变，一律不能进这个名单 —— 否则后台换了头像，访问者那边
+# 一年都看不到新的。
+# ─────────────────────────────────────────────────────────────
+
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# 站点图标按周缓存：更新不频繁，但换了要能生效
+/favicon/*
+  Cache-Control: public, max-age=604800
+
+# 搜索索引每次构建都会变，缓存短一点，避免搜出已经改过的旧标题
+/pagefind/*
+  Cache-Control: public, max-age=3600
+
+# ─────────────────────────────────────────────────────────────
+# 全站安全头
+# ─────────────────────────────────────────────────────────────
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=()

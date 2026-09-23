@@ -6,16 +6,16 @@
     "dev": "astro dev",
     "start": "astro dev",
     "check": "astro check",
-    "build": "node scripts/generate-icons.js && npx tsx scripts/generate-lqips.ts && astro build && npx tsx scripts/localize-code-blocks.ts && npx tsx scripts/subset-fonts.ts && node scripts/build-search-index.mjs",
+    "build": "node scripts/generate-icons.js && tsx scripts/generate-lqips.ts && astro build && tsx scripts/localize-code-blocks.ts && tsx scripts/subset-fonts.ts && node scripts/build-search-index.mjs",
     "preview": "astro preview",
     "astro": "astro",
     "type-check": "tsc --noEmit --isolatedDeclarations",
     "new-post": "node scripts/new-post.js",
     "format": "biome format --write ./src",
     "lint": "biome check --write ./src",
-    "preinstall": "npx only-allow pnpm",
+    "preinstall": "node scripts/check-package-manager.mjs",
     "icons": "node scripts/generate-icons.js",
-    "lqips": "npx tsx scripts/generate-lqips.ts"
+    "lqips": "tsx scripts/generate-lqips.ts"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.9",
@@ -72,6 +72,7 @@
     "sharp": "^0.35.2",
     "stylus": "^0.64.0",
     "svelte": "^5.56.3",
+    "tsx": "^4.23.15",
     "typescript": "^5.9.2",
     "unist-util-visit": "^5.1.0",
     "wrangler": "^4.102.0"
