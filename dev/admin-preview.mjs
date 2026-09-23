@@ -324,15 +324,35 @@ async function shotPages() {
 	const PROBE = `(() => {
 		const de = document.documentElement;
 		const cs = getComputedStyle(de);
+		const box = document.querySelector('.container');
 		return JSON.stringify({
 			title: document.title,
 			url: location.pathname,
 			scrollW: de.scrollWidth,
 			innerW: window.innerWidth,
 			hue: cs.getPropertyValue('--hue').trim(),
-			font: cs.getPropertyValue('--font-ui').trim().slice(0, 60),
-			themeCssLoaded: !!document.querySelector('link[href="/admin/theme.css"]'),
-			primary: getComputedStyle(de).getPropertyValue('--primary-strong').trim(),
+			// --page-bg / --primary 来自博客的 src/styles/variables.styl
+			pageBg: cs.getPropertyValue('--page-bg').trim(),
+			// --text 只在后台样式层 src/styles/admin.css 里定义，
+			// 读得到说明那一层也接上了
+			text: cs.getPropertyValue('--text').trim(),
+			// 导航栏与页脚用的是不是博客那两个组件
+			navbar: !!document.querySelector('#navbar'),
+			// 页脚的署名行；Footer 自身的根元素没有 footer 这个类，用它更准
+			footer: !!document.querySelector('#copyright-year'),
+			containerMax: box ? getComputedStyle(box).maxWidth : '（无容器）',
+			// 页面名的实际盒模型：折行/省略是否符合预期，看这一条就够
+			titleBox: (() => {
+				const h = document.querySelector('.admin-topbar h1');
+				if (!h) return '（无标题）';
+				const st = getComputedStyle(h);
+				return (
+					'w=' + Math.round(h.getBoundingClientRect().width) +
+					' scroll=' + h.scrollWidth +
+					' ws=' + st.whiteSpace +
+					' ov=' + st.overflow
+				);
+			})(),
 			bodyFont: getComputedStyle(document.body).fontFamily.slice(0, 50),
 			errors: (window.__errs || []).slice(0, 6),
 		});
@@ -366,7 +386,8 @@ async function shotPages() {
 				await send("Page.navigate", { url: `http://${HOST}:${PORT}${route}` });
 				await sleep(1500);
 				await send("Runtime.evaluate", {
-					expression: `(() => { try { localStorage.removeItem('theme'); localStorage.removeItem('admin_auth'); } catch(e){} })()`,
+					// hue 也要清：留着上一次测试的值，截图里的主题色就不是配置里那个了
+					expression: `(() => { try { localStorage.removeItem('theme'); localStorage.removeItem('hue'); localStorage.removeItem('admin_auth'); } catch(e){} })()`,
 				});
 				await send("Page.navigate", { url: `http://${HOST}:${PORT}${route}` });
 				await sleep(2000);
@@ -390,7 +411,9 @@ async function shotPages() {
 				console.log(
 					`  ${label}-${scheme}: ${info.title} | 落到 ${info.url} | ` +
 						`溢出 ${overflow ? "⚠ " + (info.scrollW - info.innerW) + "px" : "无"} | ` +
-						`主题表 ${info.themeCssLoaded ? "已载" : "未载"} | hue=${info.hue} | 报错 ${info.errors.length}`,
+						`博客令牌 ${info.pageBg && info.text ? "已载" : "未载"} | hue=${info.hue} | ` +
+						`导航栏 ${info.navbar ? "✓" : "✗"} | 页脚 ${info.footer ? "✓" : "✗"} | ` +
+						`容器上限 ${info.containerMax} | 标题 ${info.titleBox} | 报错 ${info.errors.length}`,
 				);
 				if (info.errors.length) for (const e of info.errors) console.log("      ·", e);
 			}

@@ -1,13 +1,16 @@
 ---
-import AdminTheme from "@/components/admin/AdminTheme.astro";
 // 笔记管理页面 - 往已有笔记本里写笔记，通过 GitHub Gist 存储
+import AdminTheme from "@/components/admin/AdminTheme.astro";
+import AdminTopBar from "@/components/admin/AdminTopBar.astro";
+import Footer from "@components/layout/Footer.astro";
+import { adminBodyClass, adminHtmlClass } from "@/components/admin/adminShell";
 import { externalNotebooksConfig } from "@/config/externalNotebooksConfig";
 
 // 从配置读取笔记本列表
 const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
 ---
 
-<html lang="zh-CN">
+<html lang="zh-CN" class={adminHtmlClass}>
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -17,11 +20,10 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
   {/* 样式、字体、主题色都来自这里，页面自己的样式放在它后面 */}
   <AdminTheme />
   <style is:inline>
-    /* ===== 只放这一页特有的排版，通用部分在 /admin/theme.css ===== */
+    /* ===== 只放这一页特有的排版，通用部分在 src/styles/admin.css ===== */
 
-    /* 这一页是窄栏内容，导航条与容器跟着收窄，免得四周太空 */
-    .navbar-inner { max-width: 760px; }
-    .container { max-width: 760px; }
+    /* 这一页是窄栏内容，标题条与内容区一起收窄，免得四周太空 */
+    #admin-main { --admin-content-max: 760px; }
 
     /* 连接状态独立成一行，单独给它一点卡片感 */
     .status-bar {
@@ -59,9 +61,10 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
       transition: all 0.15s;
     }
     .notebook-tab:hover { border-color: var(--primary); color: var(--btn-content); }
+    /* 与博客 FilterTabs 的选中态一致：实心主色 + 白字 */
     .notebook-tab.active {
-      background: var(--primary-strong);
-      border-color: var(--primary-strong);
+      background: var(--primary);
+      border-color: var(--primary);
       color: #fff;
     }
 
@@ -104,24 +107,11 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
     .entry-actions { display: flex; gap: 0.25rem; flex-shrink: 0; }
   </style>
 </head>
-<body>
+<body class={adminBodyClass}>
 
   <div id="admin-main">
-    <nav class="navbar">
-      <div class="navbar-inner">
-        <div class="navbar-left">
-          <span class="brand-mark">📓</span>
-          <h1>笔记管理</h1>
-        </div>
-        <div class="nav-right">
-          <a href="/admin/" class="back-link">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
-            <span>后台</span>
-          </a>
-          <button class="logout-btn" onclick="doLogout()">退出</button>
-        </div>
-      </div>
-    </nav>
+    {/* 这一页正文里已有独立的连接状态条，标题条上不再重复一次 */}
+    <AdminTopBar title="笔记管理" withStatus={false} />
 
     <div class="container">
       <!-- 连接状态 -->
@@ -225,9 +215,11 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
         </div>
       </div>
     </div>
+
+    {/* 页脚与博客同一个组件 */}
+    <Footer />
   </div>
 
-  <button class="dark-fab" onclick="toggleDark()" title="切换暗色模式">🌙</button>
   <div class="toast" id="toast"></div>
 
   <script is:inline src="/js/editor-commons.js"></script>

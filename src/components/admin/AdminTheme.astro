@@ -2,108 +2,119 @@
 /**
  * 后台页面共用的外壳。
  *
- * 后台的四个页面都是独立的 HTML 文档，不走博客的 Layout，所以博客那套
- * 设计令牌、字体、主题色都拿不到 —— 这正是它们看着和博客不像同一个站的原因。
- * 这个组件把三件事一次补齐：
+ * 后台的四个页面都是独立的 HTML 文档，不走博客的 Layout，所以博客那套设计
+ * 令牌、组件类、字体、主题色都拿不到 —— 这正是它们看着和博客不像同一个站的
+ * 原因。这个组件不新造样式，只把博客那几份原样接过来：
  *
- *   1. 引入后台共用样式层 public/admin/theme.css
- *   2. 复用博客的字体组件，后台正文用上与博客完全相同的字体
- *   3. 初始化色相与明暗：色相跟博客的访客选择同源（localStorage 的 hue），
- *      明暗默认跟随系统，与博客 siteConfig.themeColor.defaultMode 一致
+ *   1. src/styles/main.css       Tailwind 与博客的组件类
+ *                                （.card-base / .btn-regular / .btn-plain / .float-panel / .text-90 …）
+ *   2. src/styles/variables.styl 设计令牌（色相驱动的 oklch、圆角、分隔线、阴影）
+ *   3. src/styles/markdown.css   正文排版 .custom-md，后台的预览区直接用它
+ *   4. <FontManager />           博客的字体组件，后台正文与博客同一个字体
+ *   5. 主题初始化                色相跟博客访客的选择同源（localStorage 的 hue），
+ *                                明暗按 siteConfig.themeColor.defaultMode
  *
- * 用法：在 <head> 里放一个 <AdminTheme />，页面自己的 <style> 放在它后面。
+ * 用法：在 <head> 里放一个 <AdminTheme />。
+ * 页面的 <html> 与 <body> 要带上博客同款类：
+ *   <html class="bg-(--page-bg) text-[14px] md:text-[16px]">
+ *   <body class="min-h-screen enable-card-border card-follow-theme-hue">
  */
+import ConfigCarrier from "@components/layout/ConfigCarrier.astro";
 import FontManager from "@/components/features/FontManager.astro";
-import { siteConfig } from "@/config";
+import { expressiveCodeConfig, siteConfig } from "@/config";
+import { PAGE_WIDTH } from "@/constants/constants";
 
-const hue = siteConfig.themeColor.hue;
-const defaultMode = siteConfig.themeColor.defaultMode ?? "system";
+import "@/styles/main.css";
+import "@/styles/variables.styl";
+import "@/styles/markdown.css";
+import "@/styles/admin.css";
+
+const configHue = siteConfig.themeColor.hue;
+const defaultMode = siteConfig.themeColor.defaultMode ?? "light";
+const pageWidth = `${siteConfig.pageWidth ?? PAGE_WIDTH}rem`;
 ---
 
-<link rel="stylesheet" href="/admin/theme.css" />
+{/* 配置里的值要变成 CSS 变量（--page-width 决定内容区宽度），但不能照抄
+   Layout.astro 那种空的 <style define:vars>：Astro 是把这些变量挂到「这个
+   组件里的元素」上，而 <html> 与 <body> 在页面文件里、不在这个组件里，
+   于是变量一个也挂不出来 —— .container 的 max-width 会悄悄退成 none。
+   改由下面那段脚本直接挂到 <html> 上，效果相同，也不受组件边界影响。 */}
 
-{/* 复用博客的字体声明：后台与博客用同一份字体文件，
+{/* 配置载体：博客 Layout 里也有这一个。导航栏上的「显示设置」面板要靠它
+    读默认色相（setting-utils 的 getDefaultHue 会找 #config-carrier 的
+    data-hue，找不到就用写死的 250）—— 少了它，面板一挂载就把色相从配置里
+    的 270 改成 250。 */}
+<ConfigCarrier />
+
+{/* 博客的字体：后台与博客用同一份字体文件，
     子集化脚本会扫描 dist 下所有 HTML，后台页面的字也会被收进子集 */}
 <FontManager />
 
-<script is:inline data-hue={hue} data-default-mode={defaultMode}>
-	(function () {
-		var root = document.documentElement;
-		var tag = document.currentScript;
-		var hue = tag && tag.getAttribute("data-hue");
-		var defaultMode = (tag && tag.getAttribute("data-default-mode")) || "system";
+<script
+  is:inline
+  define:vars={{
+    configHue,
+    defaultMode,
+    pageWidth,
+    darkTheme: expressiveCodeConfig.darkTheme,
+    lightTheme: expressiveCodeConfig.lightTheme,
+  }}
+>
+  (function () {
+    var LIGHT_MODE = "light";
+    var DARK_MODE = "dark";
+    var SYSTEM_MODE = "system";
+    var root = document.documentElement;
 
-		// 色相：博客把访客选的色相存进 localStorage 的 hue，后台跟着走
-		try {
-			var storedHue = localStorage.getItem("hue");
-			if (storedHue) hue = storedHue;
-		} catch (e) {
-			/* 隐私模式下读不到，用配置里的默认值 */
-		}
-		if (hue) root.style.setProperty("--hue", hue);
+    // 色相：博客把访客选的色相存进 localStorage 的 hue，后台跟着走
+    var hue = localStorage.getItem("hue") || configHue;
+    root.style.setProperty("--hue", hue);
 
-		function readSaved() {
-			try {
-				return localStorage.getItem("theme");
-			} catch (e) {
-				return null;
-			}
-		}
+    // 与博客 Layout 挂在 <html> 上的那两个变量对齐。
+    // --page-width 决定内容区宽度，后台的 .container 靠它取上限。
+    root.style.setProperty("--configHue", configHue);
+    root.style.setProperty("--page-width", pageWidth);
 
-		function prefersDark() {
-			return !!(
-				window.matchMedia &&
-				window.matchMedia("(prefers-color-scheme: dark)").matches
-			);
-		}
+    // 明暗：与博客 Layout 的初始化同一套判断
+    function getSystemTheme() {
+      return window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? DARK_MODE
+        : LIGHT_MODE;
+    }
 
-		// 没有手动选过就跟随系统，与博客的 defaultMode: "system" 一致
-		function resolveMode() {
-			var saved = readSaved();
-			if (saved === "dark" || saved === "light") return saved;
-			if (defaultMode === "dark" || defaultMode === "light") return defaultMode;
-			return prefersDark() ? "dark" : "light";
-		}
+    function resolveTheme(value) {
+      return value === SYSTEM_MODE ? getSystemTheme() : value;
+    }
 
-		function applyMode(mode) {
-			root.classList.toggle("dark", mode === "dark");
-			root.style.colorScheme = mode;
-			var fab = document.querySelector(".dark-fab");
-			if (fab) {
-				fab.textContent = mode === "dark" ? "☀️" : "🌙";
-				fab.title = mode === "dark" ? "切换到亮色" : "切换到暗色";
-			}
-		}
+    function applyTheme() {
+      var isDark = resolveTheme(localStorage.getItem("theme") || defaultMode) === DARK_MODE;
+      root.classList.toggle("dark", isDark);
+      root.setAttribute("data-theme", isDark ? darkTheme : lightTheme);
+    }
 
-		applyMode(resolveMode());
+    applyTheme();
 
-		// 脚本在 <head> 里跑，此刻按钮还没解析出来，等 DOM 好了再补一次图标
-		document.addEventListener("DOMContentLoaded", function () {
-			applyMode(root.classList.contains("dark") ? "dark" : "light");
-		});
+    // 系统主题变化时，只有没手动选过时才跟随
+    if (window.matchMedia) {
+      var mq = window.matchMedia("(prefers-color-scheme: dark)");
+      var onSystemChange = function () {
+        var saved = localStorage.getItem("theme");
+        if (saved && saved !== SYSTEM_MODE) return;
+        applyTheme();
+      };
+      if (mq.addEventListener) mq.addEventListener("change", onSystemChange);
+      else if (mq.addListener) mq.addListener(onSystemChange);
+    }
 
-		// 页面上的按钮直接 onclick="toggleDark()" 调用它
-		window.toggleDark = function () {
-			var next = root.classList.contains("dark") ? "light" : "dark";
-			try {
-				localStorage.setItem("theme", next);
-			} catch (e) {
-				/* 存不下也不影响本次切换 */
-			}
-			applyMode(next);
-		};
-
-		// 系统主题变化时，只有在没手动选过的情况下才跟随
-		if (window.matchMedia) {
-			var mq = window.matchMedia("(prefers-color-scheme: dark)");
-			var onChange = function () {
-				var saved = readSaved();
-				if (saved === "dark" || saved === "light") return;
-				if (defaultMode === "dark" || defaultMode === "light") return;
-				applyMode(prefersDark() ? "dark" : "light");
-			};
-			if (mq.addEventListener) mq.addEventListener("change", onChange);
-			else if (mq.addListener) mq.addListener(onChange);
-		}
-	})();
+    // 供页面上的按钮切换明暗（与博客的 LightDarkSwitch 写同一个键）
+    window.toggleDark = function () {
+      var next = root.classList.contains("dark") ? LIGHT_MODE : DARK_MODE;
+      try {
+        localStorage.setItem("theme", next);
+      } catch (e) {
+        /* 存不下也不影响本次切换 */
+      }
+      applyTheme();
+    };
+  })();
 </script>

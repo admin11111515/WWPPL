@@ -1,0 +1,832 @@
+/* ============================================================
+   后台共用样式层
+   ------------------------------------------------------------
+   后台的四个页面（登录/说说/笔记/文章）是独立的 HTML 文档，不走博客的
+   Layout，所以拿不到博客的样式。这份文件把它们接到博客那一套上 ——
+   样式不另立一套，来源就三个：
+
+     · 设计令牌  src/styles/variables.styl      （--primary / --radius-* / --btn-* …）
+     · 组件类    src/styles/main.css            （.card-base / .btn-regular / .btn-plain / .float-panel / .text-90 …）
+     · 正文排版  src/styles/markdown.css        （.custom-md，预览区直接用它）
+
+   这里只做一件事：给「后台原有的类名」补上与博客一致的声明，
+   免得为了换个类名去改四个页面的标签。博客改了观感，后台跟着改。
+   ============================================================ */
+
+@reference "./main.css";
+
+/* ===== 1. 名称映射 =====
+   博客把灰阶写成类（.text-90 / .text-75 / .text-50 / .text-30），后台有些地方
+   写在 <style> 里，用变量更顺手 —— 这里给出同名同值的变量。
+   variables.styl 里已有的名字（--primary / --radius-* / --btn-* / --line-* / --muted
+   / --shadow-* / --admonitions-color-* …）一律不重复定义，直接用博客的。 */
+:root {
+	--text: rgb(0 0 0 / 0.9); /* = .text-90 */
+	--text-2: rgb(0 0 0 / 0.75); /* = .text-75 */
+	--text-3: rgb(0 0 0 / 0.5); /* = .text-50 */
+	--text-4: rgb(0 0 0 / 0.3); /* = .text-30 */
+
+	--line: var(--line-color);
+	--line-soft: var(--line-divider);
+
+	--hover: var(--btn-plain-bg-hover);
+	--input-bg: var(--card-bg);
+	--card-bg-soft: var(--muted);
+
+	/* 编辑器输入框用的等宽字体。variables.styl 里没有等宽字体令牌，
+	   博客的代码块是自己写一串系统等宽栈（见 src/styles/markdown.css 的 code），
+	   这里照同一份写 */
+	--admin-font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular,
+		Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+	--primary-soft: var(--btn-regular-bg);
+	--primary-soft-hover: var(--btn-regular-bg-hover);
+	--primary-soft-active: var(--btn-regular-bg-active);
+	--primary-ring: color-mix(in oklab, var(--primary) 22%, transparent);
+
+	/* 语义色取博客的提示色（variables.styl 的 --admonitions-color-*） */
+	--danger: var(--admonitions-color-caution);
+	--danger-soft: color-mix(
+		in oklab,
+		var(--admonitions-color-caution) 14%,
+		transparent
+	);
+	--success: var(--admonitions-color-tip);
+	--success-soft: color-mix(
+		in oklab,
+		var(--admonitions-color-tip) 16%,
+		transparent
+	);
+}
+
+:root.dark {
+	--text: rgb(255 255 255 / 0.9);
+	--text-2: rgb(255 255 255 / 0.75);
+	--text-3: rgb(255 255 255 / 0.5);
+	--text-4: rgb(255 255 255 / 0.3);
+}
+
+/* ===== 2. 基础 =====
+   页面底色与字号写在 <html> 上的类里（与 Layout.astro 一致）：
+   class="bg-(--page-bg) text-[14px] md:text-[16px]"
+   字体由博客的 <FontManager /> 注入到 body，这里不重复设置。
+   滚动条沿用博客的 src/styles/custom-scrollbar.css。 */
+
+/* 这里原本有一条 h1~h4 的全局 line-height + text-wrap: pretty —— 已删除。
+   博客把 text-wrap 严格限定在 .custom-md（文章正文）里，cjk-typography.css
+   的注释写明了理由：「仅作用于文章正文，避免影响导航栏、卡片这类紧凑 UI
+   的既有布局」。而 text-wrap: pretty 会把 text-wrap-mode 设成 wrap，与
+   Tailwind .truncate 的 white-space: nowrap 争同一个长属性 —— 结果是标题条
+   上的页面名不再省略，被状态文字挤成两行。
+   正文排版由 markdown.css 的 .custom-md 负责，后台不必也不该再定义一遍。 */
+
+/* 可见的键盘焦点圈，鼠标点击不出现 */
+:focus-visible {
+	outline: 2px solid var(--primary);
+	outline-offset: 2px;
+}
+
+/* ===== 3. 宽度容器 ===== 
+   内容区（.container）与页面标题条（.admin-topbar）同宽，取法与博客内容区
+   一致（Layout 的 max-w-(--page-width) + xl:w-[92vw]）。
+   页面想更窄（窄栏内容）就在共同祖先上写 --admin-content-max: 640px ——
+   写在 .container 上标题条继承不到，两者是兄弟节点。 */
+.container,
+.admin-topbar {
+	width: 100%;
+	max-width: var(--admin-content-max, var(--page-width));
+	margin-inline: auto;
+	padding-inline: 1rem;
+}
+
+.container {
+	padding-bottom: 5rem;
+}
+
+.admin-topbar {
+	padding-block: 1rem;
+}
+
+@media (min-width: 768px) {
+	.container,
+	.admin-topbar {
+		padding-inline: 1.5rem;
+	}
+}
+
+@media (min-width: 1280px) {
+	.container,
+	.admin-topbar {
+		width: 92vw;
+	}
+}
+
+/* ===== 4. 卡片 =====
+   与博客 main.css 的 .card-base / .enable-card-border .card-base 完全同两条声明，
+   只是顺手带上内边距（博客习惯在标签上写 p-4，后台沿用下来的写法是 .card 自带）。 */
+.card,
+.card-base {
+	@apply rounded-(--radius-large) overflow-hidden bg-(--card-bg) transition-colors duration-150;
+}
+
+.card {
+	padding: 1.25rem;
+}
+
+.enable-card-border .card,
+.enable-card-border .card-base {
+	@apply transition-all duration-300 border border-(--line-divider) shadow-xs;
+}
+
+@media (min-width: 768px) {
+	.card {
+		padding: 1.5rem;
+	}
+}
+
+@media (max-width: 640px) {
+	.card {
+		padding: 1rem;
+	}
+}
+
+/* ===== 5. 表单 ===== */
+.field {
+	margin-bottom: 1rem;
+}
+
+.field:last-child {
+	margin-bottom: 0;
+}
+
+.field-label {
+	display: flex;
+	align-items: center;
+	gap: 0.375rem;
+	font-size: 0.75rem;
+	font-weight: 700;
+	color: var(--text-2);
+	margin-bottom: 0.4375rem;
+	letter-spacing: 0.01em;
+}
+
+.field-label .icon {
+	font-size: 0.875rem;
+	line-height: 1;
+}
+
+.field-hint {
+	margin-top: 0.375rem;
+	font-size: 0.75rem;
+	color: var(--text-3);
+	line-height: 1.6;
+}
+
+.field-footer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+	margin-top: 0.375rem;
+	font-size: 0.75rem;
+	color: var(--text-3);
+}
+
+.input-single,
+.form-input,
+input[type="text"],
+input[type="search"],
+input[type="password"],
+input[type="date"],
+input[type="url"],
+select {
+	width: 100%;
+	padding: 0.5rem 0.75rem;
+	border: 1px solid var(--line);
+	border-radius: var(--radius-lg);
+	font-size: 0.875rem;
+	background: var(--input-bg);
+	color: var(--text);
+	outline: none;
+	transition:
+		border-color 0.15s,
+		box-shadow 0.15s,
+		background-color 0.15s;
+}
+
+.input-single:hover,
+input[type="text"]:hover,
+input[type="search"]:hover,
+input[type="password"]:hover,
+input[type="date"]:hover,
+select:hover {
+	border-color: var(--text-4);
+}
+
+.input-single:focus,
+.form-input:focus,
+input[type="text"]:focus,
+input[type="search"]:focus,
+input[type="password"]:focus,
+input[type="date"]:focus,
+select:focus {
+	border-color: var(--primary);
+	box-shadow: 0 0 0 3px var(--primary-ring);
+}
+
+.input-single::placeholder,
+.form-input::placeholder,
+input::placeholder,
+textarea::placeholder {
+	color: var(--text-4);
+}
+
+input[type="search"]::-webkit-search-cancel-button {
+	cursor: pointer;
+}
+
+textarea {
+	width: 100%;
+	min-height: 96px;
+	padding: 0.625rem 0.75rem;
+	border: 1px solid var(--line);
+	border-radius: var(--radius-lg);
+	font-size: 0.875rem;
+	line-height: 1.75;
+	background: var(--input-bg);
+	color: var(--text);
+	outline: none;
+	resize: vertical;
+	transition:
+		border-color 0.15s,
+		box-shadow 0.15s;
+}
+
+textarea:focus {
+	border-color: var(--primary);
+	box-shadow: 0 0 0 3px var(--primary-ring);
+}
+
+/* 勾选项 */
+.checkbox-row {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-size: 0.8125rem;
+	color: var(--text-2);
+	cursor: pointer;
+	user-select: none;
+}
+
+.checkbox-row.compact {
+	font-size: 0.75rem;
+}
+
+.checkbox-row input[type="checkbox"] {
+	width: 1rem;
+	height: 1rem;
+	flex: none;
+	accent-color: var(--primary);
+	cursor: pointer;
+}
+
+/* ===== 5. 按钮 =====
+   博客的按钮只有两种（main.css）：.btn-regular —— 浅色底 + 主题色字；
+   .btn-plain —— 无底色，悬停才浮出来。这里照它们来，没有第三种。 */
+.btn {
+	@apply transition-colors duration-150;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.375rem;
+	padding: 0.5rem 0.875rem;
+	border: 1px solid transparent;
+	border-radius: var(--radius-lg);
+	font-size: 0.8125rem;
+	font-weight: 700;
+	cursor: pointer;
+	background: var(--btn-regular-bg);
+	color: var(--btn-content);
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.btn:hover {
+	background: var(--btn-regular-bg-hover);
+}
+
+.btn:active {
+	background: var(--btn-regular-bg-active);
+}
+
+.btn:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
+
+/* 主要操作：在博客自己的按钮色阶上再深一档，不引入新颜色 */
+.btn-primary {
+	background: var(--btn-regular-bg-active);
+}
+
+.btn-primary:hover {
+	background: var(--btn-regular-bg-active);
+	filter: brightness(0.96);
+}
+
+.btn-primary:active {
+	background: var(--btn-regular-bg-active);
+	filter: brightness(0.92);
+}
+
+/* 次要按钮：无底色，悬停浮出一层（= .btn-plain） */
+.btn-ghost {
+	background: transparent;
+	border-color: var(--line);
+	color: var(--text-2);
+}
+
+.btn-ghost:hover {
+	background: var(--btn-plain-bg-hover);
+	border-color: transparent;
+	color: var(--primary);
+}
+
+.btn-sm {
+	padding: 0.3125rem 0.625rem;
+	font-size: 0.75rem;
+	border-radius: var(--radius-md);
+}
+
+.btn-danger-sm {
+	padding: 0.3125rem 0.5625rem;
+	font-size: 0.6875rem;
+	font-weight: 600;
+	border-radius: var(--radius-md);
+	background: transparent;
+	border-color: var(--line);
+	color: var(--text-3);
+}
+
+.btn-danger-sm:hover {
+	background: var(--danger-soft);
+	border-color: var(--danger);
+	color: var(--danger);
+}
+
+/* 图标按钮 */
+.icon-btn {
+	width: 30px;
+	height: 30px;
+	padding: 0;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: var(--radius-md);
+	background: transparent;
+	border: 1px solid var(--line);
+	color: var(--text-2);
+	cursor: pointer;
+	transition: all 0.15s;
+}
+
+.icon-btn:hover {
+	background: var(--btn-plain-bg-hover);
+	border-color: transparent;
+	color: var(--primary);
+}
+
+/* 分段切换（编辑 / 预览）：轨道用按钮底色，选中项浮成卡片色 */
+.seg {
+	display: inline-flex;
+	align-items: center;
+	gap: 2px;
+	padding: 2px;
+	background: var(--btn-regular-bg);
+	border-radius: var(--radius-lg);
+}
+
+.seg-btn {
+	border: none;
+	background: transparent;
+	color: var(--text-2);
+	font-size: 0.75rem;
+	font-weight: 700;
+	padding: 0.25rem 0.625rem;
+	border-radius: var(--radius-md);
+	cursor: pointer;
+	transition:
+		background-color 0.15s,
+		color 0.15s;
+}
+
+.seg-btn:hover {
+	color: var(--primary);
+}
+
+.seg-btn.active {
+	background: var(--card-bg);
+	color: var(--primary);
+	box-shadow: var(--shadow-xs);
+}
+
+/* ===== 6. 状态提示 ===== */
+.status-bar {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.375rem;
+	font-size: 0.75rem;
+	color: var(--text-3);
+	min-width: 0;
+}
+
+.status-dot {
+	width: 7px;
+	height: 7px;
+	flex: none;
+	border-radius: 50%;
+	background: var(--text-4);
+}
+
+.status-dot.ok {
+	background: var(--success);
+	box-shadow: 0 0 0 3px var(--success-soft);
+}
+
+.status-dot.err {
+	background: var(--danger);
+	box-shadow: 0 0 0 3px var(--danger-soft);
+}
+
+.toast {
+	@apply shadow-xl;
+	position: fixed;
+	top: 5.5rem;
+	left: 50%;
+	transform: translateX(-50%) translateY(-10px);
+	padding: 0.5625rem 1.125rem;
+	font-size: 0.8125rem;
+	font-weight: 700;
+	z-index: var(--z-toast, 999);
+	opacity: 0;
+	pointer-events: none;
+	border-radius: var(--radius-large);
+	background: var(--card-bg);
+	color: var(--text);
+	border: 1px solid var(--line);
+	transition:
+		opacity 0.2s,
+		transform 0.2s;
+	max-width: min(92vw, 32rem);
+	text-align: center;
+}
+
+.toast.show {
+	opacity: 1;
+	transform: translateX(-50%) translateY(0);
+}
+
+.toast.ok {
+	background: var(--success);
+	color: #fff;
+	border-color: var(--success);
+}
+
+.toast.err {
+	background: var(--danger);
+	color: #fff;
+	border-color: var(--danger);
+}
+
+.spinner {
+	display: inline-block;
+	width: 14px;
+	height: 14px;
+	border: 2px solid var(--line);
+	border-top-color: var(--primary);
+	border-radius: 50%;
+	animation: admin-spin 0.6s linear infinite;
+	vertical-align: middle;
+	margin-right: 0.375rem;
+}
+
+@keyframes admin-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.spinner {
+		animation-duration: 2s;
+	}
+}
+
+.empty-state {
+	text-align: center;
+	padding: 2rem 1rem;
+	color: var(--text-3);
+	font-size: 0.8125rem;
+}
+
+.empty-state .icon {
+	font-size: 1.5rem;
+	margin-bottom: 0.5rem;
+	opacity: 0.5;
+}
+
+.empty-state p {
+	font-size: 0.8125rem;
+	line-height: 1.7;
+}
+
+/* ===== 8. 列表行 ===== */
+.list-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+	margin-bottom: 0.75rem;
+}
+
+.list-header .count {
+	font-size: 0.75rem;
+	font-weight: 600;
+	color: var(--text-3);
+	flex: none;
+}
+
+.post-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+	padding: 0.625rem 0.5rem;
+	margin: 0 -0.5rem;
+	border-radius: var(--radius-lg);
+	border-bottom: 1px solid var(--line-soft);
+	transition: background-color 0.15s;
+}
+
+.post-row:hover {
+	background: var(--btn-plain-bg-hover);
+}
+
+.post-row:last-child {
+	border-bottom: none;
+}
+
+.post-info {
+	flex: 1;
+	min-width: 0;
+}
+
+.post-title {
+	font-size: 0.8125rem;
+	font-weight: 700;
+	color: var(--text);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.post-meta {
+	display: flex;
+	align-items: center;
+	gap: 0.375rem;
+	margin-top: 0.1875rem;
+	font-size: 0.6875rem;
+	color: var(--text-3);
+	flex-wrap: wrap;
+}
+
+.post-meta .sep {
+	opacity: 0.5;
+}
+
+.post-badge {
+	display: inline-block;
+	padding: 0.0625rem 0.375rem;
+	border-radius: var(--radius-md);
+	font-size: 0.625rem;
+	font-weight: 700;
+	background: var(--btn-regular-bg);
+	color: var(--btn-content);
+}
+
+.post-badge.draft {
+	background: var(--danger-soft);
+	color: var(--danger);
+}
+
+.post-actions {
+	display: flex;
+	gap: 0.25rem;
+	flex-shrink: 0;
+}
+
+/* ===== 8. 编辑器 ===== */
+.editor-container {
+	display: grid;
+	grid-template-columns: 1fr;
+	border: 1px solid var(--line);
+	border-radius: var(--radius-xl);
+	overflow: hidden;
+	background: var(--card-bg);
+}
+
+@media (min-width: 980px) {
+	.editor-container {
+		grid-template-columns: 1fr 1fr;
+	}
+}
+
+.editor-pane {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+.editor-pane-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+	padding: 0.5rem 0.625rem;
+	background: var(--card-bg-soft);
+	border-bottom: 1px solid var(--line-soft);
+	font-size: 0.75rem;
+	font-weight: 700;
+	color: var(--text-3);
+	min-height: 44px;
+}
+
+.editor-textarea {
+	width: 100%;
+	flex: 1;
+	min-height: 520px;
+	padding: 0.875rem 1rem;
+	border: none;
+	border-radius: 0;
+	font-family: var(--admin-font-mono);
+	font-size: 0.875rem;
+	line-height: 1.85;
+	background: transparent;
+	color: var(--text);
+	outline: none;
+	resize: vertical;
+	tab-size: 2;
+}
+
+.editor-textarea:focus {
+	box-shadow: none;
+}
+
+/* 预览区只负责外壳（高度、滚动、与编辑区之间的分隔线）；
+   里面的排版交给博客的 .custom-md（src/styles/markdown.css）——
+   和文章页正文是同一套样式，所以这里不再自己写一份标题/引用/代码块。 */
+.preview-pane {
+	min-height: 520px;
+	max-height: 78vh;
+	overflow-y: auto;
+	padding: 1.125rem 1.25rem;
+	border-top: 1px solid var(--line-soft);
+}
+
+@media (min-width: 980px) {
+	.preview-pane {
+		border-top: none;
+		border-left: 1px solid var(--line-soft);
+	}
+}
+
+/* 小屏一次只显示一个窗格，靠 data-mobile-pane 切换 */
+@media (max-width: 979px) {
+	.editor-container[data-mobile-pane="preview"] .editor-pane[data-pane="edit"] {
+		display: none;
+	}
+
+	.editor-container:not([data-mobile-pane="preview"])
+		.editor-pane[data-pane="preview"] {
+		display: none;
+	}
+}
+
+@media (min-width: 980px) {
+	.mobile-only {
+		display: none !important;
+	}
+}
+
+.editor-toolbar {
+	display: flex;
+	gap: 0.125rem;
+	flex-wrap: wrap;
+}
+
+/* 工具栏按钮：与博客导航栏上的图标按钮同一形态（.btn-plain） */
+.toolbar-btn {
+	min-width: 28px;
+	height: 28px;
+	padding: 0 0.3125rem;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border: none;
+	background: transparent;
+	color: var(--text-2);
+	border-radius: var(--radius-md);
+	cursor: pointer;
+	font-size: 0.8125rem;
+	font-weight: 700;
+	transition:
+		background-color 0.15s,
+		color 0.15s;
+}
+
+.toolbar-btn:hover {
+	background: var(--btn-plain-bg-hover);
+	color: var(--primary);
+}
+
+.editor-footer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+	flex-wrap: wrap;
+	padding: 0.5rem 0.75rem;
+	border-top: 1px solid var(--line-soft);
+	background: var(--card-bg-soft);
+	font-size: 0.6875rem;
+	color: var(--text-3);
+}
+
+.editor-footer .editor-hint {
+	opacity: 0.85;
+}
+
+.editor-footer kbd {
+	font-family: var(--admin-font-mono);
+	font-size: 0.625rem;
+	padding: 0.0625rem 0.25rem;
+	border: 1px solid var(--line);
+	border-bottom-width: 2px;
+	border-radius: var(--radius-md);
+	background: var(--card-bg);
+	color: var(--text-2);
+}
+
+/* ===== 9. 恢复提示条（上次未保存的本地草稿） ===== */
+.restore-bar {
+	display: flex;
+	align-items: center;
+	gap: 0.625rem;
+	flex-wrap: wrap;
+	margin-bottom: 1rem;
+	padding: 0.75rem 1rem;
+	border: 1px solid transparent;
+	border-radius: var(--radius-large);
+	background: var(--btn-regular-bg);
+	font-size: 0.8125rem;
+	color: var(--text-2);
+}
+
+.restore-bar .restore-icon {
+	flex: none;
+}
+
+.restore-bar .restore-text {
+	flex: 1;
+	min-width: 12rem;
+	line-height: 1.6;
+}
+
+.restore-bar .restore-actions {
+	display: flex;
+	gap: 0.375rem;
+	flex: none;
+}
+
+/* ===== 10. 小屏 ===== */
+@media (max-width: 640px) {
+	.container {
+		padding: 0 0.75rem 4rem;
+	}
+
+	.editor-textarea,
+	.preview-pane {
+		min-height: 340px;
+	}
+
+	.toast {
+		top: auto;
+		bottom: 4.5rem;
+		transform: translateX(-50%) translateY(10px);
+	}
+
+	.toast.show {
+		transform: translateX(-50%) translateY(0);
+	}
+}

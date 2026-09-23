@@ -1,0 +1,72 @@
+---
+/**
+ * 后台页面顶部：博客的导航栏 + 页面自己的标题条。
+ *
+ * 导航栏不是另画的，就是博客的 <Navbar /> —— 同一根条、同一套按钮
+ * （搜索、主题色、明暗、后台入口）。区别只在于后台没有壁纸，
+ * 所以导航栏走的是博客「纯色背景」下的那副样子。
+ *
+ * 下面那条标题条照博客 CategoryBar 的形态来：card-base + 一行内容。
+ */
+import { Icon } from "astro-icon/components";
+import Navbar from "@components/layout/Navbar.astro";
+
+interface Props {
+	/** 页面名，显示在标题条上 */
+	title: string;
+	/** 是否显示连接状态（有接口调用的页面才需要） */
+	withStatus?: boolean;
+	/** 返回链接指向哪里，默认回后台首页 */
+	backHref?: string;
+	/** 返回链接上的字 */
+	backLabel?: string;
+}
+
+const {
+	title,
+	withStatus = true,
+	backHref = "/admin/",
+	backLabel = "后台",
+} = Astro.props;
+---
+
+{/* 博客的导航栏。宽度容器与 Layout 里的内容区一致：max-w-(--page-width) + xl:w-[92vw] */}
+<div
+  class="relative z-50 mx-auto w-full max-w-(--page-width) px-0 md:px-4 xl:w-[92vw]"
+>
+  <div id="navbar-wrapper" class="sticky top-0 z-50">
+    <Navbar />
+  </div>
+</div>
+
+{/* 页面标题条 */}
+<div class="admin-topbar">
+  <div class="card-base flex items-center justify-between gap-3 px-3 py-2.5">
+    {/* 页面名是这一条上最该看清的东西，不许被挤；状态文字长了就自己省略 */}
+    <div class="flex min-w-0 items-center gap-2.5">
+      <h1 class="text-90 m-0 shrink-0 text-sm font-bold">{title}</h1>
+      {
+        withStatus && (
+          <span class="status-bar min-w-0">
+            <span class="status-dot" id="status-dot" />
+            <span id="status-text" class="truncate">正在连接…</span>
+          </span>
+        )
+      }
+    </div>
+    <div class="flex shrink-0 items-center gap-1">
+      <a
+        href={backHref}
+        class="btn-plain rounded-lg h-9 gap-1 px-2.5 text-xs font-bold"
+      >
+        <Icon is:inline name="material-symbols:arrow-back-rounded" class="text-base" />
+        {backLabel}
+      </a>
+      <button
+        type="button"
+        class="btn-plain rounded-lg h-9 px-2.5 text-xs font-bold"
+        onclick="doLogout()">退出</button
+      >
+    </div>
+  </div>
+</div>

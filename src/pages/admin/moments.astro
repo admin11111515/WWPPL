@@ -1,10 +1,13 @@
 ---
-import AdminTheme from "@/components/admin/AdminTheme.astro";
 // 说说写作页面 - 通过 GitHub Gist 存储，完全免费，不修改仓库代码
+import AdminTheme from "@/components/admin/AdminTheme.astro";
+import AdminTopBar from "@/components/admin/AdminTopBar.astro";
+import Footer from "@components/layout/Footer.astro";
+import { adminBodyClass, adminHtmlClass } from "@/components/admin/adminShell";
 import { externalMomentsConfig } from "@/config/externalMomentsConfig";
 ---
 
-<html lang="zh-CN">
+<html lang="zh-CN" class={adminHtmlClass}>
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -14,11 +17,10 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
   {/* 样式、字体、主题色都来自这里，页面自己的样式放在它后面 */}
   <AdminTheme />
   <style is:inline>
-    /* ===== 只放这一页特有的排版，通用部分在 /admin/theme.css ===== */
+    /* ===== 只放这一页特有的排版，通用部分在 src/styles/admin.css ===== */
 
-    /* 这一页是窄栏内容，导航条与容器跟着收窄，免得四周太空 */
-    .navbar-inner { max-width: 640px; }
-    .container { max-width: 640px; }
+    /* 这一页是窄栏内容，标题条与内容区一起收窄，免得四周太空 */
+    #admin-main { --admin-content-max: 640px; }
 
     /* 连接状态独立成一行，单独给它一点卡片感 */
     .status-bar {
@@ -43,8 +45,9 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
     .draft-hint { font-size: 0.6875rem; color: var(--text-3); white-space: nowrap; }
     .field-footer .hint { opacity: 0.75; }
 
-    textarea { min-height: 150px; }
-    @media (min-width: 640px) { textarea { min-height: 170px; } }
+    /* 正文输入框比默认的再高一点 */
+    .card textarea { min-height: 150px; }
+    @media (min-width: 640px) { .card textarea { min-height: 170px; } }
 
     /* 输入框 + 按钮 的一行 */
     .input-row { display: flex; align-items: center; gap: 0.5rem; }
@@ -142,7 +145,7 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
       box-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
       transition: transform 0.15s;
     }
-    .toggle-checkbox:checked + .toggle-switch { background: var(--primary-strong); }
+    .toggle-checkbox:checked + .toggle-switch { background: var(--primary); }
     .toggle-checkbox:checked + .toggle-switch::after { transform: translateX(16px); }
     .toggle-checkbox:focus-visible + .toggle-switch { outline: 2px solid var(--primary); outline-offset: 2px; }
 
@@ -191,25 +194,11 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
     }
   </style>
 </head>
-<body>
+<body class={adminBodyClass}>
 
   <!-- ===== 后台主页 ===== -->
   <div id="admin-main">
-    <nav class="navbar">
-      <div class="navbar-inner">
-        <div class="navbar-left">
-          <span class="brand-mark">💬</span>
-          <h1>写说说</h1>
-        </div>
-        <div class="nav-right">
-          <a href="/admin/" class="back-link">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
-            <span>后台</span>
-          </a>
-          <button class="logout-btn" onclick="doLogout()">退出</button>
-        </div>
-      </div>
-    </nav>
+    <AdminTopBar title="写说说" withStatus={false} />
 
     <div class="container">
       <!-- 连接状态 -->
@@ -303,9 +292,11 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
         </div>
       </div>
     </div>
+
+    {/* 页脚与博客同一个组件 */}
+    <Footer />
   </div>
 
-  <button class="dark-fab" onclick="toggleDark()" title="切换暗色模式">🌙</button>
   <div class="toast" id="toast"></div>
 
   <script is:inline src="/js/editor-commons.js"></script>

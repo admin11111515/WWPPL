@@ -1,9 +1,12 @@
 ---
 // 后台管理入口 - 动画角色登录页
 import AdminTheme from "@/components/admin/AdminTheme.astro";
+import AdminTopBar from "@/components/admin/AdminTopBar.astro";
+import Footer from "@components/layout/Footer.astro";
+import { adminBodyClass, adminHtmlClass } from "@/components/admin/adminShell";
 ---
 
-<html lang="zh-CN">
+<html lang="zh-CN" class={adminHtmlClass}>
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -13,7 +16,7 @@ import AdminTheme from "@/components/admin/AdminTheme.astro";
   {/* 样式、字体、主题色都来自这里，页面自己的样式放在它后面 */}
   <AdminTheme />
   <style is:inline>
-    /* ===== 只放这一页特有的排版，通用部分在 /admin/theme.css ===== */
+    /* ===== 只放这一页特有的排版，通用部分在 src/styles/admin.css ===== */
 
     /* ===== 双栏布局 ===== */
     .login-split {
@@ -219,7 +222,7 @@ import AdminTheme from "@/components/admin/AdminTheme.astro";
       color: var(--text);
     }
     .login-header p { font-size: 0.875rem; color: var(--text-3); }
-    .login-card { padding: 1.5rem; }
+    .card.login-card { padding: 1.5rem; }
     .login-error {
       font-size: 0.8125rem;
       color: var(--danger);
@@ -239,9 +242,9 @@ import AdminTheme from "@/components/admin/AdminTheme.astro";
     .login-back:hover { color: var(--btn-content); }
 
     /* ===== 后台主页 ===== */
-    /* 这一页内容窄，导航条跟着收窄，免得太空 */
-    .navbar-inner { max-width: 720px; }
-    .container-narrow { max-width: 720px; }
+    /* 这一页内容窄，标题条与内容区一起收窄。
+       .container-narrow 这个类保留，下面那条垂直居中还用得到 */
+    #admin-main { --admin-content-max: 720px; }
     /* 登录后这里只有三个入口，内容不多，让它落在视口中段而不是贴着顶，
        否则下面空一大片，看着像没加载完 */
     body.authed #admin-main .container-narrow {
@@ -259,24 +262,21 @@ import AdminTheme from "@/components/admin/AdminTheme.astro";
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 0.875rem;
     }
+    /* 三个入口卡片：底色、边框、圆角、阴影都由博客的 .card-base 负责
+       （标签上已经写了），这里只补摆法与悬停抬升 */
     .admin-card {
       display: flex;
       flex-direction: column;
       align-items: center;
       text-align: center;
       padding: 1.5rem 1rem;
-      background: var(--card-bg);
-      border: 1px solid var(--line-soft);
-      border-radius: var(--radius-large);
-      box-shadow: var(--shadow-xs);
       text-decoration: none;
       color: var(--text);
-      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+      transition: transform 0.2s, border-color 0.2s;
     }
     .admin-card:hover {
       border-color: var(--primary);
       transform: translateY(-2px);
-      box-shadow: var(--shadow-sm);
     }
     .admin-card-icon {
       width: 44px;
@@ -302,7 +302,7 @@ import AdminTheme from "@/components/admin/AdminTheme.astro";
     }
   </style>
 </head>
-<body>
+<body class={adminBodyClass}>
 
   <!-- ===== 登录页 ===== -->
   <div class="login-split" id="login-page">
@@ -376,47 +376,34 @@ import AdminTheme from "@/components/admin/AdminTheme.astro";
 
   <!-- ===== 后台主页 ===== -->
   <div id="admin-main" class="hidden">
-    <nav class="navbar">
-      <div class="navbar-inner">
-        <div class="navbar-left">
-          <span class="brand-mark">⚙️</span>
-          <h1>后台管理</h1>
-        </div>
-        <div class="nav-right">
-          <a href="/" class="back-link">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
-            <span>首页</span>
-          </a>
-          <button class="logout-btn" onclick="doLogout()">退出</button>
-        </div>
-      </div>
-    </nav>
+    <AdminTopBar title="后台管理" backHref="/" backLabel="首页" withStatus={false} />
     <div class="container container-narrow">
       <div class="admin-welcome">
         <h2>👋 欢迎回来</h2>
         <p>选择要管理的功能</p>
       </div>
       <div class="admin-grid">
-        <a href="/admin/moments/" class="admin-card">
+        <a href="/admin/moments/" class="card-base admin-card">
           <div class="admin-card-icon">✍️</div>
           <div class="admin-card-title">说说管理</div>
           <div class="admin-card-desc">发布、编辑、删除说说</div>
         </a>
-        <a href="/admin/notebooks/" class="admin-card">
+        <a href="/admin/notebooks/" class="card-base admin-card">
           <div class="admin-card-icon">📓</div>
           <div class="admin-card-title">笔记管理</div>
           <div class="admin-card-desc">管理笔记本和笔记</div>
         </a>
-        <a href="/admin/posts/" class="admin-card">
+        <a href="/admin/posts/" class="card-base admin-card">
           <div class="admin-card-icon">📝</div>
           <div class="admin-card-title">文章管理</div>
           <div class="admin-card-desc">编写、编辑、发布文章</div>
         </a>
       </div>
     </div>
-  </div>
 
-  <button class="dark-fab" onclick="toggleDark()" title="切换暗色模式">🌙</button>
+    {/* 页脚与博客同一个组件 */}
+    <Footer />
+  </div>
 
   <script is:inline>
     // ===== 工具 =====
