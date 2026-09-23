@@ -129,9 +129,7 @@
                 </svg>
             </a>
 
-        <!-- 运行时间 -->
         <div class="footer-info">
-            <span id="runtime"></span>(●'◡'●)
             <!-- 文案 -->
             <span>本职程序员。业余折腾最新的人工智能小玩意，水平也业余。</span>
         </div>
@@ -151,45 +149,6 @@
         }
     </script>
 
-    <!-- ====================== 运行时间核心代码 ====================== -->
-    <script is:inline>
-        // 网站开始运行时间（请修改为你的网站上线时间）
-        // 添加防护避免重复声明
-        if (typeof window.__siteStartTime === 'undefined') {
-            window.__siteStartTime = "2026-04-28 00:00:00";
-
-        // 运行时间函数
-        function startRuntime() {
-            const runtimeEl = document.getElementById('runtime');
-            if (!runtimeEl) return;
-
-            function update() {
-                const start = new Date(window.__siteStartTime).getTime();
-                const now = Date.now();
-                const diff = now - start;
-
-                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-                runtimeEl.innerHTML = `
-                    ⌛小破站已运行
-                    <span style="color:#FFA500">${days}</span>天
-                    <span style="color:#1DBF97">${hours}</span>时
-                    <span style="color:#8A2BE2">${minutes}</span>分
-                    <span style="color:#007EC6">${seconds}</span>秒
-                `;
-            }
-
-            update();
-            setInterval(update, 1000);
-        }
-
-        // 启动运行时间
-        startRuntime();
-        } // 结束 if 防护
-    </script>
 </body>
 
 </html>

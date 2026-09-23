@@ -155,6 +155,49 @@ function serveStatic(req, res) {
 	fs.createReadStream(full).pipe(res);
 }
 
+/** 假贡献数据：铺满 53 周，够画一整年热力图。
+ *  用日期算出来的稳定数值，每次跑结果一样，方便反复对照截图。 */
+function fakeContributions() {
+	const days = [];
+	const today = new Date();
+	// 从 52 周前的周日开始，正好铺满 53 列
+	const start = new Date(today);
+	start.setUTCDate(start.getUTCDate() - start.getUTCDay() - 52 * 7);
+	for (let i = 0; i < 53 * 7; i++) {
+		const d = new Date(start);
+		d.setUTCDate(d.getUTCDate() + i);
+		if (d > today) break;
+		// 工作日多、周末少，同一天永远是同一个数
+		const seed = (d.getUTCFullYear() * 372 + (d.getUTCMonth() + 1) * 31 + d.getUTCDate()) % 11;
+		const weekend = d.getUTCDay() === 0 || d.getUTCDay() === 6;
+		let count = seed < 3 ? 0 : weekend ? Math.max(0, seed - 8) : seed - 2;
+		// 末 4 天保证有提交，否则"连续天数"永远显示 1
+		const ago = Math.round((today - d) / 86400000);
+		if (ago <= 3) count = Math.max(count, 4 - ago);
+		days.push({ date: d.toISOString().slice(0, 10), count });
+	}
+	const sha = (i) => (i + "a1b2c3d").slice(0, 7);
+	const msgs = [
+		"refactor(admin): 后台改用博客真实的前台样式",
+		"feat(widget): 关于页加 GitHub 动态卡片",
+		"fix(footer): 移除模板遗留的运行计时器",
+		"chore(config): 头像统一为 public/assets/avatar.png",
+		"docs: 同步项目说明",
+	];
+	return {
+		username: "admin11111515",
+		repo: "WWPPL",
+		total: days.reduce((s, d) => s + d.count, 0),
+		days,
+		commits: msgs.map((message, i) => ({
+			sha: sha(i),
+			url: "https://github.com/admin11111515/WWPPL/commit/" + sha(i),
+			message,
+			date: new Date(Date.now() - i * 7 * 3600 * 1000).toISOString(),
+		})),
+	};
+}
+
 // ---------- 假接口 ----------
 /** 预览默认当作已登录；截图时会临时切成未登录，好看到登录表单本身 */
 let mockAuthed = true;
@@ -171,6 +214,9 @@ function handleApi(req, res, url) {
 	if (p === "/api/auth/status") return json(res, { authed: mockAuthed });
 	if (p === "/api/auth/login") return json(res, { ok: true });
 	if (p === "/api/auth/logout") return json(res, { ok: true });
+
+	// 公开接口，线上由服务端带令牌去问 GitHub；预览里给一份稳定的假数据
+	if (p === "/api/contributions") return json(res, fakeContributions());
 
 	// 写入类请求：明确拒绝，不假装成功
 	if (req.method !== "GET") {
@@ -314,11 +360,15 @@ async function shotPages() {
 		`,
 	});
 
+	// 每项：[名字, 路由, 要单独裁剪一张的元素选择器(可选)]
+	// 页面下半部分的组件首屏截图看不到，给它选择器就会额外出一张紧贴该元素的图
 	const pages = [
 		["login", "/admin/"],
 		["posts", "/admin/posts/"],
 		["moments", "/admin/moments/"],
 		["notebooks", "/admin/notebooks/"],
+		// 关于页不是后台，但新加的 GitHub 动态卡片在这里，要一起验收
+		["about", "/about/", "#github-activity-card"],
 	];
 
 	const PROBE = `(() => {
@@ -353,13 +403,30 @@ async function shotPages() {
 					' ov=' + st.overflow
 				);
 			})(),
+			// 关于页的 GitHub 动态卡片：格子画出来没有、总数填上没有、提交列表显示没有
+			githubCard: (() => {
+				const c = document.getElementById('github-activity-card');
+				if (!c) return '（本页无此卡片）';
+				const cells = c.querySelectorAll('.ga-day').length;
+				const lit = c.querySelectorAll('.ga-day:not(.ga-l0)').length;
+				const totalEl = document.getElementById('ga-total');
+				const commitsEl = document.getElementById('ga-commits');
+				return (
+					'格子=' + cells + ' 有提交=' + lit +
+					' 总数=' + (totalEl ? totalEl.textContent : '-') +
+					' 连续=' + ((document.getElementById('ga-streak') || {}).textContent || '-') +
+					' 提交列表=' + (commitsEl && commitsEl.style.display !== 'none' ? '显示' : '隐藏')
+				);
+			})(),
+			// 页脚那个每秒跳动的运行计时器应该已经没了
+			footerTimer: /已运行\s*\d+\s*天/.test(document.body.innerText),
 			bodyFont: getComputedStyle(document.body).fontFamily.slice(0, 50),
 			errors: (window.__errs || []).slice(0, 6),
 		});
 	})()`;
 
 	const results = [];
-	for (const [name, route] of pages) {
+	for (const [name, route, focus] of pages) {
 		for (const scheme of ["light", "dark"]) {
 			// 登录页有两种样子：访客打开时是登录表单，登录后是功能入口。
 			// 只截其中一种会看不出另一半改成了什么样。
@@ -408,12 +475,46 @@ async function shotPages() {
 					path.join(OUT, `${label}-${scheme}.png`),
 					Buffer.from(shot.data, "base64"),
 				);
+
+				// 重点元素：单独裁一张贴边的图，省得靠首屏截图去猜它长什么样
+				if (focus) {
+					const rectRes = await send("Runtime.evaluate", {
+						expression: `(() => {
+							const el = document.querySelector(${JSON.stringify(focus)});
+							if (!el) return "";
+							const b = el.getBoundingClientRect();
+							return JSON.stringify({
+								x: Math.max(0, b.left + window.scrollX - 12),
+								y: Math.max(0, b.top + window.scrollY - 12),
+								width: b.width + 24,
+								height: b.height + 24,
+							});
+						})()`,
+						returnByValue: true,
+					});
+					const rect = rectRes.result.value;
+					if (rect) {
+						const clipped = await send("Page.captureScreenshot", {
+							format: "png",
+							clip: { ...JSON.parse(rect), scale: 1 },
+							captureBeyondViewport: true,
+						});
+						fs.writeFileSync(
+							path.join(OUT, `${label}-${scheme}-focus.png`),
+							Buffer.from(clipped.data, "base64"),
+						);
+					} else {
+						console.log("      重点元素没找到：" + focus);
+					}
+				}
 				console.log(
 					`  ${label}-${scheme}: ${info.title} | 落到 ${info.url} | ` +
 						`溢出 ${overflow ? "⚠ " + (info.scrollW - info.innerW) + "px" : "无"} | ` +
-						`博客令牌 ${info.pageBg && info.text ? "已载" : "未载"} | hue=${info.hue} | ` +
+						`主题令牌 ${info.pageBg ? "✓" : "✗"} 后台令牌 ${info.text ? "✓" : "✗"} | hue=${info.hue} | ` +
 						`导航栏 ${info.navbar ? "✓" : "✗"} | 页脚 ${info.footer ? "✓" : "✗"} | ` +
-						`容器上限 ${info.containerMax} | 标题 ${info.titleBox} | 报错 ${info.errors.length}`,
+						`容器上限 ${info.containerMax} | 标题 ${info.titleBox} | ` +
+						`GitHub ${info.githubCard} | 页脚计时器 ${info.footerTimer ? "仍在(!)" : "已移除"} | ` +
+						`报错 ${info.errors.length}`,
 				);
 				if (info.errors.length) for (const e of info.errors) console.log("      ·", e);
 			}
@@ -450,7 +551,7 @@ async function onReady() {
 		console.log(
 			bad.length
 				? `\n有 ${bad.length} 张页面存在横向溢出，需要处理。`
-				: "\n四个页面在亮/暗两色下都没有横向溢出。",
+				: `\n${(results || []).length} 张截图都没有横向溢出。`,
 		);
 		server.close();
 		process.exit(0);

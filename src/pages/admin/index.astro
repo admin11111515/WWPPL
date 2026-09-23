@@ -4,6 +4,7 @@ import AdminTheme from "@/components/admin/AdminTheme.astro";
 import AdminTopBar from "@/components/admin/AdminTopBar.astro";
 import Footer from "@components/layout/Footer.astro";
 import { adminBodyClass, adminHtmlClass } from "@/components/admin/adminShell";
+import { externalPostsConfig } from "@/config/externalPostsConfig";
 ---
 
 <html lang="zh-CN" class={adminHtmlClass}>
@@ -295,6 +296,15 @@ import { adminBodyClass, adminHtmlClass } from "@/components/admin/adminShell";
     /* 防止未认证时闪烁：默认隐藏后台主页，JS 判断后再显示 */
     body:not(.authed) #admin-main { display: none !important; }
 
+    /* ===== 换头像面板 ===== */
+    #avatar-panel { margin-top: 1.25rem; padding: 1.5rem; }
+    .avatar-panel-row { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; }
+    .avatar-figure { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: var(--text-3); }
+    .avatar-figure img { width: 96px; height: 96px; border-radius: var(--radius-xl); object-fit: cover; border: 1px solid var(--line); }
+    .avatar-arrow { font-size: 1.25rem; color: var(--text-3); }
+    .avatar-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1.25rem; }
+    .avatar-status { margin-top: 0.875rem; font-size: 0.75rem; color: var(--text-3); line-height: 1.7; min-height: 1.2em; }
+
     @media (max-width: 480px) {
       .login-right { padding: 1.5rem 1rem; }
       .login-header h1 { font-size: 1.375rem; }
@@ -398,6 +408,32 @@ import { adminBodyClass, adminHtmlClass } from "@/components/admin/adminShell";
           <div class="admin-card-title">文章管理</div>
           <div class="admin-card-desc">编写、编辑、发布文章</div>
         </a>
+        <button type="button" class="card-base admin-card" onclick="toggleAvatarPanel()">
+          <div class="admin-card-icon">🖼️</div>
+          <div class="admin-card-title">换头像</div>
+          <div class="admin-card-desc">上传新头像，保存后全站生效</div>
+        </button>
+      </div>
+
+      {/* 换头像面板：默认收起，点入口卡片展开 */}
+      <div id="avatar-panel" class="card hidden">
+        <div class="avatar-panel-row">
+          <div class="avatar-figure">
+            <img id="avatar-current" alt="当前头像" />
+            <span>当前头像</span>
+          </div>
+          <span class="avatar-arrow">→</span>
+          <div class="avatar-figure">
+            <img id="avatar-preview" alt="新头像预览" style="display:none" />
+            <span>新头像预览</span>
+          </div>
+        </div>
+        <div class="avatar-actions">
+          <button class="btn" type="button" id="avatar-pick">选择图片</button>
+          <button class="btn btn-primary" type="button" id="avatar-upload" disabled>上传并生效</button>
+          <input type="file" id="avatar-file" accept="image/*" class="hidden" />
+        </div>
+        <div class="avatar-status" id="avatar-status">支持常见图片格式，会自动缩到最长边 512 像素。保存后 Cloudflare 会自动重新构建，大约一两分钟后全站生效。</div>
       </div>
     </div>
 
@@ -405,6 +441,9 @@ import { adminBodyClass, adminHtmlClass } from "@/components/admin/adminShell";
     <Footer />
   </div>
 
+  <script is:inline data-swup-ignore-script>
+    window.__AVATAR_TARGET__ = {"owner":"admin11111515","repo":"WWPPL","branch":"main","path":"public/assets/avatar.png"};
+  </script>
   <script is:inline>
     // ===== 工具 =====
     // toggleDark 与明暗初始化由 <AdminTheme /> 提供
@@ -564,6 +603,78 @@ import { adminBodyClass, adminHtmlClass } from "@/components/admin/adminShell";
           startLoginAnimation();
         });
     })();
+
+    // ===== 换头像 =====
+    var AVATAR = window.__AVATAR_TARGET__ || { owner: "admin11111515", repo: "WWPPL", branch: "main", path: "public/assets/avatar.png" };
+    var avatarBase64 = null;
+
+    function toggleAvatarPanel() {
+      $("avatar-panel").classList.toggle("hidden");
+      if (!$("avatar-panel").classList.contains("hidden")) {
+        $("avatar-current").src = "/assets/avatar.png?v=" + Date.now();
+      }
+    }
+    $("avatar-pick").addEventListener("click", function() { $("avatar-file").click(); });
+    $("avatar-file").addEventListener("change", function() {
+      var f = this.files && this.files[0];
+      if (!f) return;
+      $("avatar-status").textContent = "正在处理图片…";
+      var url = URL.createObjectURL(f);
+      var img = new Image();
+      img.onload = function() {
+        URL.revokeObjectURL(url);
+        var w = img.naturalWidth, h = img.naturalHeight;
+        var scale = Math.min(1, 512 / Math.max(w, h));
+        var c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(w * scale));
+        c.height = Math.max(1, Math.round(h * scale));
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        var dataUrl;
+        try { dataUrl = c.toDataURL("image/png"); }
+        catch (e) { $("avatar-status").textContent = "这张图处理不了，换一张试试"; return; }
+        avatarBase64 = dataUrl.split(",")[1];
+        var prev = $("avatar-preview");
+        prev.src = dataUrl; prev.style.display = "";
+        $("avatar-upload").disabled = false;
+        var kb = Math.round(avatarBase64.length * 3 / 4 / 1024);
+        $("avatar-status").textContent = "新头像准备好了（约 " + kb + " KB），点「上传并生效」提交到仓库。";
+      };
+      img.onerror = function() { URL.revokeObjectURL(url); $("avatar-status").textContent = "这张图读不出来，换一张试试"; };
+      img.src = url;
+    });
+    $("avatar-upload").addEventListener("click", async function() {
+      if (!avatarBase64) return;
+      var btn = this; btn.disabled = true; btn.textContent = "上传中…";
+      $("avatar-status").textContent = "正在提交到 GitHub 仓库…";
+      try {
+        var base = "/api/github/repos/" + AVATAR.owner + "/" + AVATAR.repo + "/contents/" + AVATAR.path;
+        var sha = null;
+        var cur = await fetch(base + "?ref=" + AVATAR.branch);
+        if (cur.ok) { sha = (await cur.json()).sha; }
+        else if (cur.status !== 404) { throw new Error("读取现有头像失败（HTTP " + cur.status + "）"); }
+        var put = await fetch(base, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: "chore: 更换头像",
+            content: avatarBase64,
+            branch: AVATAR.branch,
+            sha: sha || undefined
+          })
+        });
+        if (!put.ok) {
+          var msg = "";
+          try { msg = (await put.json()).message || ""; } catch (e) {}
+          throw new Error("上传失败（HTTP " + put.status + (msg ? "：" + msg : "") + "）");
+        }
+        $("avatar-status").textContent = "已提交。Cloudflare 会自动重新构建，大约一两分钟后刷新首页就能看到新头像。";
+        $("avatar-upload").disabled = false;
+      } catch (e) {
+        $("avatar-status").textContent = "没保存成功：" + e.message;
+        $("avatar-upload").disabled = false;
+      }
+      btn.textContent = "上传并生效";
+    });
   </script>
 </body>
 </html>

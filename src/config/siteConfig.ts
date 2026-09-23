@@ -124,7 +124,7 @@ export const siteConfig: SiteConfig = {
 	diary: {
 		// 默认头像
 		defaultAvatar:
-			"/assets/avatar.avif",
+			"/assets/avatar.png",
 	},
 
 	// 说说页面封面配置（微信朋友圈风格）

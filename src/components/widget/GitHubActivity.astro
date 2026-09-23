@@ -1,0 +1,423 @@
+---
+// 关于页的 GitHub 动态卡片：近一年贡献热力图 + 博客仓库最近提交。
+// 数据来自 /api/contributions —— 那个函数在服务端带着令牌去问 GitHub，
+// 浏览器只拿到画图要用的数字。
+//
+
+// 想换人/换仓库时改这里，函数端的 GITHUB_USERNAME / GITHUB_REPO 优先
+const GITHUB_USER = "admin11111515";
+---
+
+<div id="github-activity-card" class="card-base github-activity px-6 py-6 md:px-9 md:py-8">
+	<div class="ga-head">
+		<h2 class="ga-title text-90">GitHub 动态</h2>
+		<a class="ga-profile-link" href={`https://github.com/${GITHUB_USER}`} target="_blank" rel="noopener noreferrer"
+			>去 GitHub 看主页</a
+		>
+	</div>
+
+	<div class="ga-stats">
+		<div class="ga-stat">
+			<span class="ga-stat-num text-90" id="ga-total">–</span>
+			<span class="ga-stat-label">近一年提交</span>
+		</div>
+		<div class="ga-stat">
+			<span class="ga-stat-num text-90" id="ga-streak">–</span>
+			<span class="ga-stat-label">连续天数</span>
+		</div>
+	</div>
+
+	<div class="ga-heatmap-scroll">
+		<div class="ga-months" id="ga-months" aria-hidden="true"></div>
+		<div class="ga-heatmap" id="ga-heatmap" role="img" aria-label="近一年的 GitHub 贡献热力图">
+			<span class="ga-loading">正在加载 GitHub 动态…</span>
+		</div>
+	</div>
+
+	<div class="ga-legend">
+		<span class="ga-hint" id="ga-hint">把鼠标放到格子上，看某一天提交了几次</span>
+		<span class="ga-scale" aria-hidden="true">
+			少
+			<i class="ga-cell ga-l0"></i><i class="ga-cell ga-l1"></i><i class="ga-cell ga-l2"></i><i
+				class="ga-cell ga-l3"></i><i class="ga-cell ga-l4"></i>
+			多
+		</span>
+	</div>
+
+	<div class="ga-commits" id="ga-commits" style="display: none">
+		<h3 class="ga-subtitle text-90">博客仓库最近更新</h3>
+		<ul class="ga-commit-list" id="ga-commit-list"></ul>
+	</div>
+</div>
+
+<!--
+	is:global 是必须的：
+	Astro 默认会把 <style> 作用域化 —— 只给「模板里写死的元素」打上标记，
+	样式选择器也带着这个标记。而热力图的格子、提交条目都是脚本运行时才
+	createElement 出来的，天生没有标记，选择器就一条都命中不了（格子会连
+	尺寸都没有，整片空白）。
+	这里每个选择器都带 .github-activity 或 .ga- 前缀，全局了也不会外泄。
+-->
+<style is:global>
+	/* 色阶跟随博客主题色相（--hue），明暗各自一档；
+	   数字只决定深浅，不引入第二套颜色 */
+	.github-activity {
+		--ga-cell: 10px;
+		--ga-gap: 3px;
+		--ga-l0: oklch(0.93 0.015 var(--hue));
+		--ga-l1: oklch(0.86 0.055 var(--hue));
+		--ga-l2: oklch(0.75 0.105 var(--hue));
+		--ga-l3: oklch(0.64 0.145 var(--hue));
+		--ga-l4: oklch(0.53 0.16 var(--hue));
+	}
+	:root.dark .github-activity {
+		--ga-l0: oklch(0.28 0.015 var(--hue));
+		--ga-l1: oklch(0.38 0.075 var(--hue));
+		--ga-l2: oklch(0.49 0.12 var(--hue));
+		--ga-l3: oklch(0.61 0.15 var(--hue));
+		--ga-l4: oklch(0.73 0.14 var(--hue));
+	}
+
+	.ga-head {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 1rem;
+		margin-bottom: 1rem;
+	}
+	.ga-title {
+		font-size: 1.25rem;
+		font-weight: 700;
+		margin: 0;
+	}
+	.ga-profile-link {
+		font-size: 0.8125rem;
+		color: var(--btn-content);
+		text-decoration: none;
+		white-space: nowrap;
+	}
+	.ga-profile-link:hover {
+		text-decoration: underline;
+	}
+
+	.ga-stats {
+		display: flex;
+		gap: 2.25rem;
+		margin-bottom: 1.25rem;
+	}
+	.ga-stat {
+		display: flex;
+		flex-direction: column;
+		gap: 0.125rem;
+	}
+	.ga-stat-num {
+		font-size: 1.5rem;
+		font-weight: 700;
+		line-height: 1.2;
+	}
+	.ga-stat-label {
+		font-size: 0.75rem;
+		color: var(--content-meta);
+	}
+
+	.ga-heatmap-scroll {
+		overflow-x: auto;
+		padding-bottom: 0.25rem;
+	}
+	/* 月份行与热力图都是"每周一列"，两边列宽用同一套算式，才对得齐 */
+	.ga-months {
+		display: grid;
+		grid-auto-flow: column;
+		grid-auto-columns: calc(var(--ga-cell) + var(--ga-gap));
+		margin-bottom: 0.25rem;
+	}
+	.ga-months span {
+		font-size: 0.6875rem;
+		line-height: 1;
+		color: var(--content-meta);
+		white-space: nowrap;
+		overflow: visible;
+	}
+	.ga-heatmap {
+		display: grid;
+		grid-auto-flow: column;
+		grid-template-rows: repeat(7, var(--ga-cell));
+		grid-auto-columns: var(--ga-cell);
+		gap: var(--ga-gap);
+		width: max-content;
+	}
+	.ga-heatmap .ga-day {
+		display: block;
+		width: var(--ga-cell);
+		height: var(--ga-cell);
+		border-radius: 2px;
+	}
+	.ga-loading {
+		font-size: 0.8125rem;
+		color: var(--content-meta);
+	}
+
+	.ga-legend {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		margin-top: 0.75rem;
+	}
+	.ga-hint {
+		font-size: 0.75rem;
+		color: var(--content-meta);
+		min-height: 1.1em;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.ga-scale {
+		display: inline-flex;
+		align-items: center;
+		gap: 3px;
+		flex-shrink: 0;
+		font-size: 0.75rem;
+		color: var(--content-meta);
+	}
+	.ga-cell {
+		display: inline-block;
+		width: var(--ga-cell);
+		height: var(--ga-cell);
+		border-radius: 2px;
+	}
+	.ga-l0 { background: var(--ga-l0); }
+	.ga-l1 { background: var(--ga-l1); }
+	.ga-l2 { background: var(--ga-l2); }
+	.ga-l3 { background: var(--ga-l3); }
+	.ga-l4 { background: var(--ga-l4); }
+
+	.ga-commits {
+		margin-top: 1.5rem;
+		padding-top: 1.25rem;
+		border-top: 1px solid var(--line-divider);
+	}
+	.ga-subtitle {
+		font-size: 0.9375rem;
+		font-weight: 700;
+		margin: 0 0 0.75rem;
+	}
+	.ga-commit-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.625rem;
+	}
+	.ga-commit-list li {
+		display: flex;
+		align-items: baseline;
+		gap: 0.625rem;
+		font-size: 0.875rem;
+		line-height: 1.5;
+	}
+	.ga-commit-list li::before {
+		content: "";
+		flex-shrink: 0;
+		width: 6px;
+		height: 6px;
+		border-radius: 9999px;
+		background: var(--primary);
+		position: relative;
+		top: -1px;
+	}
+	.ga-commit-list a {
+		flex: 1;
+		min-width: 0;
+		color: var(--btn-content);
+		text-decoration: none;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.ga-commit-list a:hover {
+		text-decoration: underline;
+	}
+	.ga-commit-list time {
+		flex-shrink: 0;
+		font-size: 0.75rem;
+		color: var(--content-meta);
+	}
+</style>
+
+<script>
+	type Day = { date: string; count: number };
+	type Commit = { url: string; message: string; date: string };
+
+	/** 一周从周日开始，和 GitHub 一致的排法 */
+	function weekdayOf(dateStr: string): number {
+		const [y, m, d] = dateStr.split("-").map(Number);
+		return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+	}
+
+	function formatDay(dateStr: string): string {
+		const [y, m, d] = dateStr.split("-").map(Number);
+		return `${y}年${m}月${d}日`;
+	}
+
+	function levelOf(count: number): string {
+		if (count <= 0) return "ga-l0";
+		if (count <= 2) return "ga-l1";
+		if (count <= 5) return "ga-l2";
+		if (count <= 9) return "ga-l3";
+		return "ga-l4";
+	}
+
+	function relativeTime(iso: string): string {
+		const then = new Date(iso).getTime();
+		if (Number.isNaN(then)) return "";
+		const minutes = Math.floor((Date.now() - then) / 60000);
+		if (minutes < 1) return "刚刚";
+		if (minutes < 60) return `${minutes} 分钟前`;
+		const hours = Math.floor(minutes / 60);
+		if (hours < 24) return `${hours} 小时前`;
+		const days = Math.floor(hours / 24);
+		if (days < 30) return `${days} 天前`;
+		const months = Math.floor(days / 30);
+		if (months < 12) return `${months} 个月前`;
+		return `${Math.floor(months / 12)} 年前`;
+	}
+
+	/**
+	 * 把按天排好的数组切成"周"。
+	 * 周日到周六算一周；周几不再是递增（就是新的一周开始了），月份标签
+	 * 靠这个列号对齐热力图，所以两边必须用同一套切法。
+	 */
+	function splitWeeks(days: Day[]): Day[][] {
+		const weeks: Day[][] = [];
+		let lastWeekday = -1;
+		for (const day of days) {
+			const wd = weekdayOf(day.date);
+			if (weeks.length === 0 || wd <= lastWeekday) weeks.push([]);
+			weeks[weeks.length - 1].push(day);
+			lastWeekday = wd;
+		}
+		return weeks;
+	}
+
+	/** 连续有提交的天数；今天还没提交不算断 */
+	function streakOf(days: Day[]): number {
+		let streak = 0;
+		for (let i = days.length - 1; i >= 0; i--) {
+			if (days[i].count > 0) streak += 1;
+			else if (i === days.length - 1) continue;
+			else break;
+		}
+		return streak;
+	}
+
+	function renderHeatmap(days: Day[]): void {
+		const heatmap = document.getElementById("ga-heatmap");
+		if (!heatmap) return;
+		const hint = document.getElementById("ga-hint");
+		const defaultHint = hint ? hint.textContent || "" : "";
+		const weeks = splitWeeks(days);
+
+		heatmap.innerHTML = "";
+		for (const week of weeks) {
+			for (const day of week) {
+				const cell = document.createElement("span");
+				cell.className = `ga-day ${levelOf(day.count)}`;
+				cell.dataset.date = day.date;
+				cell.dataset.count = String(day.count);
+				cell.title = `${formatDay(day.date)} · ${day.count} 次提交`;
+				if (hint) {
+					cell.addEventListener("mouseenter", () => {
+						hint.textContent = `${formatDay(day.date)} · ${day.count} 次提交`;
+					});
+					cell.addEventListener("mouseleave", () => {
+						hint.textContent = defaultHint;
+					});
+				}
+				heatmap.appendChild(cell);
+			}
+		}
+
+		// 月份标签：每周一格，好和热力图的列对齐
+		const monthsEl = document.getElementById("ga-months");
+		if (monthsEl) {
+			monthsEl.innerHTML = "";
+			weeks.forEach((week, wi) => {
+				const span = document.createElement("span");
+				const dateStr = week[0].date;
+				const month = Number(dateStr.slice(5, 7));
+				const prevMonth = wi > 0 ? Number(weeks[wi - 1][0].date.slice(5, 7)) : -1;
+				// 开头那格通常是一个月的下旬（残月），标了会和下个月的标签挤在一起
+				const partialStart = wi === 0 && dateStr.slice(8) !== "01";
+				if (!partialStart && (wi === 0 || month !== prevMonth)) {
+					span.textContent = `${month}月`;
+				}
+				monthsEl.appendChild(span);
+			});
+		}
+	}
+
+	function renderCommits(commits: Commit[]): void {
+		const block = document.getElementById("ga-commits");
+		const list = document.getElementById("ga-commit-list");
+		if (!block || !list || !commits.length) return;
+		list.innerHTML = "";
+		for (const c of commits) {
+			const li = document.createElement("li");
+			const a = document.createElement("a");
+			a.href = c.url;
+			a.target = "_blank";
+			a.rel = "noopener noreferrer";
+			a.textContent = c.message || "(无说明)";
+			const time = document.createElement("time");
+			time.textContent = relativeTime(c.date);
+			li.appendChild(a);
+			li.appendChild(time);
+			list.appendChild(li);
+		}
+		block.style.display = "";
+	}
+
+	function renderStats(days: Day[], total: unknown): void {
+		const totalEl = document.getElementById("ga-total");
+		if (totalEl && typeof total === "number") totalEl.textContent = String(total);
+		const streakEl = document.getElementById("ga-streak");
+		if (streakEl && days.length) streakEl.textContent = String(streakOf(days));
+	}
+
+	function showFail(): void {
+		const heatmap = document.getElementById("ga-heatmap");
+		if (heatmap) {
+			heatmap.innerHTML = '<span class="ga-loading">GitHub 动态暂时加载不出来，稍后再来看看</span>';
+		}
+		const hint = document.getElementById("ga-hint");
+		if (hint) hint.textContent = "加载失败不影响页面其他内容";
+	}
+
+	// 与站内统计小组件同一套生命周期：首次执行 + swup 换页后再来一次
+	function initGithubActivity(): void {
+		const root = document.getElementById("github-activity-card");
+		if (!root || root.dataset.ready === "1") return;
+		root.dataset.ready = "1";
+
+		fetch("/api/contributions")
+			.then((r) => {
+				if (!r.ok) throw new Error(`HTTP ${r.status}`);
+				return r.json();
+			})
+			.then((data) => {
+				const days: Day[] = Array.isArray(data.days) ? data.days : [];
+				if (!days.length) throw new Error("没有数据");
+				renderHeatmap(days);
+				renderStats(days, data.total);
+				renderCommits(Array.isArray(data.commits) ? data.commits : []);
+			})
+			.catch(showFail);
+	}
+
+	initGithubActivity();
+	if (window.swup) {
+		window.swup.hooks.on("page:view", () => initGithubActivity());
+	}
+</script>

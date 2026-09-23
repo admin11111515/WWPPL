@@ -5,6 +5,7 @@ import Markdown from "@components/common/Markdown.astro";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
+import GitHubActivity from "@/components/widget/GitHubActivity.astro";
 
 const aboutPost = await getEntry("spec", "about");
 
@@ -29,6 +30,10 @@ const { Content } = await render(aboutPost);
                 <Content />
             </Markdown>
         </div>
+    </div>
+    {/* GitHub 动态：贡献热力图 + 博客仓库最近提交，数据由公开函数从 GitHub 取 */}
+    <div class="mt-4 w-full">
+        <GitHubActivity />
     </div>
 </MainGridLayout>
 
