@@ -1,0 +1,109 @@
+---
+/**
+ * 后台页面共用的外壳。
+ *
+ * 后台的四个页面都是独立的 HTML 文档，不走博客的 Layout，所以博客那套
+ * 设计令牌、字体、主题色都拿不到 —— 这正是它们看着和博客不像同一个站的原因。
+ * 这个组件把三件事一次补齐：
+ *
+ *   1. 引入后台共用样式层 public/admin/theme.css
+ *   2. 复用博客的字体组件，后台正文用上与博客完全相同的字体
+ *   3. 初始化色相与明暗：色相跟博客的访客选择同源（localStorage 的 hue），
+ *      明暗默认跟随系统，与博客 siteConfig.themeColor.defaultMode 一致
+ *
+ * 用法：在 <head> 里放一个 <AdminTheme />，页面自己的 <style> 放在它后面。
+ */
+import FontManager from "@/components/features/FontManager.astro";
+import { siteConfig } from "@/config";
+
+const hue = siteConfig.themeColor.hue;
+const defaultMode = siteConfig.themeColor.defaultMode ?? "system";
+---
+
+<link rel="stylesheet" href="/admin/theme.css" />
+
+{/* 复用博客的字体声明：后台与博客用同一份字体文件，
+    子集化脚本会扫描 dist 下所有 HTML，后台页面的字也会被收进子集 */}
+<FontManager />
+
+<script is:inline data-hue={hue} data-default-mode={defaultMode}>
+	(function () {
+		var root = document.documentElement;
+		var tag = document.currentScript;
+		var hue = tag && tag.getAttribute("data-hue");
+		var defaultMode = (tag && tag.getAttribute("data-default-mode")) || "system";
+
+		// 色相：博客把访客选的色相存进 localStorage 的 hue，后台跟着走
+		try {
+			var storedHue = localStorage.getItem("hue");
+			if (storedHue) hue = storedHue;
+		} catch (e) {
+			/* 隐私模式下读不到，用配置里的默认值 */
+		}
+		if (hue) root.style.setProperty("--hue", hue);
+
+		function readSaved() {
+			try {
+				return localStorage.getItem("theme");
+			} catch (e) {
+				return null;
+			}
+		}
+
+		function prefersDark() {
+			return !!(
+				window.matchMedia &&
+				window.matchMedia("(prefers-color-scheme: dark)").matches
+			);
+		}
+
+		// 没有手动选过就跟随系统，与博客的 defaultMode: "system" 一致
+		function resolveMode() {
+			var saved = readSaved();
+			if (saved === "dark" || saved === "light") return saved;
+			if (defaultMode === "dark" || defaultMode === "light") return defaultMode;
+			return prefersDark() ? "dark" : "light";
+		}
+
+		function applyMode(mode) {
+			root.classList.toggle("dark", mode === "dark");
+			root.style.colorScheme = mode;
+			var fab = document.querySelector(".dark-fab");
+			if (fab) {
+				fab.textContent = mode === "dark" ? "☀️" : "🌙";
+				fab.title = mode === "dark" ? "切换到亮色" : "切换到暗色";
+			}
+		}
+
+		applyMode(resolveMode());
+
+		// 脚本在 <head> 里跑，此刻按钮还没解析出来，等 DOM 好了再补一次图标
+		document.addEventListener("DOMContentLoaded", function () {
+			applyMode(root.classList.contains("dark") ? "dark" : "light");
+		});
+
+		// 页面上的按钮直接 onclick="toggleDark()" 调用它
+		window.toggleDark = function () {
+			var next = root.classList.contains("dark") ? "light" : "dark";
+			try {
+				localStorage.setItem("theme", next);
+			} catch (e) {
+				/* 存不下也不影响本次切换 */
+			}
+			applyMode(next);
+		};
+
+		// 系统主题变化时，只有在没手动选过的情况下才跟随
+		if (window.matchMedia) {
+			var mq = window.matchMedia("(prefers-color-scheme: dark)");
+			var onChange = function () {
+				var saved = readSaved();
+				if (saved === "dark" || saved === "light") return;
+				if (defaultMode === "dark" || defaultMode === "light") return;
+				applyMode(prefersDark() ? "dark" : "light");
+			};
+			if (mq.addEventListener) mq.addEventListener("change", onChange);
+			else if (mq.addListener) mq.addListener(onChange);
+		}
+	})();
+</script>

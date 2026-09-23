@@ -1,5 +1,6 @@
 ---
 // 文章管理页面 - 通过 GitHub Contents API 读写博客仓库
+import AdminTheme from "@/components/admin/AdminTheme.astro";
 import { externalPostsConfig } from "@/config/externalPostsConfig";
 const postsConfig = JSON.stringify(externalPostsConfig);
 ---
@@ -11,296 +12,104 @@ const postsConfig = JSON.stringify(externalPostsConfig);
   <title>文章管理</title>
   {/* 后台是站长自用界面，不该出现在搜索结果里（sitemap 中同样已剔除） */}
   <meta name="robots" content="noindex, nofollow" />
+  {/* 样式、字体、主题色都来自这里，页面自己的样式放在它后面 */}
+  <AdminTheme />
   <style is:inline>
-    :root {
-      --bg: #fff; --card: transparent; --border: #d9d9d9; --text: #1a1a1a;
-      --text-2: #595959; --text-3: #8c8c8c; --primary: #4d4d4d;
-      --input-bg: transparent; --hover: #f5f5f5; --danger: #cf1322;
-      --success: #389e0d; --code-bg: #f6f8fa;
-    }
-    :root.dark {
-      --bg: #141414; --card: transparent; --border: #404040; --text: #e8e8e8;
-      --text-2: #a6a6a6; --text-3: #737373; --input-bg: transparent;
-      --hover: #262626; --primary: #d9d9d9; --code-bg: #1e1e1e;
-    }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'Roboto', sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
-      background: var(--bg); color: var(--text); min-height: 100vh;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    .navbar {
-      position: sticky; top: 0; z-index: 50;
-      background: var(--bg); border-bottom: 1px solid var(--border);
-    }
-    .navbar-inner {
-      max-width: 1200px; margin: 0 auto; padding: 0 1rem;
-      display: flex; align-items: center; justify-content: space-between; height: 48px;
-    }
-    .navbar-left { display: flex; align-items: center; gap: 0.5rem; }
-    .navbar-left h1 { font-size: 0.9375rem; font-weight: 600; color: var(--text); }
-    .nav-right { display: flex; align-items: center; gap: 0.5rem; }
-    .back-link {
-      display: inline-flex; align-items: center; gap: 0.25rem;
-      color: var(--text-2); text-decoration: none; font-size: 0.8125rem;
-      padding: 0.25rem 0.5rem; transition: color 0.15s;
-    }
-    .back-link:hover { color: var(--text); }
-    .back-link svg { width: 16px; height: 16px; }
-    .logout-btn {
-      background: none; border: 1px solid var(--border); color: var(--text-3);
-      padding: 0.25rem 0.5rem; font-size: 0.6875rem;
-      cursor: pointer; transition: all 0.15s;
-    }
-    .logout-btn:hover { border-color: var(--danger); color: var(--danger); }
-
-    .container { max-width: 1200px; margin: 0 auto; padding: 1.25rem 1rem 4rem; }
-
-    .card {
-      background: var(--card); border: 1px solid var(--border);
-      padding: 1.25rem; margin-bottom: 1rem;
-    }
-
-    .status-bar {
-      display: flex; align-items: center; gap: 0.5rem;
-      padding: 0.5rem 0.75rem; margin-bottom: 1rem;
-      border: 1px solid var(--border); font-size: 0.8125rem; color: var(--text-2);
-    }
-    .status-dot { width: 6px; height: 6px; border-radius: 50%; }
-    .status-dot.ok { background: var(--success); }
-    .status-dot.err { background: var(--danger); }
-
-    .field { margin-bottom: 1rem; }
-    .field:last-child { margin-bottom: 0; }
-    .field-label {
-      display: flex; align-items: center; gap: 0.375rem;
-      font-size: 0.75rem; font-weight: 500; color: var(--text-2);
-      margin-bottom: 0.5rem;
-    }
-    .field-label .icon { font-size: 0.875rem; }
-    .field-hint { margin-top: 0.375rem; font-size: 0.75rem; color: var(--text-3); }
-
-    .input-single {
-      width: 100%; padding: 0.4rem 0.625rem; border: 1px solid var(--border);
-      border-radius: 0; font-size: 0.8125rem; background: var(--input-bg);
-      color: var(--text); outline: none; transition: border-color 0.15s;
-    }
-    .input-single:focus { border-color: var(--primary); }
-    .input-single::placeholder { color: var(--text-3); }
-
-    input[type="date"] {
-      width: 100%; padding: 0.4rem 0.625rem; border: 1px solid var(--border);
-      border-radius: 0; font-size: 0.8125rem; background: var(--input-bg);
-      color: var(--text); outline: none; transition: border-color 0.15s;
-      font-family: inherit;
-    }
-    input[type="date"]:focus { border-color: var(--primary); }
-
-    textarea {
-      width: 100%; min-height: 60px; padding: 0.625rem 0.75rem;
-      border: 1px solid var(--border); border-radius: 0;
-      font-size: 0.875rem; line-height: 1.7; background: var(--input-bg);
-      color: var(--text); outline: none; resize: vertical;
-      font-family: inherit; transition: border-color 0.15s;
-    }
-    textarea:focus { border-color: var(--primary); }
-    textarea::placeholder { color: var(--text-3); }
-
-    .editor-container {
-      display: grid; grid-template-columns: 1fr; gap: 0;
-      border: 1px solid var(--border);
-    }
-    @media (min-width: 900px) {
-      .editor-container { grid-template-columns: 1fr 1fr; }
-    }
-    .editor-pane { display: flex; flex-direction: column; }
-    .editor-pane-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0.5rem 0.75rem;
-      border-bottom: 1px solid var(--border);
-      font-size: 0.75rem; font-weight: 500; color: var(--text-3);
-    }
-    .editor-textarea {
-      width: 100%; min-height: 420px; padding: 0.75rem;
-      border: none; border-radius: 0;
-      font-size: 0.875rem; line-height: 1.8; background: var(--input-bg);
-      color: var(--text); outline: none; resize: vertical;
-      font-family: 'JetBrains Mono', 'Fira Code', monospace;
-    }
-    .editor-textarea::placeholder { color: var(--text-3); }
-    .preview-pane {
-      border-top: 1px solid var(--border);
-      min-height: 420px; padding: 0.75rem;
-      overflow-y: auto; font-size: 0.875rem; line-height: 1.8;
-    }
-    @media (min-width: 900px) {
-      .preview-pane { border-top: none; border-left: 1px solid var(--border); }
-    }
-    .preview-pane h1, .preview-pane h2, .preview-pane h3 { margin: 1em 0 0.5em; }
-    .preview-pane h1 { font-size: 1.5rem; }
-    .preview-pane h2 { font-size: 1.25rem; }
-    .preview-pane h3 { font-size: 1.1rem; }
-    .preview-pane p { margin: 0 0 0.75em; }
-    .preview-pane ul, .preview-pane ol { margin: 0 0 0.75em; padding-left: 1.5em; }
-    .preview-pane li { margin-bottom: 0.25em; }
-    .preview-pane blockquote { border-left: 3px solid var(--primary); padding-left: 1em; margin: 0 0 0.75em; color: var(--text-2); }
-    .preview-pane code { font-family: 'JetBrains Mono', monospace; background: var(--code-bg); padding: 0.15em 0.4em; font-size: 0.85em; }
-    .preview-pane pre { background: var(--code-bg); padding: 0.75em; margin: 0 0 0.75em; overflow-x: auto; }
-    .preview-pane pre code { background: none; padding: 0; }
-    .preview-pane img { max-width: 100%; }
-    .preview-pane a { color: var(--primary); }
-    .preview-pane hr { border: none; border-top: 1px solid var(--border); margin: 1.5em 0; }
-
-    .editor-toolbar { display: flex; gap: 0.25rem; flex-wrap: wrap; }
-    .toolbar-btn {
-      width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
-      border: 1px solid var(--border); background: var(--bg); color: var(--text-2);
-      cursor: pointer; font-size: 0.8rem; transition: all 0.15s;
-    }
-    .toolbar-btn:hover { border-color: var(--primary); color: var(--primary); }
-
-    .btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 0.375rem;
-      padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 0;
-      font-size: 0.8125rem; font-weight: 500; cursor: pointer;
-      transition: all 0.15s; font-family: inherit; background: var(--bg); color: var(--text);
-    }
-    .btn:hover { border-color: var(--primary); color: var(--primary); }
-    .btn:active { background: var(--hover); }
-    .btn-primary { background: var(--text); color: var(--bg); width: 100%; border-color: var(--text); }
-    .btn-primary:hover { opacity: 0.85; color: var(--bg); }
-    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
-    .btn-sm { padding: 0.25rem 0.625rem; font-size: 0.75rem; background: transparent; color: var(--text-2); border: 1px solid var(--border); }
-    .btn-sm:hover { border-color: var(--primary); color: var(--primary); }
-    .btn-danger-sm { padding: 0.25rem 0.5rem; font-size: 0.6875rem; background: transparent; color: var(--text-3); border: 1px solid var(--border); }
-    .btn-danger-sm:hover { border-color: var(--danger); color: var(--danger); }
+    /* ===== 只放这一页特有的排版，通用部分在 /admin/theme.css ===== */
 
     .layout-grid {
-      display: grid; grid-template-columns: 1fr; gap: 1rem;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      align-items: start;
     }
-    @media (min-width: 900px) {
-      .layout-grid { grid-template-columns: 340px 1fr; align-items: start; }
+    @media (min-width: 980px) {
+      .layout-grid { grid-template-columns: 340px minmax(0, 1fr); }
     }
-    .post-list-card { position: sticky; top: 60px; }
-    @media (max-width: 899px) {
+
+    /* 文章列表：跟随页面滚动，长列表不会把编辑器顶下去 */
+    .post-list-card { position: sticky; top: 5.25rem; }
+    .post-list-scroll { max-height: calc(100vh - 17rem); overflow-y: auto; margin: 0 -0.25rem; padding: 0 0.25rem; }
+    @media (max-width: 979px) {
       .post-list-card { position: static; }
+      .post-list-scroll { max-height: 22rem; }
     }
 
-    .list-header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 0.75rem;
-    }
-    .list-header .count { font-size: 0.75rem; color: var(--text-3); }
+    .list-filter { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.75rem; }
 
-    .post-row {
-      display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
-      padding: 0.625rem 0; border-bottom: 1px solid var(--border);
+    /* ===== 编辑器卡片 ===== */
+    /* 卡片自身不留内边距，好让底部操作条能贴齐整条边 */
+    .editor-card { padding: 0; }
+    .editor-body { padding: 1.25rem 1.25rem 1rem; }
+    @media (min-width: 768px) {
+      .editor-body { padding: 1.5rem 1.5rem 1.25rem; }
     }
-    .post-row:last-child { border-bottom: none; }
-    .post-info { flex: 1; min-width: 0; }
-    .post-title { font-size: 0.8125rem; font-weight: 500; color: var(--text); }
-    .post-meta { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.15rem; font-size: 0.6875rem; color: var(--text-3); }
-    .post-meta .sep { opacity: 0.4; }
-    .post-badge {
-      display: inline-block; padding: 0.1rem 0.35rem;
-      border: 1px solid var(--border); font-size: 0.625rem; color: var(--text-3);
+
+    .editor-head {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.125rem;
     }
-    .post-badge.draft { border-color: var(--danger); color: var(--danger); }
-    .post-actions { display: flex; gap: 0.25rem; flex-shrink: 0; }
+    .editor-head .field-label { margin: 0; font-size: 0.875rem; }
 
-    .empty-state { text-align: center; padding: 2rem 1rem; color: var(--text-3); }
-    .empty-state .icon { font-size: 1.5rem; margin-bottom: 0.5rem; opacity: 0.4; }
-    .empty-state p { font-size: 0.8125rem; }
-
-    .toast {
-      position: fixed; top: 60px; left: 50%; transform: translateX(-50%) translateY(-8px);
-      padding: 0.5rem 1rem; font-size: 0.8125rem;
-      font-weight: 500; z-index: 999; opacity: 0;
-      transition: opacity 0.2s, transform 0.2s;
-      pointer-events: none; border: 1px solid var(--border);
+    /* 底部操作条：长文章滚到一半也够得着保存 */
+    .editor-actions {
+      position: sticky;
+      bottom: 0;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      padding: 0.75rem 1.25rem;
+      background: color-mix(in oklab, var(--card-bg) 92%, transparent);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-top: 1px solid var(--line-soft);
+      border-radius: 0 0 var(--radius-large) var(--radius-large);
     }
-    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-    .toast.ok { background: var(--success); color: #fff; border-color: var(--success); }
-    .toast.err { background: var(--danger); color: #fff; border-color: var(--danger); }
-
-    .dark-fab {
-      position: fixed; bottom: 1.5rem; right: 1.5rem;
-      width: 36px; height: 36px;
-      background: var(--bg); border: 1px solid var(--border);
-      cursor: pointer; font-size: 1rem;
-      display: flex; align-items: center; justify-content: center;
-      transition: border-color 0.15s;
+    @media (min-width: 768px) {
+      .editor-actions { padding: 0.875rem 1.5rem; }
     }
-    .dark-fab:hover { border-color: var(--primary); }
+    .save-actions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .edit-bar { display: flex; align-items: center; gap: 0.5rem; }
+    .draft-hint { font-size: 0.6875rem; color: var(--text-3); margin-left: auto; }
 
-    .spinner {
-      display: inline-block; width: 14px; height: 14px;
-      border: 1.5px solid var(--border); border-top-color: var(--primary);
-      border-radius: 50%; animation: spin 0.6s linear infinite;
-      vertical-align: middle; margin-right: 0.375rem;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .hidden { display: none !important; }
-    .edit-bar { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+    /* ===== 字段 ===== */
     .form-grid { display: grid; grid-template-columns: 1fr; gap: 0 1rem; }
-    @media (min-width: 640px) {
+    @media (min-width: 720px) {
       .form-grid { grid-template-columns: 1fr 1fr; }
     }
     .form-grid .full { grid-column: 1 / -1; }
-    .checkbox-row {
-      display: flex; align-items: center; gap: 0.5rem;
-      font-size: 0.8125rem; color: var(--text-2); cursor: pointer;
-    }
-    .checkbox-row input { accent-color: var(--primary); }
+
     .cover-row { display: flex; gap: 0.5rem; }
-    .cover-row input { flex: 1; }
+    .cover-row .input-single { flex: 1; min-width: 0; }
+    .cover-row .btn { flex: none; }
 
-    /* 上次未保存就离开时的恢复提示 */
-    .restore-bar {
-      display: flex; align-items: center; gap: 0.625rem; flex-wrap: wrap;
-      margin-bottom: 1rem; padding: 0.625rem 0.875rem;
-      border: 1px solid var(--border); border-radius: 6px;
-      background: var(--hover);
-      font-size: 0.8125rem; color: var(--text-2);
+    .cover-preview {
+      position: relative;
+      margin-top: 0.625rem;
+      max-width: 22rem;
+      aspect-ratio: 2 / 1;
+      border: 1px solid var(--line-soft);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      background: var(--card-bg-soft);
     }
-    .restore-bar .restore-icon { flex: none; }
-    .restore-bar .restore-text { flex: 1; min-width: 12rem; line-height: 1.6; }
-    .restore-bar .restore-actions { display: flex; gap: 0.375rem; flex: none; }
+    .cover-preview img { width: 100%; height: 100%; object-fit: cover; }
 
-    /* 文章列表的搜索与筛选 */
-    .list-filter { display: flex; flex-direction: column; gap: 0.375rem; margin-bottom: 0.75rem; }
-    .list-filter input[type="search"] { font-size: 0.8125rem; }
-    .list-filter input[type="search"]::-webkit-search-cancel-button { cursor: pointer; }
-    .checkbox-row.compact { font-size: 0.75rem; }
+    .slug-hint { font-family: var(--font-mono); font-size: 0.6875rem; }
+    .slug-hint .warn { color: var(--danger); font-family: var(--font-ui); }
 
-    /* 编辑器底部的字数与快捷键提示 */
-    .editor-footer {
-      display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
-      flex-wrap: wrap; padding: 0.375rem 0.625rem;
-      border-top: 1px solid var(--border);
-      font-size: 0.6875rem; color: var(--text-3);
+    /* 正文区的编辑器容器：小屏时一次只看一个窗格 */
+    .editor-container { --pane-min: 520px; }
+    @media (max-width: 640px) {
+      .editor-container { --pane-min: 340px; }
     }
-    .editor-footer .editor-hint { opacity: 0.75; }
 
-    /* 保存按钮一行，右侧显示本地草稿的保存时刻 */
-    .save-row { display: flex; align-items: center; gap: 0.75rem; }
-    .save-row .btn-primary { flex: 1; }
-    .draft-hint { font-size: 0.6875rem; color: var(--text-3); white-space: nowrap; }
-
-    @media (min-width: 768px) {
-      .container { padding: 2rem 1.5rem 4rem; }
-      .card { padding: 1.5rem; }
-    }
-    @media (max-width: 480px) {
-      .navbar-inner { padding: 0 0.75rem; }
-      .container { padding: 1rem 0.75rem 3rem; }
-      .card { padding: 1rem; }
-      .editor-textarea { min-height: 280px; }
-      .preview-pane { min-height: 200px; }
-      .post-list-card { position: static; }
-    }
+    .preview-empty { padding: 2.5rem 1rem; }
   </style>
 </head>
 <body>
@@ -308,8 +117,12 @@ const postsConfig = JSON.stringify(externalPostsConfig);
   <nav class="navbar">
     <div class="navbar-inner">
       <div class="navbar-left">
-        <span class="dot"></span>
+        <span class="brand-mark">📝</span>
         <h1>文章管理</h1>
+        <span class="status-bar">
+          <span class="status-dot" id="status-dot"></span>
+          <span id="status-text">正在连接…</span>
+        </span>
       </div>
       <div class="nav-right">
         <a href="/admin/" class="back-link">
@@ -322,29 +135,24 @@ const postsConfig = JSON.stringify(externalPostsConfig);
   </nav>
 
   <div class="container">
-    <div class="status-bar" id="status-bar">
-      <span class="status-dot" id="status-dot"></span>
-      <span id="status-text">正在连接...</span>
-    </div>
-
     {/* 上次没有保存就离开时，把本地留存的草稿提示出来 */}
     <div class="restore-bar hidden" id="restore-bar">
       <span class="restore-icon">🕘</span>
       <span class="restore-text" id="restore-text"></span>
       <div class="restore-actions">
         <button class="btn btn-sm" onclick="restoreDraft()">恢复</button>
-        <button class="btn btn-sm" onclick="discardDraft()">丢弃</button>
+        <button class="btn btn-ghost btn-sm" onclick="discardDraft()">丢弃</button>
       </div>
     </div>
 
-
     <div class="layout-grid">
-      <div class="card post-list-card">
+      <!-- ===== 左：文章列表 ===== -->
+      <aside class="card post-list-card">
         <div class="list-header">
           <div class="field-label" style="margin:0"><span class="icon">📋</span> 已有文章</div>
           <span class="count" id="list-count"></span>
         </div>
-        <button class="btn btn-sm" onclick="startNewPost()" style="width:100%;margin-bottom:0.75rem;">+ 新建文章</button>
+        <button class="btn" onclick="startNewPost()" style="width:100%;margin-bottom:0.75rem;">＋ 新建文章</button>
         <div class="list-filter">
           <input type="search" class="input-single" id="list-search" placeholder="搜标题 / 路径 / 标签" />
           <label class="checkbox-row compact">
@@ -352,97 +160,132 @@ const postsConfig = JSON.stringify(externalPostsConfig);
             只看草稿
           </label>
         </div>
-        <div id="post-list">
-          <div class="empty-state"><span class="spinner"></span><p>正在加载...</p></div>
+        <div class="post-list-scroll">
+          <div id="post-list">
+            <div class="empty-state"><span class="spinner"></span><p>正在加载…</p></div>
+          </div>
         </div>
-      </div>
+      </aside>
 
-      <div class="card" id="editor-card">
-        <div class="field-label"><span class="icon">✍️</span> <span id="editor-title">写文章</span></div>
+      <!-- ===== 右：编辑器 ===== -->
+      <main class="card editor-card" id="editor-card">
+        <div class="editor-body">
+          <div class="editor-head">
+            <div class="field-label"><span class="icon">✍️</span> <span id="editor-title">写文章</span></div>
+          </div>
 
-        <div class="form-grid">
-          <div class="field">
-            <div class="field-label">标题</div>
-            <input type="text" class="input-single" id="title-input" placeholder="文章标题" />
-          </div>
-          <div class="field">
-            <div class="field-label">Slug（文章路径）</div>
-            <input type="text" class="input-single" id="slug-input" placeholder="留空自动生成" />
-          </div>
-          <div class="field">
-            <div class="field-label">分类</div>
-            <input type="text" class="input-single" id="category-input" placeholder="如：前端" />
-          </div>
-          <div class="field">
-            <div class="field-label">标签（逗号分隔）</div>
-            <input type="text" class="input-single" id="tags-input" placeholder="如：Astro, 性能" />
-          </div>
-          <div class="field">
-            <div class="field-label">发布日期</div>
-            <input type="date" id="date-input" />
-          </div>
-          <div class="field">
-            <div class="field-label">摘要（可选）</div>
-            <input type="text" class="input-single" id="description-input" placeholder="文章摘要" />
-          </div>
-          <div class="field full">
-            <div class="field-label">封面（可填 URL 或上传图片）</div>
-            <div class="cover-row">
-              <input type="text" class="input-single" id="cover-input" placeholder="https://... 或 /images/posts/..." />
-              <button class="btn btn-sm" id="cover-upload-btn" onclick="pickCover()">上传封面</button>
-              <input type="file" id="cover-file" accept="image/*" class="hidden" />
+          <div class="form-grid">
+            <div class="field full">
+              <div class="field-label">标题</div>
+              <input type="text" class="input-single" id="title-input" placeholder="文章标题" />
+            </div>
+            <div class="field">
+              <div class="field-label">路径（slug）</div>
+              <input type="text" class="input-single" id="slug-input" placeholder="留空按标题生成" />
+              <div class="field-hint slug-hint" id="slug-hint"></div>
+            </div>
+            <div class="field">
+              <div class="field-label">分类</div>
+              <input type="text" class="input-single" id="category-input" list="category-options" placeholder="如：life" />
+              <div class="field-hint">可点右侧箭头选已有分类，避免同一个分类被拼成两种写法</div>
+            </div>
+            <div class="field">
+              <div class="field-label">标签（逗号分隔）</div>
+              <input type="text" class="input-single" id="tags-input" list="tag-options" placeholder="如：Astro, 性能" />
+            </div>
+            <div class="field">
+              <div class="field-label">发布日期</div>
+              <input type="date" id="date-input" />
+            </div>
+            <div class="field full">
+              <div class="field-label">摘要（可选）</div>
+              <input type="text" class="input-single" id="description-input" placeholder="一句话说明这篇写了什么" />
+            </div>
+            <div class="field full">
+              <div class="field-label">封面</div>
+              <div class="cover-row">
+                <input type="text" class="input-single" id="cover-input" placeholder="https://… 或 /images/posts/…" />
+                <button class="btn btn-sm" id="cover-upload-btn" onclick="pickCover()">上传图片</button>
+                <input type="file" id="cover-file" accept="image/*" class="hidden" />
+              </div>
+              <div class="cover-preview hidden" id="cover-preview">
+                <img id="cover-preview-img" alt="封面预览" loading="lazy" />
+              </div>
+            </div>
+            <div class="field full">
+              <label class="checkbox-row">
+                <input type="checkbox" id="draft-input" />
+                存为草稿（保存后不对外展示）
+              </label>
             </div>
           </div>
-          <div class="field full">
-            <label class="checkbox-row">
-              <input type="checkbox" id="draft-input" />
-              草稿（保存后不对外展示）
-            </label>
-          </div>
-        </div>
 
-        <div class="field">
-          <div class="field-label">正文（Markdown，可直接拖图片进来）</div>
-          <div class="editor-container">
-            <div class="editor-pane">
-              <div class="editor-pane-header">
-                <span>编辑</span>
-                <div class="editor-toolbar">
-                  <button class="toolbar-btn" onclick="insertMd('**','**')" title="加粗">B</button>
-                  <button class="toolbar-btn" onclick="insertMd('*','*')" title="斜体">I</button>
-                  <button class="toolbar-btn" onclick="insertMd('`','`')" title="行内代码">&lt;&gt;</button>
-                  <button class="toolbar-btn" onclick="insertMd('\n```\n','\n```\n')" title="代码块">{}</button>
-                  <button class="toolbar-btn" onclick="insertMd('[','](url)')" title="链接">🔗</button>
-                  <button class="toolbar-btn" id="body-upload-btn" onclick="pickBodyImage()" title="上传图片">🖼</button>
-                  <button class="toolbar-btn" onclick="insertMd('> ','')" title="引用">❝</button>
-                  <button class="toolbar-btn" onclick="insertMd('- ','')" title="列表">☰</button>
+          {/* 分类 / 标签的可选项，由脚本按已有文章填进去 */}
+          <datalist id="category-options"></datalist>
+          <datalist id="tag-options"></datalist>
+
+          <div class="field" style="margin-top:1rem;">
+            <div class="field-label">正文（Markdown，图片可直接拖进来）</div>
+            <div class="editor-container" id="editor-container" data-mobile-pane="edit">
+              <!-- 编辑窗格 -->
+              <div class="editor-pane" data-pane="edit">
+                <div class="editor-pane-header">
+                  <span>Markdown</span>
+                  <div class="seg mobile-only">
+                    <button type="button" class="seg-btn active" data-pane-btn="edit">编辑</button>
+                    <button type="button" class="seg-btn" data-pane-btn="preview">预览</button>
+                  </div>
+                  <div class="editor-toolbar">
+                    <button type="button" class="toolbar-btn" onclick="insertMd('## ','')" title="二级标题">H2</button>
+                    <button type="button" class="toolbar-btn" onclick="insertMd('### ','')" title="三级标题">H3</button>
+                    <button type="button" class="toolbar-btn" onclick="insertMd('**','**')" title="加粗（Ctrl+B）"><b>B</b></button>
+                    <button type="button" class="toolbar-btn" onclick="insertMd('*','*')" title="斜体（Ctrl+I）"><i>I</i></button>
+                    <button type="button" class="toolbar-btn" onclick="insertMd('`','`')" title="行内代码">&lt;&gt;</button>
+                    <button type="button" class="toolbar-btn" onclick="insertMd('```\n','\n```')" title="代码块">{ }</button>
+                    <button type="button" class="toolbar-btn" onclick="insertMd('[','](url)','链接文字')" title="链接（Ctrl+K）">🔗</button>
+                    <button type="button" class="toolbar-btn" id="body-upload-btn" onclick="pickBodyImage()" title="上传图片">🖼</button>
+                    <button type="button" class="toolbar-btn" onclick="insertBlock('> 引用')" title="引用">❝</button>
+                    <button type="button" class="toolbar-btn" onclick="insertBlock('- 列表项')" title="无序列表">≡</button>
+                    <button type="button" class="toolbar-btn" onclick="insertBlock('1. 列表项')" title="有序列表">1.</button>
+                    <button type="button" class="toolbar-btn" onclick="insertBlock('- [ ] 待办')" title="待办列表">☑</button>
+                    <button type="button" class="toolbar-btn" onclick="insertBlock('| 列 1 | 列 2 |\n| --- | --- |\n| 内容 | 内容 |')" title="表格">▦</button>
+                    <button type="button" class="toolbar-btn" onclick="insertBlock('---')" title="分割线">—</button>
+                  </div>
+                </div>
+                <textarea class="editor-textarea" id="content-input" placeholder="用 Markdown 写下文章…" ondrop="onBodyDrop(event)" ondragover="onBodyDragOver(event)" spellcheck="false"></textarea>
+                <input type="file" id="body-file" accept="image/*" class="hidden" />
+                <div class="editor-footer">
+                  <span id="content-counter">0 字</span>
+                  <span class="editor-hint"><kbd>Ctrl</kbd>+<kbd>B</kbd> 加粗 · <kbd>Ctrl</kbd>+<kbd>K</kbd> 链接 · <kbd>Ctrl</kbd>+<kbd>S</kbd> 保存 · <kbd>Tab</kbd> 缩进</span>
                 </div>
               </div>
-              <textarea class="editor-textarea" id="content-input" placeholder="用 Markdown 写下文章..." ondrop="onBodyDrop(event)" ondragover="onBodyDragOver(event)"></textarea>
-              <input type="file" id="body-file" accept="image/*" class="hidden" />
-              <div class="editor-footer">
-                <span id="content-counter">0 字</span>
-                <span class="editor-hint">Ctrl+B 加粗 · Ctrl+K 链接 · Ctrl+S 保存 · Tab 缩进</span>
-              </div>
-            </div>
-            <div class="editor-pane">
-              <div class="editor-pane-header"><span>预览</span></div>
-              <div class="preview-pane" id="preview-pane">
-                <div class="empty-state" style="padding:2rem;"><p>开始编辑后预览内容</p></div>
+
+              <!-- 预览窗格 -->
+              <div class="editor-pane" data-pane="preview">
+                <div class="editor-pane-header">
+                  <span>预览</span>
+                  <div class="seg mobile-only">
+                    <button type="button" class="seg-btn" data-pane-btn="edit">编辑</button>
+                    <button type="button" class="seg-btn active" data-pane-btn="preview">预览</button>
+                  </div>
+                </div>
+                <div class="preview-pane" id="preview-pane">
+                  <div class="empty-state preview-empty"><p>开始写就能在这里看到成稿的样子</p></div>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="save-row">
+        <div class="editor-actions">
           <button class="btn btn-primary" id="save-btn" onclick="savePost()">发布文章</button>
+          <div class="edit-bar hidden" id="edit-bar">
+            <button class="btn btn-ghost" onclick="cancelEdit()">取消编辑</button>
+            <a class="btn btn-ghost hidden" id="view-post-btn" href="#" target="_blank" rel="noopener">查看前台</a>
+          </div>
           <span class="draft-hint" id="draft-hint"></span>
         </div>
-        <div class="hidden" id="edit-bar" style="display:flex;gap:0.5rem;margin-top:0.5rem;">
-          <button class="btn btn-sm" onclick="cancelEdit()" style="flex:1;">取消编辑</button>
-          <a class="btn btn-sm hidden" id="view-post-btn" href="#" target="_blank" rel="noopener" style="flex:1;text-align:center;">查看前台</a>
-        </div>
-      </div>
+      </main>
     </div>
   </div>
 
@@ -472,11 +315,6 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       var el = $("toast"); el.textContent = msg; el.className = "toast " + type + " show";
       clearTimeout(el._t); el._t = setTimeout(function() { el.className = "toast"; }, 2800);
     }
-    function toggleDark() {
-      document.documentElement.classList.toggle("dark");
-      localStorage.setItem("theme", document.documentElement.classList.contains("dark") ? "dark" : "light");
-    }
-    if (localStorage.getItem("theme") === "dark") document.documentElement.classList.add("dark");
     function doLogout() { sessionStorage.removeItem("admin_auth"); fetch("/api/auth/logout", { method: "POST" }).catch(function() {}); window.location.href = "/admin/"; }
     function setStatus(ok, text) {
       $("status-dot").className = "status-dot " + (ok ? "ok" : "err");
@@ -508,7 +346,6 @@ const postsConfig = JSON.stringify(externalPostsConfig);
     }
 
     // ===== 认证 =====
-    // ===== 认证 =====
     function checkAuth() {
       return fetch("/api/auth/status")
         .then(function(r) { return r.json(); })
@@ -524,8 +361,28 @@ const postsConfig = JSON.stringify(externalPostsConfig);
     }
 
     // ===== 文章列表 =====
+    // 每篇正文都要单独取一次才知道标题、日期、草稿状态，66 篇就是 66 次请求。
+    // 所以把读到的元信息连文件指纹一起存在本地：git 返回的 blob sha 没变，
+    // 说明这份缓存还是当前版本，直接复用；一旦文件被改过，sha 就变了，自动失效。
+    // 于是第一次打开要等一会儿，之后打开是瞬间的。
+    var META_CACHE_KEY = "wb-postmeta-cache";
+    var metaCache = readMetaCache();
+
+    function readMetaCache() {
+      try {
+        var raw = localStorage.getItem(META_CACHE_KEY);
+        var parsed = raw ? JSON.parse(raw) : null;
+        return parsed && typeof parsed === "object" ? parsed : {};
+      } catch (e) {
+        return {};
+      }
+    }
+    function writeMetaCache() {
+      try { localStorage.setItem(META_CACHE_KEY, JSON.stringify(metaCache)); } catch (e) { /* 存不下就算了 */ }
+    }
+
     function loadPosts() {
-      $("post-list").innerHTML = '<div class="empty-state"><span class="spinner"></span><p>正在加载...</p></div>';
+      $("post-list").innerHTML = '<div class="empty-state"><span class="spinner"></span><p>正在加载…</p></div>';
       var url = API + "/repos/" + CONFIG.owner + "/" + CONFIG.repo + "/git/trees/" + CONFIG.branch + "?recursive=1";
       fetch(url, {})
         .then(function(r) {
@@ -533,28 +390,45 @@ const postsConfig = JSON.stringify(externalPostsConfig);
           return r.json();
         })
         .then(function(tree) {
-          var paths = (tree.tree || [])
-            .filter(function(item) {
-              return item.type === "blob" &&
-                item.path.indexOf(CONFIG.postsPath + "/") === 0 &&
-                /\.(md|mdx)$/i.test(item.path);
-            })
-            .map(function(item) { return item.path; });
+          var blobs = (tree.tree || []).filter(function(item) {
+            return item.type === "blob" &&
+              item.path.indexOf(CONFIG.postsPath + "/") === 0 &&
+              /\.(md|mdx)$/i.test(item.path);
+          });
           posts = [];
-          return Promise.all(paths.map(fetchPostMeta));
+          var needFetch = 0;
+          return Promise.all(blobs.map(function(item) {
+            return fetchPostMeta(item.path, item.sha).then(function(cached) {
+              if (!cached) needFetch++;
+              return null;
+            });
+          })).then(function() { return needFetch; });
         })
-        .then(function() {
+        .then(function(needFetch) {
+          writeMetaCache();
           posts.sort(function(a, b) {
             return new Date(b.published || 0) - new Date(a.published || 0);
           });
           renderList();
+          fillSuggestions();
+          setStatus(true, "已连接 · " + posts.length + " 篇");
         })
         .catch(function(e) {
           $("post-list").innerHTML = '<div class="empty-state" style="color:var(--danger)">加载失败：' + esc(e.message) + '</div>';
           setStatus(false, "加载失败");
         });
     }
-    function fetchPostMeta(path) {
+
+    /**
+     * 取一篇文章的元信息。
+     * blobSha 与缓存里记的一致时直接用缓存，不发请求 —— 返回 true 表示"命中缓存"。
+     */
+    function fetchPostMeta(path, blobSha) {
+      var hit = metaCache[path];
+      if (hit && blobSha && hit.blobSha === blobSha) {
+        posts.push(hit.meta);
+        return Promise.resolve(true);
+      }
       return fetch(API + "/repos/" + CONFIG.owner + "/" + CONFIG.repo + "/contents/" + encPath(path) + "?ref=" + CONFIG.branch, {})
         .then(function(r) {
           if (!r.ok) throw new Error("读取文件失败 HTTP " + r.status);
@@ -563,7 +437,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
         .then(function(file) {
           var md = b64DecodeUnicode(file.content || "");
           var parsed = parsePost(md);
-          posts.push({
+          var meta = {
             path: path,
             sha: file.sha,
             slug: path.replace(new RegExp("^" + CONFIG.postsPath + "/"), "").replace(/\.(md|mdx)$/i, ""),
@@ -572,9 +446,28 @@ const postsConfig = JSON.stringify(externalPostsConfig);
             category: parsed.fm.category || "",
             draft: parsed.fm.draft === true || parsed.fm.draft === "true",
             tags: parsed.fm.tags || [],
-          });
+          };
+          posts.push(meta);
+          metaCache[path] = { blobSha: blobSha || file.sha, meta: meta };
+          return false;
         });
     }
+
+    /** 把已有文章里出现过的分类与标签填进候选项 */
+    function fillSuggestions() {
+      var cats = {}, tags = {};
+      posts.forEach(function(p) {
+        if (p.category && cats[p.category] !== 1) cats[p.category] = 1;
+        (p.tags || []).forEach(function(t) { if (t) tags[t] = 1; });
+      });
+      $("category-options").innerHTML = Object.keys(cats).sort().map(function(c) {
+        return '<option value="' + esc(c) + '"></option>';
+      }).join("");
+      $("tag-options").innerHTML = Object.keys(tags).sort().map(function(t) {
+        return '<option value="' + esc(t) + '"></option>';
+      }).join("");
+    }
+
     function matchesFilter(post) {
       if (listDraftOnly && !post.draft) return false;
       if (!listKeyword) return true;
@@ -590,7 +483,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
         ? posts.length + " 篇"
         : shown.length + " / " + posts.length + " 篇";
       if (!posts.length) {
-        $("post-list").innerHTML = '<div class="empty-state"><div class="icon">📝</div><p>还没有文章，点“新建文章”开始</p></div>';
+        $("post-list").innerHTML = '<div class="empty-state"><div class="icon">📝</div><p>还没有文章，点「新建文章」开始</p></div>';
         return;
       }
       if (!shown.length) {
@@ -611,7 +504,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
           '</div></div>' +
           '<div class="post-actions">' +
           '<button class="btn btn-sm" onclick="editPost(\'' + escapeAttr(post.path) + '\')">编辑</button>' +
-          '<button class="btn btn-danger-sm" onclick="deletePost(\'' + escapeAttr(post.path) + '\')">删除</button>' +
+          '<button class="btn-danger-sm" onclick="deletePost(\'' + escapeAttr(post.path) + '\')">删除</button>' +
           '</div>';
         $("post-list").appendChild(row);
       });
@@ -632,7 +525,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
           if (!kv) return;
           var key = kv[1], value = kv[2].trim();
           if (key === "tags") {
-            try { fm.tags = JSON.parse(value); } catch(e) {
+            try { fm.tags = JSON.parse(value); } catch (e) {
               fm.tags = value.replace(/^\[|\]$/g, "").split(",").map(function(s) { return s.trim().replace(/^["']|["']$/g, ""); }).filter(Boolean);
             }
           } else if (key === "draft" || key === "pinned" || key === "comment") {
@@ -657,9 +550,9 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       $("draft-input").checked = fm.draft === true || fm.draft === "true";
       $("content-input").value = body || "";
       slugAutoMode = false;
+      refreshDerived();
       updatePreview();
       updateCounter();
-      updateViewLink();
       markClean();
     }
     function resetForm() {
@@ -673,9 +566,9 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       $("draft-input").checked = false;
       $("content-input").value = "";
       slugAutoMode = true;
+      refreshDerived();
       updatePreview();
       updateCounter();
-      updateViewLink();
       markClean();
     }
     function newPost() {
@@ -715,9 +608,9 @@ const postsConfig = JSON.stringify(externalPostsConfig);
           $("save-btn").textContent = "保存修改";
           $("edit-bar").classList.remove("hidden");
           window.scrollTo({ top: 0, behavior: "smooth" });
-          toast("正在编辑: " + (parsed.fm.title || path), "ok");
+          toast("正在编辑：" + (parsed.fm.title || path), "ok");
         })
-        .catch(function(e) { toast("加载失败: " + e.message, "err"); });
+        .catch(function(e) { toast("加载失败：" + e.message, "err"); });
     }
 
     // ===== slug =====
@@ -738,10 +631,14 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       return slug;
     }
     $("title-input").addEventListener("input", function() {
-      if (slugAutoMode) $("slug-input").value = slugifyTitle(this.value);
+      if (slugAutoMode) {
+        $("slug-input").value = slugifyTitle(this.value);
+        refreshDerived();
+      }
     });
     $("slug-input").addEventListener("input", function() {
       slugAutoMode = false;
+      refreshDerived();
     });
 
     // ===== 保存 =====
@@ -858,7 +755,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       var btn = $("save-btn");
       btn.disabled = true;
       var originalText = btn.textContent;
-      btn.textContent = "保存中...";
+      btn.textContent = "保存中…";
       var isNew = !editingPath;
       var renamingFrom = editingPath && editingPath !== newPath ? editingPath : "";
       var newSlug = slugFromPath(newPath);
@@ -879,7 +776,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
         // 内容已经进了仓库，本地那份临时草稿就没用了
         clearDraft();
         markClean();
-        updateViewLink();
+        refreshDerived();
         loadPosts();
       }
 
@@ -903,7 +800,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
           })
           .then(function() { finish(isNew ? "发布成功 ✓" : "已保存 ✓"); })
           .catch(function(e) {
-            toast("保存失败: " + e.message, "err");
+            toast("保存失败：" + e.message, "err");
             btn.disabled = false;
             btn.textContent = originalText;
           });
@@ -945,63 +842,226 @@ const postsConfig = JSON.stringify(externalPostsConfig);
         if (editingPath === path) newPost();
         loadPosts();
       }).catch(function(e) {
-        toast("删除失败: " + e.message, "err");
+        toast("删除失败：" + e.message, "err");
       });
     }
 
     // ===== Markdown 预览 =====
+    // 后台是独立页面，拿不到博客构建时的 Markdown 管线，所以这里自己过一遍。
+    // 按行分块解析（标题 / 代码块 / 引用 / 表格 / 列表 / 段落），再处理行内语法，
+    // 比一条条正则替换可靠得多 —— 表格、待办列表、带语言的代码块都能出来。
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        // 引号也转掉：后面会把 alt / href 拼进属性里，留着裸引号会把标签拆坏
+        .replace(/"/g, "&quot;");
+    }
+
+    function renderInline(text) {
+      var codes = [];
+      // 行内代码先抽出来，免得里面的 ** 又被当成加粗
+      var t = text.replace(/`([^`]+)`/g, function(m, code) {
+        codes.push(code);
+        return "\u0000" + (codes.length - 1) + "\u0000";
+      });
+      t = t
+        .replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, '<img src="$2" alt="$1" loading="lazy">')
+        .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+        .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+        .replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<em>$2</em>")
+        .replace(/~~([^~]+)~~/g, "<del>$1</del>");
+      t = t.replace(/\u0000(\d+)\u0000/g, function(m, i) {
+        return "<code>" + codes[Number(i)] + "</code>";
+      });
+      return t;
+    }
+
+    function renderMarkdown(md) {
+      if (!md) return "";
+      var lines = escapeHtml(md.replace(/\r\n?/g, "\n")).split("\n");
+      var out = [];
+      var i = 0;
+      var tableSep = /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/;
+
+      function isBlockStart(line) {
+        return /^\s*(#{1,4})\s+/.test(line) ||
+          /^\s*(```|~~~)/.test(line) ||
+          /^\s*>/.test(line) ||
+          /^\s*([-*+]|\d+\.)\s+/.test(line) ||
+          /^\s*([-*_])\1{2,}\s*$/.test(line);
+      }
+
+      while (i < lines.length) {
+        var line = lines[i];
+
+        // 空行
+        if (!line.trim()) { i++; continue; }
+
+        // 围栏代码块
+        var fence = line.match(/^\s*(```|~~~)\s*(\S*)\s*$/);
+        if (fence) {
+          var closer = fence[1];
+          var lang = fence[2];
+          var buf = [];
+          i++;
+          while (i < lines.length && !new RegExp("^\\s*" + closer).test(lines[i])) {
+            buf.push(lines[i]);
+            i++;
+          }
+          i++; // 跳过结束围栏
+          out.push(
+            '<pre data-lang="' + (lang || "") + '"><code>' + buf.join("\n") + "</code></pre>"
+          );
+          continue;
+        }
+
+        // 标题
+        var h = line.match(/^\s*(#{1,4})\s+(.*)$/);
+        if (h) {
+          var level = h[1].length;
+          out.push("<h" + level + ">" + renderInline(h[2].trim()) + "</h" + level + ">");
+          i++;
+          continue;
+        }
+
+        // 分割线
+        if (/^\s*([-*_])\1{2,}\s*$/.test(line)) {
+          out.push("<hr>");
+          i++;
+          continue;
+        }
+
+        // 表格：本行含 |，下一行是分隔行
+        if (line.indexOf("|") !== -1 && i + 1 < lines.length && tableSep.test(lines[i + 1])) {
+          var cells = function(row) {
+            return row.replace(/^\s*\|/, "").replace(/\|\s*$/, "").split("|").map(function(c) { return c.trim(); });
+          };
+          var head = cells(line);
+          i += 2;
+          var rows = [];
+          while (i < lines.length && lines[i].indexOf("|") !== -1 && lines[i].trim()) {
+            rows.push(cells(lines[i]));
+            i++;
+          }
+          var html = "<table><thead><tr>" +
+            head.map(function(c) { return "<th>" + renderInline(c) + "</th>"; }).join("") +
+            "</tr></thead><tbody>" +
+            rows.map(function(r) {
+              return "<tr>" + r.map(function(c) { return "<td>" + renderInline(c) + "</td>"; }).join("") + "</tr>";
+            }).join("") +
+            "</tbody></table>";
+          out.push(html);
+          continue;
+        }
+
+        // 引用
+        if (/^\s*>/.test(line)) {
+          var quote = [];
+          while (i < lines.length && /^\s*>/.test(lines[i])) {
+            quote.push(lines[i].replace(/^\s*>\s?/, ""));
+            i++;
+          }
+          out.push("<blockquote><p>" + renderInline(quote.join("<br>")) + "</p></blockquote>");
+          continue;
+        }
+
+        // 列表：连续的同类行合成一个 ul / ol，[-] 或 [x] 开头的是待办
+        var li = line.match(/^\s*([-*+]|\d+\.)\s+(.*)$/);
+        if (li) {
+          var ordered = /\d+\./.test(li[1]);
+          var items = [];
+          while (i < lines.length) {
+            var m2 = lines[i].match(/^\s*([-*+]|\d+\.)\s+(.*)$/);
+            if (!m2) break;
+            if (/\d+\./.test(m2[1]) !== ordered) break;
+            var text = m2[2];
+            var task = text.match(/^\[( |x|X)\]\s*(.*)$/);
+            if (task) {
+              items.push(
+                '<li><input type="checkbox" disabled' + (task[1].toLowerCase() === "x" ? " checked" : "") +
+                "> " + renderInline(task[2]) + "</li>"
+              );
+            } else {
+              items.push("<li>" + renderInline(text) + "</li>");
+            }
+            i++;
+          }
+          var tag = ordered ? "ol" : "ul";
+          out.push("<" + tag + ">" + items.join("") + "</" + tag + ">");
+          continue;
+        }
+
+        // 段落：收拢到下一个空行或下一个块级起点
+        var para = [];
+        while (i < lines.length && lines[i].trim() && !isBlockStart(lines[i])) {
+          para.push(lines[i]);
+          i++;
+          // 单独的图片行不跟后面的文字粘成一段
+          if (i < lines.length && /^\s*!\[[^\]]*\]\([^)]+\)\s*$/.test(lines[i - 1])) break;
+        }
+        var paraText = para.join("\n");
+        // 整段只有一张图时，按博客的样式配上图注
+        var soloImg = paraText.trim().match(/^!\[([^\]]*)\]\(([^)\s]+)\)$/);
+        if (soloImg) {
+          out.push(
+            "<figure><img src=\"" + soloImg[2] + "\" alt=\"" + soloImg[1] + "\" loading=\"lazy\">" +
+            (soloImg[1] ? "<figcaption>" + soloImg[1] + "</figcaption>" : "") +
+            "</figure>"
+          );
+        } else {
+          out.push("<p>" + renderInline(paraText).replace(/\n/g, "<br>") + "</p>");
+        }
+      }
+      return out.join("\n");
+    }
+
     var previewTimer = null;
     function updatePreview() {
       clearTimeout(previewTimer);
       previewTimer = setTimeout(function() {
         var md = $("content-input").value;
-        $("preview-pane").innerHTML = md ? renderMarkdown(md) : '<div class="empty-state" style="padding:2rem;"><p>开始编辑后预览内容</p></div>';
-      }, 200);
+        $("preview-pane").innerHTML = md
+          ? renderMarkdown(md)
+          : '<div class="empty-state preview-empty"><p>开始写就能在这里看到成稿的样子</p></div>';
+      }, 180);
     }
     $("content-input").addEventListener("input", updatePreview);
 
-    function renderMarkdown(md) {
-      if (!md) return "";
-      var html = esc(md);
-      html = html.replace(/```(\w*)\n([\s\S]*?)```/g, function(m, l, c) { return '<pre><code>' + c + '</code></pre>'; });
-      html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-      html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
-      html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
-      html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
-      html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-      html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-      html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
-      html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
-      html = html.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
-      html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
-      html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
-      html = html.replace(/^---$/gm, '<hr>');
-      html = html.replace(/\n\n/g, '</p><p>');
-      html = html.replace(/\n/g, '<br>');
-      html = '<p>' + html + '</p>';
-      html = html.replace(/<p>\s*<\/p>/g, '');
-      html = html.replace(/<p>\s*(<h[1-6]>)/g, '$1');
-      html = html.replace(/(<\/h[1-6]>)\s*<\/p>/g, '$1');
-      html = html.replace(/<p>\s*(<pre>)/g, '$1');
-      html = html.replace(/(<\/pre>)\s*<\/p>/g, '$1');
-      html = html.replace(/<p>\s*(<ul>)/g, '$1');
-      html = html.replace(/(<\/ul>)\s*<\/p>/g, '$1');
-      html = html.replace(/<p>\s*(<blockquote>)/g, '$1');
-      html = html.replace(/(<\/blockquote>)\s*<\/p>/g, '$1');
-      html = html.replace(/<p>\s*(<hr>)/g, '$1');
-      html = html.replace(/(<hr>)\s*<\/p>/g, '$1');
-      return html;
+    // ===== 编辑器工具栏 =====
+    // 走 WBEditor.replaceSelection，让插入的文本能进浏览器原生撤销栈，
+    // 也顺带触发 input 事件（字数、草稿、预览都会跟着更新）。
+    function insertMd(before, after, placeholder) {
+      var ta = $("content-input");
+      var selected = ta.value.slice(ta.selectionStart, ta.selectionEnd);
+      var body = selected || placeholder || "";
+      WBEditor.replaceSelection(ta, before + body + after, before.length, before.length + body.length);
+    }
+    // 块级语法（代码块、表格、列表）单独占行，别和上一行黏在一起
+    function insertBlock(text) {
+      var ta = $("content-input");
+      var before = ta.value.slice(0, ta.selectionStart);
+      var after = ta.value.slice(ta.selectionEnd);
+      var prefix = !before || /\n$/.test(before) ? "" : "\n";
+      var suffix = !after || /^\n/.test(after) ? "" : "\n";
+      WBEditor.replaceSelection(ta, prefix + text + suffix);
     }
 
-    // ===== 编辑器工具栏 =====
-    function insertMd(before, after) {
-      var ta = $("content-input");
-      var start = ta.selectionStart, end = ta.selectionEnd;
-      var text = ta.value, selected = text.substring(start, end) || "文本";
-      ta.value = text.substring(0, start) + before + selected + after + text.substring(end);
-      ta.focus(); ta.selectionStart = start + before.length; ta.selectionEnd = start + before.length + selected.length;
-      updatePreview();
-    }
+    // ===== 小屏：编辑 / 预览 二选一 =====
+    (function() {
+      var box = $("editor-container");
+      var btns = box.querySelectorAll("[data-pane-btn]");
+      Array.prototype.forEach.call(btns, function(btn) {
+        btn.addEventListener("click", function() {
+          var pane = btn.getAttribute("data-pane-btn");
+          box.setAttribute("data-mobile-pane", pane);
+          Array.prototype.forEach.call(btns, function(b) {
+            b.classList.toggle("active", b.getAttribute("data-pane-btn") === pane);
+          });
+        });
+      });
+    })();
 
     // ===== 图片上传 =====
     function pickCover() { $("cover-file").click(); }
@@ -1077,12 +1137,12 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       var btn = purpose === "cover" ? $("cover-upload-btn") : $("body-upload-btn");
       var original = btn.textContent;
       btn.disabled = true;
-      btn.textContent = "上传中...";
+      btn.textContent = "上传中…";
 
       var fileName = Date.now() + ".webp";
       var imagePath = CONFIG.imagesPath + "/" + slug + "/" + fileName;
       var imageUrl = "/images/posts/" + slug + "/" + fileName;
-      toast(purpose === "cover" ? "正在压缩封面上传..." : "正在压缩图片上传...", "");
+      toast(purpose === "cover" ? "正在压缩封面上传…" : "正在压缩图片上传…", "");
 
       compressImage(file, 1600, 0.82)
         .then(blobToBase64)
@@ -1103,13 +1163,14 @@ const postsConfig = JSON.stringify(externalPostsConfig);
         .then(function() {
           if (purpose === "cover") {
             $("cover-input").value = imageUrl;
+            updateCoverPreview();
           } else {
-            insertMd("![](" + imageUrl + ")", "");
+            insertBlock("![](" + imageUrl + ")");
           }
           toast("图片已上传 ✓", "ok");
         })
         .catch(function(e) {
-          toast("上传失败: " + e.message, "err");
+          toast("上传失败：" + e.message, "err");
         })
         .finally(function() {
           btn.disabled = false;
@@ -1160,9 +1221,9 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       $("draft-input").checked = !!s.draft;
       $("content-input").value = s.body || "";
       slugAutoMode = false;
+      refreshDerived();
       updatePreview();
       updateCounter();
-      updateViewLink();
     }
     function pad2(n) { return String(n).padStart(2, "0"); }
     function fmtTime(ts) {
@@ -1190,7 +1251,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       $(id).addEventListener("input", scheduleDraftSave);
     });
     $("draft-input").addEventListener("change", function() {
-      updateViewLink();
+      refreshDerived();
       scheduleDraftSave();
     });
 
@@ -1218,7 +1279,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       if (editingPath) $("edit-bar").classList.remove("hidden");
       $("restore-bar").classList.add("hidden");
       $("draft-hint").textContent = "本地草稿 " + fmtTime(pendingDraft.at);
-      updateViewLink();
+      refreshDerived();
       markClean();
       toast("已恢复上次未保存的内容", "ok");
     }
@@ -1230,14 +1291,41 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       if (!isDirty()) return true;
       return confirm(
         "当前内容还没保存，确定要" + action + "吗？\n" +
-        "未保存的内容仍留在本地草稿里，之后可以点“恢复”取回。"
+        "未保存的内容仍留在本地草稿里，之后可以点「恢复」取回。"
       );
     }
 
     // 关标签页或刷新时拦一下，避免手滑丢掉正在写的内容
     WBEditor.guardUnsavedChanges(isDirty);
 
-    // ===== 写完可以去前台看一眼 =====
+    // ===== 跟着内容一起刷新的几处提示 =====
+    function updateCoverPreview() {
+      var box = $("cover-preview");
+      var img = $("cover-preview-img");
+      var src = $("cover-input").value.trim();
+      if (!src) {
+        box.classList.add("hidden");
+        img.removeAttribute("src");
+        return;
+      }
+      // 地址没变就不重新加载：浏览器对同一个 src 不会再触发 load，会一直空着
+      if (img.getAttribute("src") === src) {
+        if (img.complete && img.naturalWidth > 0) box.classList.remove("hidden");
+        return;
+      }
+      img.onload = function() { box.classList.remove("hidden"); };
+      img.onerror = function() { box.classList.add("hidden"); };
+      img.setAttribute("src", src);
+    }
+
+    function updateSlugHint() {
+      var slug = $("slug-input").value.trim();
+      var hint = $("slug-hint");
+      if (!slug) { hint.textContent = "留空会按标题生成，建议手填英文，链接更干净"; return; }
+      var warn = /[^\x00-\x7F]/.test(slug) ? ' <span class="warn">含中文，前台链接也会是中文</span>' : "";
+      hint.innerHTML = esc(CONFIG.postsPath + "/" + slug + ".md") + warn;
+    }
+
     function updateViewLink() {
       var btn = $("view-post-btn");
       var slug = $("slug-input").value.trim() || (editingPath ? slugFromPath(editingPath) : "");
@@ -1251,12 +1339,20 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       btn.classList.remove("hidden");
     }
 
+    // 封面预览、路径提示、前台链接都依赖表单当前值，一起刷新
+    function refreshDerived() {
+      updateCoverPreview();
+      updateSlugHint();
+      updateViewLink();
+    }
+    $("cover-input").addEventListener("input", updateCoverPreview);
+
     // ===== 快捷键 =====
     WBEditor.installTabIndent($("content-input"));
     WBEditor.installShortcuts($("content-input"), {
       bold: function() { insertMd("**", "**"); },
       italic: function() { insertMd("*", "*"); },
-      link: function() { insertMd("[", "](url)"); },
+      link: function() { insertMd("[", "](url)", "链接文字"); },
       save: savePost,
       submit: savePost,
     });
@@ -1274,6 +1370,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
     // ===== 初始化 =====
     $("date-input").value = todayStr();
     updateCounter();
+    refreshDerived();
     markClean();
     showRestoreBar();
     checkAuth().then(function(ok) {

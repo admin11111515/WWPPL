@@ -85,23 +85,27 @@
 	 * 优先走 insertText 命令：它由浏览器原生处理，撤销（Ctrl+Z）能一路退回去。
 	 * 直接改 textarea.value 会把撤销历史清空 —— 对一个写作框来说这不能接受。
 	 */
-	function replaceSelection(textarea, text, selectFrom, selectTo) {
-		textarea.focus();
-		var ok = false;
-		try {
-			ok = document.execCommand("insertText", false, text);
-		} catch (e) {
-			ok = false;
-		}
-		if (!ok) {
-			var start = textarea.selectionStart;
-			var end = textarea.selectionEnd;
-			textarea.value = textarea.value.slice(0, start) + text + textarea.value.slice(end);
-			textarea.selectionStart = start + (selectFrom == null ? text.length : selectFrom);
-			textarea.selectionEnd = start + (selectTo == null ? text.length : selectTo);
-		}
-		textarea.dispatchEvent(new Event("input", { bubbles: true }));
+function replaceSelection(textarea, text, selectFrom, selectTo) {
+	textarea.focus();
+	var start = textarea.selectionStart;
+	var end = textarea.selectionEnd;
+	var ok = false;
+	try {
+		ok = document.execCommand("insertText", false, text);
+	} catch (e) {
+		ok = false;
 	}
+	if (!ok) {
+		textarea.value =
+			textarea.value.slice(0, start) + text + textarea.value.slice(end);
+	}
+	// execCommand 会把光标丢在插入内容的末尾，所以这里统一按调用方给的偏移定位。
+	// 否则「选中一段字→点加粗」之后选区就没了，接着打字会跑到 ** 后面去。
+	var from = start + (selectFrom == null ? text.length : selectFrom);
+	var to = start + (selectTo == null ? text.length : selectTo);
+	textarea.setSelectionRange(from, to);
+	textarea.dispatchEvent(new Event("input", { bubbles: true }));
+}
 
 	/**
 	 * 让 Tab 键用来缩进，而不是把光标弹出输入框。
