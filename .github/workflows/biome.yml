@@ -22,6 +22,11 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # 允许手动触发。用得上：本仓库往 main 推提交走的是 GitHub API
+  #（见 verify/2026-09-23/API推送.mjs），实测这种推法不会让 push 事件
+  # 触发工作流 —— 工作流总运行数一直是 1（唯一那次还是手动派的）。
+  # 所以想要结果，得有手动入口。
+  workflow_dispatch:
 
 permissions:
   contents: read
