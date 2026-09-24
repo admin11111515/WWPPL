@@ -104,18 +104,22 @@ export const siteConfig: SiteConfig = {
 		// 留言板页面开关，需要配置评论系统
 		guestbook: true,
 		// 番组计划页面开关，含追番、游戏、书籍和音乐
+		// ⚠️ /bangumi/ 页面尚未实现（src/pages 下没有该页面），开关只能保持 false；
+		// 打开它得到的是 404，对应的导航预设也已移除
 		bangumi: false,
 		// 追番页面开关
 		anime: true,
 		// 相册页面开关
 		gallery: true,
 		// 设备页面开关
+		// ⚠️ /devices/ 页面尚未实现，开关只能保持 false，打开会 404
 		devices: false,
 		// 日记页面开关
 		diary: true,
 		// 项目页面开关
 		projects: true,
 		// 时间线页面开关
+		// ⚠️ /timeline/ 页面尚未实现，开关只能保持 false，打开会 404
 		timeline: false,
 		// 技能页面开关
 		skills: true,

@@ -157,6 +157,12 @@ const coverLqipProps = cover
         <div class="flex flex-col items-center justify-center py-16 text-neutral-400 dark:text-neutral-500">
           <Icon is:inline name="material-symbols:photo-library" class="text-6xl mb-4 opacity-50" />
           <p class="text-lg">{i18n(I18nKey.galleryNoAlbums)}</p>
+          <a
+            href="/gallery/"
+            class="mt-4 text-sm underline underline-offset-4 opacity-70 transition-opacity hover:opacity-100"
+          >
+            {i18n(I18nKey.galleryBackToAlbums)}
+          </a>
         </div>
       )}
     </div>

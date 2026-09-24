@@ -182,6 +182,12 @@ function getQrLqipProps(qrCode: string) {
         ) : (
           <div class="text-center py-12 text-neutral-500 dark:text-neutral-500">
             <p>{i18n(I18nKey.sponsorEmpty)}</p>
+            <a
+              href="/archive/"
+              class="inline-block mt-4 text-sm underline underline-offset-4 opacity-70 transition-opacity hover:opacity-100"
+            >
+              {i18n(I18nKey.keepExploring)}
+            </a>
           </div>
         )}
       </div>

@@ -477,6 +477,7 @@ export const en: LanguagePack = {
 	[Key.pageMoved]: "This page has moved to a new address, taking you there now",
 
 	[Key.projectsEmpty]: "No projects yet",
+	[Key.keepExploring]: "Browse the archive",
 
 	[Key.backToTop]: "Back to top",
 	[Key.calendarBackToToday]: "Back to today",

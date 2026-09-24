@@ -504,6 +504,9 @@ enum I18nKey {
 	// 空集合页面：一项内容都还没有
 	projectsEmpty = "projectsEmpty",
 
+	// 空集合页面统一给一个去处，避免访客走进死胡同
+	keepExploring = "keepExploring",
+
 	// 无障碍：屏幕上不显示、只给读屏软件听的两处按钮
 	backToTop = "backToTop",
 	calendarBackToToday = "calendarBackToToday",

@@ -65,9 +65,6 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 			// 追番
 			LinkPresets.Anime,
 
-			// 番组计划
-			LinkPresets.Bangumi,
-
 			// 音乐
 			LinkPresets.Music,
 		],
@@ -118,8 +115,11 @@ export const navBarSearchConfig: NavBarSearchConfig = {
 //
 // 这里是备选池：预设留着不占用导航，只有被上面的 links 引用了才会显示。
 // 但 url 指向的页面必须真实存在，否则谁启用谁就多一条 404 链接。
-// 截至 2026-09-24，/devices/、/timeline/、/bangumi/ 三个页面本站都还没有，
-// 对应的预设已单独标注，启用前请先补页面。
+//
+// 2026-09-24 移除了三个「指向不存在页面」的预设：设备 /devices/、时间线 /timeline/、
+// 番组计划 /bangumi/ —— 本站没有这三块内容（站点开关也一直是关的），启用就是 404；
+// 番剧相关的需求已由 /anime/（追番）覆盖。要恢复：先在 src/pages/ 下补出页面，
+// 再把预设和 links 里的引用加回来。
 // ============================================================================
 export const LinkPresets: Record<string, NavBarLink> = {
 	Home: {
@@ -165,14 +165,6 @@ export const LinkPresets: Record<string, NavBarLink> = {
 		url: "/about/",
 		icon: "material-symbols:person",
 	},
-	// ⚠️ /bangumi/ 页面尚未实现（线上实测 404）。它已挂在「我的」菜单下，
-	// 只是 siteConfig.pages.bangumi 开关关着才没露出来；打开开关前先补页面
-	Bangumi: {
-		name: "番组计划",
-		url: "/bangumi/",
-		icon: "material-symbols:movie",
-		pageKey: "bangumi",
-	},
 	Anime: {
 		name: "追番",
 		url: "/anime/",
@@ -184,12 +176,6 @@ export const LinkPresets: Record<string, NavBarLink> = {
 		url: "/gallery/",
 		icon: "material-symbols:photo-library",
 		pageKey: "gallery",
-	},
-	// ⚠️ /devices/ 页面尚未实现（线上实测 404），启用前需先补页面
-	Devices: {
-		name: "设备",
-		url: "/devices/",
-		icon: "material-symbols:devices",
 	},
 	Diary: {
 		name: "日记",
@@ -205,12 +191,6 @@ export const LinkPresets: Record<string, NavBarLink> = {
 		name: "技能",
 		url: "/skills/",
 		icon: "material-symbols:psychology",
-	},
-	// ⚠️ /timeline/ 页面尚未实现（线上实测 404），启用前需先补页面
-	Timeline: {
-		name: "时间线",
-		url: "/timeline/",
-		icon: "material-symbols:timeline",
 	},
 	Music: {
 		name: "音乐",

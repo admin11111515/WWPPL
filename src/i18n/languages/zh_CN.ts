@@ -503,6 +503,7 @@ export const zh_CN: Translation = {
 	[Key.pageMoved]: "这个页面已经搬到新地址，正在为你跳转",
 
 	[Key.projectsEmpty]: "还没有添加项目",
+	[Key.keepExploring]: "去文章归档逛逛",
 
 	[Key.backToTop]: "返回顶部",
 	[Key.calendarBackToToday]: "回到今天",
