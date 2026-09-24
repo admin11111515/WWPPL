@@ -300,13 +300,13 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
   <div class="toast" id="toast"></div>
 
   <script is:inline src="/js/editor-commons.js"></script>
+  <script is:inline src="/js/admin-github.js"></script>
   <script is:inline
     data-gist={externalMomentsConfig.gistId || ""}
     data-file={externalMomentsConfig.fileName || "moments.json"}>
     var _script = document.currentScript;
     var GIST_ID = _script.getAttribute("data-gist") || "";
     var FILE_NAME = _script.getAttribute("data-file") || "moments.json";
-    var API = "/api/github";
     // 本地草稿与"是否有未保存改动"的判定基线
     var draftStore = WBEditor.createDraftStore("moment");
     var cleanSnapshot = "";
@@ -470,12 +470,9 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
       var list = $("moments-list");
       list.innerHTML = '<div class="empty-state"><span class="spinner"></span></div>';
 
-      fetch(API + "/gists/" + GIST_ID, {
-        headers: { "Accept": "application/vnd.github+json" }
-      }).then(function(r) { return r.json(); }).then(function(gist) {
-        var file = gist.files[FILE_NAME];
-        if (!file) { showEmpty(); return; }
-        var moments = JSON.parse(file.content || "[]");
+      WBGitHub.readGist(GIST_ID).then(function(gist) {
+        var text = WBGitHub.gistText(gist, FILE_NAME);
+        var moments = []; try { moments = JSON.parse(text || "[]"); } catch(e) {}
         if (!moments.length) { showEmpty(); return; }
 
         moments.sort(function(a, b) { return new Date(b.published) - new Date(a.published); });
@@ -498,7 +495,7 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
           d.innerHTML = '<div class="moment-body"><div class="moment-text">' + esc(text) + '</div>' + imgHtml + '<div class="moment-meta"><span>' + ds + '</span>' + tagStr + loc + '</div></div><div style="display:flex;gap:0.375rem;flex-shrink:0;"><button class="btn btn-sm" onclick="editMoment(\'' + m.id + '\')">编辑</button><button class="btn btn-danger-sm" onclick="deleteMoment(\'' + m.id + '\')">删除</button></div>';
           list.appendChild(d);
         });
-      }).catch(function() { list.innerHTML = '<div class="empty-state" style="color:var(--danger)">加载失败</div>'; });
+      }).catch(function(e) { list.innerHTML = '<div class="empty-state" style="color:var(--danger)">加载失败：' + esc(e.message) + '</div>'; });
     }
 
     function showEmpty() {
@@ -533,11 +530,8 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
 
     function editMoment(id) {
       if (!confirmDiscardIfDirty("切换到另一条")) return;
-      fetch(API + "/gists/" + GIST_ID, {
-        headers: { "Accept": "application/vnd.github+json" }
-      }).then(function(r) { return r.json(); }).then(function(gist) {
-        var file = gist.files[FILE_NAME];
-        var moments = []; try { moments = JSON.parse(file.content || "[]"); } catch(e) {}
+      WBGitHub.readGist(GIST_ID).then(function(gist) {
+        var moments = []; try { moments = JSON.parse(WBGitHub.gistText(gist, FILE_NAME) || "[]"); } catch(e) {}
         var m = moments.find(function(x) { return x.id === id; });
         if (!m) { toast("未找到该条说说", "err"); return; }
 
@@ -564,7 +558,7 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
         updateCounter();
         markClean();
         toast("正在编辑（ID: " + id.slice(-6) + "）", "ok");
-      }).catch(function() { toast("加载失败", "err"); });
+      }).catch(function(e) { toast("读取失败：" + e.message, "err"); });
     }
 
     function cancelEdit() {
@@ -608,16 +602,13 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
       btn.disabled = true;
       btn.textContent = isEdit ? "保存中..." : (images.length ? "发布中...（含 " + images.length + " 张图）" : "发布中...");
 
-      fetch(API + "/gists/" + GIST_ID, {
-        headers: { "Accept": "application/vnd.github+json" }
-      }).then(function(r) { return r.json(); }).then(function(gist) {
-        var file = gist.files[FILE_NAME];
+      WBGitHub.readGist(GIST_ID).then(function(gist) {
         var moments = [];
-        if (file) { try { moments = JSON.parse(file.content || "[]"); } catch(e) {} }
+        try { moments = JSON.parse(WBGitHub.gistText(gist, FILE_NAME) || "[]"); } catch(e) {}
 
         if (isEdit) {
           var idx = moments.findIndex(function(x) { return x.id === editingId; });
-          if (idx === -1) { throw new Error("未找到"); }
+          if (idx === -1) { throw new Error("这条说说在 Gist 里已经找不到了，刷新页面看看"); }
           moments[idx] = {
             id: editingId, content: content,
             published: published,
@@ -635,13 +626,8 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
           });
         }
 
-        return fetch(API + "/gists/" + GIST_ID, {
-          method: "PATCH",
-          headers: { "Accept": "application/vnd.github+json", "Content-Type": "application/json" },
-          body: JSON.stringify({ files: { [FILE_NAME]: { content: JSON.stringify(moments, null, 2) } } })
-        });
-      }).then(function(r) {
-        if (!r.ok) throw new Error("HTTP " + r.status);
+        return WBGitHub.patchGist(GIST_ID, FILE_NAME, JSON.stringify(moments, null, 2));
+      }).then(function() {
         saved = true;
         // 已经进了仓库，本地那份临时草稿就没用了
         clearDraft();
@@ -661,21 +647,14 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
     // ===== 删除 =====
     function deleteMoment(id) {
       if (!confirm("确定删除？")) return;
-      fetch(API + "/gists/" + GIST_ID, {
-        headers: { "Accept": "application/vnd.github+json" }
-      }).then(function(r) { return r.json(); }).then(function(gist) {
-        var file = gist.files[FILE_NAME];
-        var moments = []; try { moments = JSON.parse(file.content || "[]"); } catch(e) {}
+      WBGitHub.readGist(GIST_ID).then(function(gist) {
+        var moments = []; try { moments = JSON.parse(WBGitHub.gistText(gist, FILE_NAME) || "[]"); } catch(e) {}
         moments = moments.filter(function(m) { return m.id !== id; });
-        return fetch(API + "/gists/" + GIST_ID, {
-          method: "PATCH",
-          headers: { "Accept": "application/vnd.github+json", "Content-Type": "application/json" },
-          body: JSON.stringify({ files: { [FILE_NAME]: { content: JSON.stringify(moments, null, 2) } } })
-        });
-      }).then(function(r) {
-        if (r.ok) { toast("已删除", "ok"); loadMoments(); }
-        else { toast("删除失败", "err"); }
-      }).catch(function() { toast("网络错误", "err"); });
+        return WBGitHub.patchGist(GIST_ID, FILE_NAME, JSON.stringify(moments, null, 2));
+      }).then(function() {
+        toast("已删除", "ok");
+        loadMoments();
+      }).catch(function(e) { toast("删除失败：" + e.message, "err"); });
     }
 
     // ===== 字数 =====

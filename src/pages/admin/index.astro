@@ -444,6 +444,7 @@ import { externalPostsConfig } from "@/config/externalPostsConfig";
   <script is:inline data-swup-ignore-script>
     window.__AVATAR_TARGET__ = {"owner":"admin11111515","repo":"WWPPL","branch":"main","path":"public/assets/avatar.png"};
   </script>
+  <script is:inline src="/js/admin-github.js"></script>
   <script is:inline>
     // ===== 工具 =====
     // toggleDark 与明暗初始化由 <AdminTheme /> 提供
@@ -647,26 +648,14 @@ import { externalPostsConfig } from "@/config/externalPostsConfig";
       var btn = this; btn.disabled = true; btn.textContent = "上传中…";
       $("avatar-status").textContent = "正在提交到 GitHub 仓库…";
       try {
-        var base = "/api/github/repos/" + AVATAR.owner + "/" + AVATAR.repo + "/contents/" + AVATAR.path;
-        var sha = null;
-        var cur = await fetch(base + "?ref=" + AVATAR.branch);
-        if (cur.ok) { sha = (await cur.json()).sha; }
-        else if (cur.status !== 404) { throw new Error("读取现有头像失败（HTTP " + cur.status + "）"); }
-        var put = await fetch(base, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            message: "chore: 更换头像",
-            content: avatarBase64,
-            branch: AVATAR.branch,
-            sha: sha || undefined
-          })
+        var target = { owner: AVATAR.owner, repo: AVATAR.repo, path: AVATAR.path, branch: AVATAR.branch };
+        // 先看看仓库里有没有旧头像：有就带上它的 sha 覆盖，没有就当新建
+        var cur = await WBGitHub.getFile(target);
+        await WBGitHub.putFile({
+          owner: target.owner, repo: target.repo, path: target.path, branch: target.branch,
+          content: avatarBase64, message: "chore: 更换头像",
+          sha: cur && cur.sha ? cur.sha : undefined
         });
-        if (!put.ok) {
-          var msg = "";
-          try { msg = (await put.json()).message || ""; } catch (e) {}
-          throw new Error("上传失败（HTTP " + put.status + (msg ? "：" + msg : "") + "）");
-        }
         $("avatar-status").textContent = "已提交。Cloudflare 会自动重新构建，大约一两分钟后刷新首页就能看到新头像。";
         $("avatar-upload").disabled = false;
       } catch (e) {

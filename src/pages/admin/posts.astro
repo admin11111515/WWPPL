@@ -280,10 +280,10 @@ const postsConfig = JSON.stringify(externalPostsConfig);
   <div class="toast" id="toast"></div>
 
   <script is:inline src="/js/editor-commons.js"></script>
+  <script is:inline src="/js/admin-github.js"></script>
   <script is:inline data-config={postsConfig}>
     var _script = document.currentScript;
     var CONFIG = JSON.parse(_script.getAttribute("data-config") || "{}");
-    var API = "/api/github";
     var posts = [];
     var editingPath = "";
     var editingSha = "";
@@ -310,9 +310,6 @@ const postsConfig = JSON.stringify(externalPostsConfig);
     function todayStr() {
       var d = new Date();
       return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
-    }
-    function encPath(p) {
-      return p.split("/").map(encodeURIComponent).join("/");
     }
     function slugFromPath(path) {
       var prefix = CONFIG.postsPath + "/";
@@ -370,12 +367,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
 
     function loadPosts() {
       $("post-list").innerHTML = '<div class="empty-state"><span class="spinner"></span><p>正在加载…</p></div>';
-      var url = API + "/repos/" + CONFIG.owner + "/" + CONFIG.repo + "/git/trees/" + CONFIG.branch + "?recursive=1";
-      fetch(url, {})
-        .then(function(r) {
-          if (!r.ok) throw new Error("拉取仓库失败 HTTP " + r.status);
-          return r.json();
-        })
+      WBGitHub.request("/repos/" + CONFIG.owner + "/" + CONFIG.repo + "/git/trees/" + CONFIG.branch + "?recursive=1")
         .then(function(tree) {
           var blobs = (tree.tree || []).filter(function(item) {
             return item.type === "blob" &&
@@ -416,12 +408,9 @@ const postsConfig = JSON.stringify(externalPostsConfig);
         posts.push(hit.meta);
         return Promise.resolve(true);
       }
-      return fetch(API + "/repos/" + CONFIG.owner + "/" + CONFIG.repo + "/contents/" + encPath(path) + "?ref=" + CONFIG.branch, {})
-        .then(function(r) {
-          if (!r.ok) throw new Error("读取文件失败 HTTP " + r.status);
-          return r.json();
-        })
+      return getFileMeta(path)
         .then(function(file) {
+          if (!file) throw new Error("仓库里读不到这个文件：" + path);
           var md = b64DecodeUnicode(file.content || "");
           var parsed = parsePost(md);
           var meta = {
@@ -579,12 +568,9 @@ const postsConfig = JSON.stringify(externalPostsConfig);
     }
     function editPost(path) {
       if (!confirmDiscardIfDirty("切换到另一篇")) return;
-      fetch(API + "/repos/" + CONFIG.owner + "/" + CONFIG.repo + "/contents/" + encPath(path) + "?ref=" + CONFIG.branch, {})
-        .then(function(r) {
-          if (!r.ok) throw new Error("读取失败 HTTP " + r.status);
-          return r.json();
-        })
+      getFileMeta(path)
         .then(function(file) {
+          if (!file) throw new Error("仓库里读不到这个文件：" + path);
           var parsed = parsePost(b64DecodeUnicode(file.content || ""));
           editingPath = path;
           editingSha = file.sha;
@@ -657,70 +643,53 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       return lines.join("\n");
     }
     function putTextFile(path, text, sha, message) {
-      return fetch(API + "/repos/" + CONFIG.owner + "/" + CONFIG.repo + "/contents/" + encPath(path), {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: message,
-          content: b64EncodeUnicode(text),
-          branch: CONFIG.branch,
-          ...(sha ? { sha: sha } : {})
-        })
-      }).then(function(r) {
-        if (!r.ok) throw new Error("保存失败 HTTP " + r.status);
-        return r.json();
+      return WBGitHub.putFile({
+        owner: CONFIG.owner, repo: CONFIG.repo, path: path, branch: CONFIG.branch,
+        content: b64EncodeUnicode(text), message: message, sha: sha
       });
     }
+    // 读文件：文件不存在返回 null（不是报错）—— 调用方靠它区分"新建"与"更新"
     function getFileMeta(path) {
-      return fetch(API + "/repos/" + CONFIG.owner + "/" + CONFIG.repo + "/contents/" + encPath(path) + "?ref=" + CONFIG.branch, {})
-        .then(function(r) { return r.json(); });
+      return WBGitHub.getFile({
+        owner: CONFIG.owner, repo: CONFIG.repo, path: path, branch: CONFIG.branch
+      });
     }
     function deleteFile(path, sha, message) {
-      return fetch(API + "/repos/" + CONFIG.owner + "/" + CONFIG.repo + "/contents/" + encPath(path), {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: message, sha: sha, branch: CONFIG.branch })
-      }).then(function(r) {
-        if (!r.ok) throw new Error("删除失败 HTTP " + r.status);
-        return r.json();
+      return WBGitHub.deleteFile({
+        owner: CONFIG.owner, repo: CONFIG.repo, path: path, branch: CONFIG.branch,
+        sha: sha, message: message
       });
     }
     function listImagesDir(slug) {
-      return fetch(API + "/repos/" + CONFIG.owner + "/" + CONFIG.repo + "/contents/" + encPath(CONFIG.imagesPath + "/" + slug) + "?ref=" + CONFIG.branch, {})
-        .then(function(r) {
-          if (r.status === 404) return [];
-          if (!r.ok) throw new Error("读取图片目录失败 HTTP " + r.status);
-          return r.json();
-        });
+      return WBGitHub.listDir({
+        owner: CONFIG.owner, repo: CONFIG.repo, branch: CONFIG.branch,
+        path: CONFIG.imagesPath + "/" + slug
+      });
     }
     function deleteImagesForPost(slug) {
       return listImagesDir(slug).then(function(files) {
-        var list = Array.isArray(files) ? files.filter(function(f) { return f.type === "file"; }) : [];
+        var list = files.filter(function(f) { return f.type === "file"; });
         return Promise.all(list.map(function(f) {
           return deleteFile(f.path, f.sha, "删除文章图片: " + f.path);
         }));
       });
     }
     function putBase64File(path, content, message) {
-      return fetch(API + "/repos/" + CONFIG.owner + "/" + CONFIG.repo + "/contents/" + encPath(path), {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: message, content: content, branch: CONFIG.branch })
-      }).then(function(r) {
-        if (!r.ok) throw new Error("上传失败 HTTP " + r.status);
-        return r.json();
+      return WBGitHub.putFile({
+        owner: CONFIG.owner, repo: CONFIG.repo, path: path, branch: CONFIG.branch,
+        content: content, message: message
       });
     }
     function moveImageFile(oldPath, newPath) {
       return getFileMeta(oldPath).then(function(file) {
-        if (!file.sha || !file.content) throw new Error("读取图片失败: " + oldPath);
+        if (!file || !file.sha || !file.content) throw new Error("读取图片失败: " + oldPath);
         return putBase64File(newPath, file.content, "移动文章图片: " + newPath)
           .then(function() { return deleteFile(oldPath, file.sha, "移动文章图片: " + oldPath); });
       });
     }
     function moveImagesForPost(oldSlug, newSlug) {
       return listImagesDir(oldSlug).then(function(files) {
-        var list = Array.isArray(files) ? files.filter(function(f) { return f.type === "file"; }) : [];
+        var list = files.filter(function(f) { return f.type === "file"; });
         return Promise.all(list.map(function(f) {
           var name = f.path.split("/").pop();
           return moveImageFile(f.path, CONFIG.imagesPath + "/" + newSlug + "/" + name);
@@ -794,12 +763,12 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       }
 
       if (editingPath) {
-        getFileMeta(editingPath).then(function(file) { doPut(file.sha || ""); })
+        getFileMeta(editingPath).then(function(file) { doPut(file && file.sha ? file.sha : ""); })
           .catch(function() { doPut(""); });
       } else {
         getFileMeta(newPath).then(function(file) {
-          if (file.sha && !confirm("仓库已有同名文章，确定覆盖？")) throw new Error("已取消");
-          doPut(file.sha || "");
+          if (file && file.sha && !confirm("仓库已有同名文章，确定覆盖？")) throw new Error("已取消");
+          doPut(file && file.sha ? file.sha : "");
         }).catch(function(e) {
           if (e && e.message === "已取消") {
             btn.disabled = false;
@@ -815,7 +784,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
     function deletePost(path) {
       if (!confirm("确定删除这篇文章？文章图片也会一并删除。")) return;
       getFileMeta(path).then(function(file) {
-        if (!file.sha) throw new Error("未找到文件");
+        if (!file || !file.sha) throw new Error("仓库里找不到这个文件，可能已经被删掉了");
         var slug = slugFromPath(path);
         return deleteFile(path, file.sha, "删除文章: " + path)
           .then(function() {
@@ -1134,17 +1103,9 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       compressImage(file, 1600, 0.82)
         .then(blobToBase64)
         .then(function(base64) {
-          return fetch(API + "/repos/" + CONFIG.owner + "/" + CONFIG.repo + "/contents/" + encPath(imagePath), {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              message: "上传文章图片: " + slug,
-              content: base64,
-              branch: CONFIG.branch
-            })
-          }).then(function(r) {
-            if (!r.ok) throw new Error("上传失败 HTTP " + r.status);
-            return r.json();
+          return WBGitHub.putFile({
+            owner: CONFIG.owner, repo: CONFIG.repo, path: imagePath, branch: CONFIG.branch,
+            content: base64, message: "上传文章图片: " + slug
           });
         })
         .then(function() {
