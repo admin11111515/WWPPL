@@ -681,6 +681,33 @@ const siteLang = lang.replace("_", "-");
 >
   @reference "../styles/main.css";
 
+  /* ⚠️ 这一行不能删，也不能挪到别的文件里。删掉它，全站的间距和居中会一起崩。
+     ------------------------------------------------------------------
+     CSS 分层（@layer）的优先级顺序，由**整个文档里第一次出现该层名的位置**决定，
+     看的是一份份 CSS 在文档里的先后，而不是源码里的 import 顺序。
+
+     本站的实情：这个组件的样式被 Astro 打成一个 CSS 文件、排在文档最前面；Tailwind 的
+     全局 CSS（含 @import 'tailwindcss'）打进另一个文件、排在它后面。于是只要这里先写出
+     @layer components / @layer utilities，这两个层就被钉在最前面，Tailwind 自带的层顺序
+     声明随之失效 —— 结果 @layer base 落到最后、优先级最高。
+
+     而 @layer base 里装的是 Preflight（* { margin:0; padding:0 }、h1 { font-size:inherit }、
+     ul { list-style:none }）。它一旦排到工具类后面：
+       · 全站 margin / padding 工具类（p-4 / mt-4 / mx-auto / space-x-*）**全部失效**
+       · 标题上的字号工具类（text-2xl）失效，因为 h1 的 font-size 被改回「继承」
+       · 列表样式工具类（list-disc）失效
+     2026-09-24 线上实测症状：主内容容器写了 mx-auto 却不居中（1440 视口下左贴边、
+     右侧空 115px）、导航项之间没有间距、卡片内边距全靠组件样式硬撑。
+
+     在最先加载的这份 CSS 里把顺序写全即可修复。注意 Tailwind 会把这句规范化为
+     `@layer theme,base;`（它自己管 properties / components / utilities），最终产出的
+     顺序是 theme → base → properties → components → utilities，正是我们要的。
+     改完必须复核（产出的 CSS 里应能看到 @layer theme,base; 出现在 components 之前）：
+       python verify/2026-09-24/沙箱构建.py --fast
+       node verify/2026-09-24/线上页面诊断.mjs --widths 10 --eval '<体检工具类的表达式>'
+     ------------------------------------------------------------------ */
+  @layer properties, theme, base, components, utilities;
+
   @layer components {
     /* 无障碍跳转链接：平时移出视口之外，聚焦时滑入左上角。
        用 fixed 而非 absolute，因为页面滚动后仍要在同一位置出现。 */

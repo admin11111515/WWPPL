@@ -143,14 +143,16 @@ const showMini = musicPlayerConfig.showMiniPlayer ?? false;
             document.addEventListener('astro:page-load', () => this.handlePageLoad());
 
             // Also listen via swup hooks (more reliable — fires AFTER DOM replacement)
+            // 钩子名必须是 content:replace（无 d）。写成 content:replaced 时 swup 会
+            // 报 "Unknown hook"，回调永远不执行 —— 表现为客户端跳转后播放器不回绑。
             const bindSwup = () => {
                 if (window.swup?.hooks) {
-                    window.swup.hooks.on('content:replaced', () => {
+                    window.swup.hooks.on('content:replace', () => {
                         this.handlePageLoad();
                     });
                 } else {
                     document.addEventListener('swup:enable', () => {
-                        window.swup.hooks.on('content:replaced', () => {
+                        window.swup.hooks.on('content:replace', () => {
                             this.handlePageLoad();
                         });
                     });
