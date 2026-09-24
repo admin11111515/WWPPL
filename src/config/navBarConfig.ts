@@ -115,6 +115,11 @@ export const navBarSearchConfig: NavBarSearchConfig = {
 // ============================================================================
 // 链接预设 - 可自由自定义导航栏链接的名称、图标和URL
 // Link Presets - Allows free customization of the name, icon, and URL of navigation bar links
+//
+// 这里是备选池：预设留着不占用导航，只有被上面的 links 引用了才会显示。
+// 但 url 指向的页面必须真实存在，否则谁启用谁就多一条 404 链接。
+// 截至 2026-09-24，/devices/、/timeline/、/bangumi/ 三个页面本站都还没有，
+// 对应的预设已单独标注，启用前请先补页面。
 // ============================================================================
 export const LinkPresets: Record<string, NavBarLink> = {
 	Home: {
@@ -160,6 +165,8 @@ export const LinkPresets: Record<string, NavBarLink> = {
 		url: "/about/",
 		icon: "material-symbols:person",
 	},
+	// ⚠️ /bangumi/ 页面尚未实现（线上实测 404）。它已挂在「我的」菜单下，
+	// 只是 siteConfig.pages.bangumi 开关关着才没露出来；打开开关前先补页面
 	Bangumi: {
 		name: "番组计划",
 		url: "/bangumi/",
@@ -178,6 +185,7 @@ export const LinkPresets: Record<string, NavBarLink> = {
 		icon: "material-symbols:photo-library",
 		pageKey: "gallery",
 	},
+	// ⚠️ /devices/ 页面尚未实现（线上实测 404），启用前需先补页面
 	Devices: {
 		name: "设备",
 		url: "/devices/",
@@ -198,6 +206,7 @@ export const LinkPresets: Record<string, NavBarLink> = {
 		url: "/skills/",
 		icon: "material-symbols:psychology",
 	},
+	// ⚠️ /timeline/ 页面尚未实现（线上实测 404），启用前需先补页面
 	Timeline: {
 		name: "时间线",
 		url: "/timeline/",

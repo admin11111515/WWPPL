@@ -18,7 +18,9 @@ const { author, avatar, published, tags, location, device, pinned } =
 
 // 默认作者信息
 const defaultAuthor = externalMomentsConfig.defaultAuthor || "匿名";
-const defaultAvatar = externalMomentsConfig.defaultAvatar || "/avatar.png";
+// 兜底头像要和 profileConfig.avatar 指向同一个文件（/assets/avatar.png）。
+// 原来兜底写的是 "/avatar.png"，public 下没有这个文件，一旦走到这个分支就是坏图。
+const defaultAvatar = externalMomentsConfig.defaultAvatar || "/assets/avatar.png";
 
 // 相对时间
 const formatTimeAgo = (date: Date): string => {

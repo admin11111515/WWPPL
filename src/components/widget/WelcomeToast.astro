@@ -50,6 +50,10 @@
         }
     }
 
+    // 外部依赖说明：这里是浏览器直连第三方接口取访客归属地，第三方（v2.xxapi.cn）
+    // 因此能看到访客 IP。接口挂了会走 catch 显示通用欢迎语，功能可降级、不会卡住。
+    // 哪天要满足备案或个人信息告知的要求，需要在隐私说明里写明这一点，
+    // 或者去掉这段、直接用固定欢迎语。
     async function fetchLocation() {
         try {
             const response = await fetch('https://v2.xxapi.cn/api/ip');

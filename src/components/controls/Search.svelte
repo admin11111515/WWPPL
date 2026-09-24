@@ -100,6 +100,38 @@ const search = async (keyword: string, isDesktop: boolean): Promise<void> => {
 	}, 300); // 300ms debounce
 };
 
+// --- 键盘唤起 ---
+// Ctrl/⌘ + K 唤起搜索；Escape 关闭。导航栏那个放大镜是唯一入口，
+// 不熟悉的人找不到，所以补一个键盘入口。
+const onKeydown = (event: KeyboardEvent): void => {
+	const isMac = /mac/i.test(navigator.platform || navigator.userAgent);
+	const mod = isMac ? event.metaKey : event.ctrlKey;
+
+	if (mod && event.key.toLowerCase() === "k") {
+		// 必须先拦：Chrome 里这个组合默认是「把焦点移到地址栏」，
+		// 不 preventDefault 的话按键被浏览器抢走，搜索框永远弹不出来
+		event.preventDefault();
+		const desktopInput = document.querySelector<HTMLInputElement>("#search-bar input");
+		if (desktopInput && desktopInput.offsetParent !== null) {
+			desktopInput.focus();
+			return;
+		}
+		// 窄屏下桌面输入框是隐藏的（hidden lg:flex），改开面板并聚焦面板里的输入框
+		document.getElementById("search-panel")?.classList.remove("float-panel-closed");
+		document.querySelector<HTMLInputElement>("#search-bar-inside input")?.focus();
+		return;
+	}
+
+	// 打开了关不掉比没打开还烦；只在焦点落在搜索区域内时响应，
+	// 免得在别处按 Escape 就把用户输了一半的关键词清掉
+	if (event.key === "Escape") {
+		const active = document.activeElement;
+		if (!(active instanceof HTMLElement) || !active.closest("#search-panel, #search-bar")) return;
+		closeSearchPanel();
+		active.blur();
+	}
+};
+
 // --- Initialization onMount ---
 onMount(() => {
 	const initializePagefind = () => {
@@ -125,6 +157,9 @@ onMount(() => {
 			});
 		}
 	}
+
+	window.addEventListener("keydown", onKeydown);
+	return () => window.removeEventListener("keydown", onKeydown);
 });
 
 // --- Reactive Statements ---
