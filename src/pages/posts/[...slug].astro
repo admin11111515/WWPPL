@@ -4,7 +4,6 @@ import * as path from "node:path";
 import Comment from "@components/comment/index.astro";
 import Markdown from "@components/common/Markdown.astro";
 import EncryptedPost from "@components/features/EncryptedPost.astro";
-import KatexManager from "@components/features/KatexManager.astro";
 import License from "@components/misc/License.astro";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
@@ -217,9 +216,9 @@ const relatedPosts = await getRelatedPosts(entry, 5);
   headings={headings}
   bannerPostMeta={bannerPostMeta}
 >
-  <!-- KaTeX 按需加载 - 仅在文章页面 -->
-  <KatexManager slot="head" />
-  
+  <!-- 数学公式渲染已在 2026-09-27 关闭（站内 0 篇用公式，KaTeX 白占 1.02MB）。
+       以后要写公式：恢复 KatexManager.astro 与 astro.config.mjs 里那四处，再把这行加回来。 -->
+
   <script
     is:inline
     slot="head"

@@ -3,41 +3,102 @@ import { Icon } from "astro-icon/components";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
+import { getSortedPostsList } from "@utils/content-utils";
+import { formatDateToYYYYMMDD } from "@/utils/date-utils";
 import { url } from "@/utils/url-utils";
+
+// 最近 5 篇：进 404 的人多半是拿着旧链接来找具体内容的，「返回首页」并不是他想要的。
+// 这里用 getSortedPostsList（不含正文），别用 getSortedPosts —— 后者会把每篇的 body 也读进来。
+const recentPosts = (await getSortedPostsList()).slice(0, 5);
 ---
 
 <MainGridLayout title={i18n(I18nKey.notFound)} description={i18n(I18nKey.notFoundDescription)}>
     <div class="flex w-full rounded-(--radius-large) overflow-hidden relative min-h-96">
-        <div class="card-base z-10 px-9 py-12 relative w-full flex flex-col items-center justify-center text-center">
+        <div class="card-base z-10 px-6 md:px-9 py-12 relative w-full flex flex-col items-center justify-center text-center">
             <!-- 404 大号数字 -->
             <div class="text-8xl md:text-9xl font-bold text-(--primary) opacity-20 mb-4">
                 {i18n(I18nKey.notFound)}
             </div>
-            
+
             <!-- 404 图标 -->
             <div class="mb-6">
                 <Icon is:inline name="material-symbols:error-outline" class="text-6xl text-(--primary)" />
             </div>
-            
+
             <!-- 标题 -->
             <div class="text-3xl md:text-4xl font-bold mb-4 text-90">
                 {i18n(I18nKey.notFoundTitle)}
             </div>
-            
+
             <!-- 描述 -->
             <p class="text-lg text-75 mb-8 max-w-md">
                 {i18n(I18nKey.notFoundDescription)}
             </p>
-            
+
+            <!-- 搜索：带着关键词跳站内搜索页（/search/ 会读 ?q=，见 AdvancedSearch.svelte 的 getInitialKeyword） -->
+            <form action={url("/search/")} method="get" class="w-full max-w-md mb-8" role="search">
+                <label class="sr-only" for="notfound-q">搜索站内文章</label>
+                <div class="flex gap-2">
+                    <input
+                        id="notfound-q"
+                        name="q"
+                        type="search"
+                        autocomplete="off"
+                        placeholder="搜一下站内文章…"
+                        class="flex-1 min-w-0 px-4 py-2.5 rounded-(--radius-large) bg-black/5 dark:bg-white/10 text-90 outline-none focus:ring-2 focus:ring-(--primary) transition"
+                    />
+                    <button
+                        type="submit"
+                        class="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-(--radius-large) bg-(--primary) text-white font-medium hover:opacity-90 transition-opacity"
+                    >
+                        <Icon is:inline name="material-symbols:search" class="text-lg" />
+                        搜索
+                    </button>
+                </div>
+            </form>
+
+            <!-- 最近更新：给几个具体去处，比只说「回首页」有用 -->
+            {
+                recentPosts.length > 0 && (
+                    <div class="w-full max-w-md text-left mb-8">
+                        <div class="text-sm text-75 mb-2">最近更新</div>
+                        <ul class="flex flex-col gap-1">
+                            {recentPosts.map((post) => (
+                                <li>
+                                    <a
+                                        href={url(`/posts/${post.id}/`)}
+                                        class="flex items-baseline justify-between gap-3 py-1.5 px-3 -mx-3 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                                    >
+                                        <span class="text-90 line-clamp-1">{post.data.title}</span>
+                                        <span class="text-xs text-75 shrink-0 tabular-nums">
+                                            {formatDateToYYYYMMDD(new Date(post.data.published))}
+                                        </span>
+                                    </a>
+                                </li>
+                            ))}
+                        </ul>
+                        <div class="mt-3">
+                            <a
+                                href={url("/archive/")}
+                                class="inline-flex items-center gap-1 text-sm text-(--primary) hover:underline"
+                            >
+                                看全部文章
+                                <Icon is:inline name="material-symbols:arrow-forward" class="text-base" />
+                            </a>
+                        </div>
+                    </div>
+                )
+            }
+
             <!-- 返回首页按钮 -->
-            <a 
+            <a
                 href={url("/")}
-                class="inline-flex items-center gap-2 px-6 py-3 bg-(--primary) text-white rounded-(--radius-large) hover:bg-(--btn-content) transition-colors duration-200 font-medium"
+                class="nf-home inline-flex items-center gap-2 px-6 py-3 bg-(--primary) text-white rounded-(--radius-large) hover:bg-(--btn-content) transition-colors duration-200 font-medium"
             >
                 <Icon is:inline name="material-symbols:home" class="text-xl" />
                 {i18n(I18nKey.backToHome)}
             </a>
-            
+
             <!-- 装饰性元素 -->
             <div class="absolute top-4 left-4 opacity-10">
                 <Icon is:inline name="material-symbols:sentiment-sad" class="text-4xl text-(--primary)" />
@@ -50,11 +111,10 @@ import { url } from "@/utils/url-utils";
 </MainGridLayout>
 
 <style>
-    /* 添加一些动画效果 */
     .card-base {
         animation: fadeInUp 0.6s ease-out;
     }
-    
+
     @keyframes fadeInUp {
         from {
             opacity: 0;
@@ -65,9 +125,10 @@ import { url } from "@/utils/url-utils";
             transform: translateY(0);
         }
     }
-    
-    /* 按钮悬停效果 */
-    a:hover {
+
+    /* 悬停上浮只给主按钮 —— 原来写的是裸 a:hover，现在页面里链接多了，
+       不加限定的话「最近更新」那些行链接也会跟着跳起来。 */
+    .nf-home:hover {
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);
     }

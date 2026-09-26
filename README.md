@@ -25,9 +25,21 @@
 
 </div>
 
+---
+
+> ### ⚠️ 这是 WWPPL 的定制站点，不是主题原版
+>
+> 本仓库是 [Firefly](https://github.com/CuteLeaf/Firefly) 主题的 fork，线上跑在 **https://wwppl.dpdns.org**。
+> 下面这份是**主题自带的文档**，安装 / 配置 / 部署的说明依然适用，但有三处与本站实际不同：
+>
+> 1. **只启用简体中文**：主题自带的 en / ja / ru / zh_TW 四份语言包已经删除，`src/i18n/languages/` 现在只有 `zh_CN.ts`；站点语言是构建期常量，**没有语言切换入口**。要改界面文案，只改这一份。
+> 2. **部署是 Cloudflare Worker**（服务名 `firefly`：静态产物 + `worker/index.js` 接 `/api/*`），不是 Cloudflare Pages。见 `wrangler.jsonc` 与 `docs/Cloudflare部署指南.md`。
+> 3. **本地构建必须走 Temp 沙箱**：`node dev/sandbox.mjs sync`、`node dev/sandbox.mjs build`。本机对项目目录有写入限速，把 `node_modules` 放在项目目录里会让安装和构建慢一个数量级。
+>
+> 站点自己的运维文档在 `docs/`：`Cloudflare部署指南.md`、`后台启用清单.md`。
 
 ---
-📖 README：
+📖 主题 README：
 **[简体中文](README.md)** | **[繁體中文](docs/README.zh-TW.md)** | **[English](README.en.md)** | **[日本語](docs/README.ja.md)** | **[Русский](docs/README.ru.md)**
 
 🚀 快速指南：

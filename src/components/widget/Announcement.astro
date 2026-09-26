@@ -53,7 +53,7 @@ const showTitle = widgetConfig?.showTitle !== false;
         config.closable && (
           <button
             class="btn-regular rounded-lg h-8 w-8 text-sm hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
-            onclick="this.closest('widget-layout').style.display='none'"
+            data-announcement-close="true"
             aria-label={i18n(I18nKey.announcementClose)}
           >
             <Icon is:inline name="fa7-solid:xmark" class="text-sm" />
@@ -63,3 +63,42 @@ const showTitle = widgetConfig?.showTitle !== false;
     </div>
   </div>
 </WidgetLayout>
+
+<script>
+	// 公告关闭按钮：点一下，本次会话内不再出现（关掉标签页即复位）。
+	//
+	// 原来只写了 onclick="closest('widget-layout').style.display='none'"，那只能关掉
+	// 当前这一个节点 —— 公告在侧栏和移动端底部各有一份，而且 swup 换页后 DOM 会重建，
+	// 刷新也会回来，等于「关不掉」。这里把状态记进 sessionStorage，并在每次内容替换后重新应用。
+	const KEY = "wwppl:announcement-closed";
+
+	const hideAll = () => {
+		const nodes = document.querySelectorAll<HTMLElement>("widget-layout#announcement");
+		nodes.forEach((el) => {
+			el.style.display = "none";
+		});
+	};
+
+	const applyState = () => {
+		if (sessionStorage.getItem(KEY) === "1") hideAll();
+	};
+
+	// 用事件委托：两份公告、以及换页后重建的按钮，都不用重新绑定。
+	document.addEventListener("click", (event) => {
+		const target = event.target as HTMLElement | null;
+		if (!target?.closest("[data-announcement-close]")) return;
+		sessionStorage.setItem(KEY, "1");
+		hideAll();
+	});
+
+	applyState();
+
+	// swup 换页时这个脚本不会重跑，得挂钩子再应用一次。
+	// 注意钩子名是 content:replace（无 d），写成 content:replaced 会被 swup 报 Unknown hook。
+	type SwupLike = { hooks?: { on: (name: string, cb: () => void) => void } } | undefined;
+	const onSwupReady = () => {
+		(window as unknown as { swup?: SwupLike }).swup?.hooks?.on("content:replace", applyState);
+	};
+	onSwupReady();
+	document.addEventListener("swup:enable", onSwupReady);
+</script>

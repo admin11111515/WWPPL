@@ -9,11 +9,8 @@ import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "astro/config";
 import expressiveCode from "astro-expressive-code";
 import icon from "astro-icon";
-import katex from "katex";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypeComponents from "rehype-components"; /* Render the custom directive content */
-import rehypeKatex from "rehype-katex";
-import "katex/dist/contrib/mhchem.mjs"; // 加载 mhchem 扩展
 import cloudflare from "@astrojs/cloudflare";
 import mdx from "@astrojs/mdx";
 import { pluginCollapsible } from "expressive-code-collapsible"; /* Collapsible */
@@ -22,7 +19,6 @@ import rehypeCallouts from "rehype-callouts";
 import rehypeSlug from "rehype-slug";
 import remarkAdmonitionToBlockquoteCallout from "remark-admonition-to-blockquote-callout";
 import remarkDirective from "remark-directive"; /* Handle directives */
-import remarkMath from "remark-math";
 import remarkSectionize from "remark-sectionize";
 import { expressiveCodeConfig, plantumlConfig, siteConfig } from "./src/config";
 import I18nKey from "./src/i18n/i18nKey";
@@ -221,13 +217,19 @@ export default defineConfig({
 		}),
 		mdx(),
 	],
+	// ⚠️ 数学公式渲染自 2026-09-27 起关闭：站内 0 篇文章用公式，而 KaTeX 会往产物里塞
+	// 59 个字体文件（ttf/woff/woff2 三份，合计 1.02 MB）。共移除四处：
+	// ① remarkMath；② rehypeKatex + katex 实例；③ vite.optimizeDeps 里的 katex；
+	// ④ 组件 KatexManager.astro（文章页原本靠它引 katex.min.css）。
+	// 以后要写公式：把这四处加回来，并在 posts/[...slug].astro 里恢复
+	// <KatexManager slot="head" />。package.json 里的 katex / rehype-katex 依赖
+	// **故意保留**，就是为了这一步能一行改回。
 	markdown: {
 		processor: unified({
 			remarkPlugins: [
 				...(siteConfig.post.rehypeCallouts.enablePythonMarkdownAdmonitions !== false
 					? [remarkAdmonitionToBlockquoteCallout]
 					: []),
-				remarkMath,
 				remarkReadingTime,
 				remarkImageGrid,
 				remarkExcerpt,
@@ -238,7 +240,6 @@ export default defineConfig({
 				[remarkPlantuml, plantumlConfig],
 			],
 			rehypePlugins: [
-				[rehypeKatex, { katex }],
 				[rehypeCallouts, { theme: siteConfig.post.rehypeCallouts.theme }],
 				rehypeSlug,
 				rehypeMermaid,
@@ -335,7 +336,7 @@ export default defineConfig({
 			// 强制预构建依赖
 			// 注意：不要在这里写没被当作模块引入的包。marked 只在笔记页运行时按需取用，
 			// 它既不是依赖也没装，写在这里只会让每次启动都报一句解析失败的警告。
-			include: ["@fancyapps/ui", "katex"],
+			include: ["@fancyapps/ui"],
 		},
 	},
 });

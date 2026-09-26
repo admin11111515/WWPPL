@@ -86,7 +86,7 @@ Firefly 项目中所有可复用组件的集中管理。组件按照功能和职
 **管理器（初始化和管理功能）**
 - `FancyboxManager.astro` - Fancybox 图片查看器管理
 - `FontManager.astro` - 字体加载和管理
-- `KatexManager.astro` - Katex 数学公式渲染管理
+- ~~`KatexManager.astro`~~：已于 2026-09-27 移除（站内没有数学公式，KaTeX 白占 1.02MB；恢复办法见 `astro.config.mjs` 的注释）
 - `MusicManager.astro` - 全局音乐播放管理器（单例，管理唯一 audio 元素和播放状态，通过 CustomEvent 同步所有 MusicPlayer 视图实例）
 
 **功能组件**

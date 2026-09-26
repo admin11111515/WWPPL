@@ -10,7 +10,7 @@
  * 在 Temp 下建一个沙箱目录做依赖安装与构建验证。
  *
  * 用法：
- *   node dev/sandbox.mjs sync         仅同步源码到沙箱
+ *   node dev/sandbox.mjs sync         同步源码到沙箱（并清掉源码里已删除的文件）
  *   node dev/sandbox.mjs build        按 package.json 的完整链路构建
  *   node dev/sandbox.mjs build --fast 只跑 astro build，跳过内容生成与字体子集化
  *   node dev/sandbox.mjs clean        删除沙箱（含 node_modules）
@@ -72,6 +72,37 @@ function mirror(src, dest) {
 	}
 }
 
+/** 删除 dest 中「src 已经不存在」的条目 —— 让沙箱真正等于源码。
+ *
+ *  背景：mirror 只覆盖、不删除。所以源码里删掉的文件（组件、语言表、配置、静态资源）
+ *  会一直留在沙箱里，构建时照旧被打包进产物。2026-09-27 就因此白带了一整套 KaTeX
+ *  字体（59 个文件、1.02 MB，因为已删除的 KatexManager.astro 还在沙箱里），
+ *  以及一个已删除的 favicon/avatar.jpg（差点跟着上线）。
+ *
+ *  这里跳过 EXCLUDE_DIRS：那几个（node_modules / dist / .astro / .git / 各家 CI 缓存）
+ *  是沙箱自己的东西，源码里本来就没有，不能当「多余」删掉。 */
+function prune(src, dest) {
+	const removed = [];
+	let entries;
+	try {
+		entries = fs.readdirSync(dest, { withFileTypes: true });
+	} catch {
+		return removed;
+	}
+	for (const entry of entries) {
+		if (EXCLUDE_DIRS.has(entry.name)) continue;
+		const s = path.join(src, entry.name);
+		const d = path.join(dest, entry.name);
+		if (!fs.existsSync(s)) {
+			fs.rmSync(d, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 });
+			removed.push(path.relative(DST, d).replace(/\\/g, "/"));
+			continue;
+		}
+		if (entry.isDirectory()) removed.push(...prune(s, d));
+	}
+	return removed;
+}
+
 function countFiles(dir, limit = 999999) {
 	let n = 0;
 	const walk = (d) => {
@@ -128,8 +159,14 @@ function doSync() {
 	ensureDir(SANDBOX_ROOT);
 	const t0 = Date.now();
 	mirror(SRC, DST);
+	const removed = prune(SRC, DST);
 	const dt = Date.now() - t0;
 	log(`[sync] 完成，耗时 ${dt} ms`);
+	if (removed.length) {
+		log(`[sync] 清掉 ${removed.length} 个源码里已不存在的条目（不清理它们会一直被打进产物）：`);
+		for (const r of removed.slice(0, 20)) log(`       - ${r}`);
+		if (removed.length > 20) log(`       …另有 ${removed.length - 20} 个`);
+	}
 	if (dt > 3000) {
 		log("[sync] 提示：同步本身也受写入限速影响，属预期现象");
 	}

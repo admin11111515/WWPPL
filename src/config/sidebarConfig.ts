@@ -212,6 +212,12 @@ export const sidebarLayoutConfig: SidebarLayoutConfig = {
 
 	// 移动端底部组件配置列表
 	// 这些组件只在移动端(<768px)显示在页面底部，独立于左右侧边栏配置
+	//
+	// 2026-09-27 精简：移动端没有左右侧栏，这些组件全部落在正文之后，原来堆了 10 个，
+	// 想看「下一页 / 相关文章」得先滚过一整屏卡片。现在只留 5 个（资料卡 / 公告 / 音乐 /
+	// 天气 / 今日一言），关掉的 5 个要么在导航里另有入口（分类、标签），要么属于可省的
+	// 展示信息（统计 / 站点信息 / 时间进度）。这里用 enable: false 而不是删条目，
+	// 以后想单独放回某个，改一个字即可。
 	mobileBottomComponents: [
 		{
 			// 组件类型：用户资料组件
@@ -233,7 +239,7 @@ export const sidebarLayoutConfig: SidebarLayoutConfig = {
 			// 组件类型：分类组件
 			type: "categories",
 			// 是否启用该组件
-			enable: true,
+			enable: false,
 			// 是否在文章详情页显示
 			showOnPostPage: true,
 			// 组件专属配置
@@ -246,7 +252,7 @@ export const sidebarLayoutConfig: SidebarLayoutConfig = {
 			// 组件类型：标签组件
 			type: "tags",
 			// 是否启用该组件
-			enable: true,
+			enable: false,
 			// 是否在文章详情页显示
 			showOnPostPage: true,
 			// 组件专属配置
@@ -259,7 +265,7 @@ export const sidebarLayoutConfig: SidebarLayoutConfig = {
 			// 组件类型：站点统计组件
 			type: "stats",
 			// 是否启用该组件
-			enable: true,
+			enable: false,
 			// 是否在文章详情页显示
 			showOnPostPage: true,
 		},
@@ -267,7 +273,7 @@ export const sidebarLayoutConfig: SidebarLayoutConfig = {
 			// 组件类型：站点信息组件
 			type: "siteInfo",
 			// 是否启用该组件
-			enable: true,
+			enable: false,
 			// 是否在文章详情页显示
 			showOnPostPage: true,
 			// 组件专属配置
@@ -292,7 +298,7 @@ export const sidebarLayoutConfig: SidebarLayoutConfig = {
 			// 组件类型：时间进度组件
 			type: "schedule",
 			// 是否启用该组件
-			enable: true,
+			enable: false,
 			// 是否在文章详情页显示
 			showOnPostPage: false,
 		},
