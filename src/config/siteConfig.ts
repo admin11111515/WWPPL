@@ -9,24 +9,17 @@ export const siteConfig: SiteConfig = {
 	title: "WWPPL Blog",
 
 	// 站点副标题
-	subtitle: "白天上课，晚上学专业软件、做项目。业余折腾最新的人工智能小玩意，水平也业余。",
+	subtitle:
+		"白天上课，晚上学专业软件、做项目。业余折腾最新的人工智能小玩意，水平也业余。",
 
 	// 站点 URL
 	site_url: "https://wwppl.dpdns.org",
 
 	// 站点描述
-	description:
-		"WWPPL 的个人博客，记录生活与思考，偶尔分享一些技术心得。",
+	description: "WWPPL 的个人博客，记录生活与思考，偶尔分享一些技术心得。",
 
 	// 站点关键词
-	keywords: [
-		"WWPPL",
-		"个人博客",
-		"生活记录",
-		"随笔",
-		"感悟",
-		"技术心得",
-	],
+	keywords: ["WWPPL", "个人博客", "生活记录", "随笔", "感悟", "技术心得"],
 
 	// 主题色
 	themeColor: {
@@ -127,11 +120,14 @@ export const siteConfig: SiteConfig = {
 	// 日记页面配置
 	diary: {
 		// 默认头像
-		defaultAvatar:
-			"/assets/avatar.png",
+		defaultAvatar: "/assets/avatar.png",
 	},
 
 	// 说说页面封面配置（微信朋友圈风格）
+	// 外部依赖：封面图取自第三方图床 t.alcy.cc（浏览器直连，访客 IP 会到对方那里）。
+	// 它限流、改版或下线时，封面位置会空着，说说的正文、列表、翻页都不受影响
+	// —— 这是有意的降级，不是故障。要彻底不受制于人，就把图下到 public/assets/ 里，
+	// 把 image 换成 "/assets/xxx.jpg"。
 	momentsCover: {
 		enable: true,
 		image: "https://t.alcy.cc/pc",
@@ -260,8 +256,6 @@ export const siteConfig: SiteConfig = {
 		// id: 网易云歌单ID（歌单页面URL中的数字）
 		// name: 显示名称
 		// server: "netease" 网易云 / "tencent" QQ音乐
-		playlists: [
-			{ id: "18126719128", name: "我喜欢的音乐", server: "netease" },
-		],
+		playlists: [{ id: "18126719128", name: "我喜欢的音乐", server: "netease" }],
 	},
 };

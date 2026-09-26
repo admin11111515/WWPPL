@@ -1,10 +1,11 @@
 ---
+import Footer from "@components/layout/Footer.astro";
 // 文章管理页面 - 通过 GitHub Contents API 读写博客仓库
 import AdminTheme from "@/components/admin/AdminTheme.astro";
 import AdminTopBar from "@/components/admin/AdminTopBar.astro";
-import Footer from "@components/layout/Footer.astro";
 import { adminBodyClass, adminHtmlClass } from "@/components/admin/adminShell";
 import { externalPostsConfig } from "@/config/externalPostsConfig";
+
 const postsConfig = JSON.stringify(externalPostsConfig);
 ---
 

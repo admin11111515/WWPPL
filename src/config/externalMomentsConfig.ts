@@ -14,7 +14,5 @@ export const externalMomentsConfig = {
 
 	// 默认作者信息
 	defaultAuthor: "WWPPL",
-	defaultAvatar:
-		"/assets/avatar.png",
-
+	defaultAvatar: "/assets/avatar.png",
 };

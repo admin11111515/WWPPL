@@ -3,10 +3,6 @@ export type { AnnouncementConfig } from "./announcementConfig";
 export type { BackgroundWallpaperConfig } from "./backgroundWallpaper";
 export type { CommentConfig } from "./commentConfig";
 export type { CoverImageConfig } from "./coverImageConfig";
-export type {
-	GeneratedCoverConfig,
-	GeneratedCoverPalette,
-} from "./generatedCover";
 export type { SakuraConfig } from "./effectsConfig";
 export type {
 	ExpressiveCodeConfig,
@@ -17,6 +13,10 @@ export type { FontConfig, FontItem } from "./fontConfig";
 export type { FooterConfig } from "./footerConfig";
 export type { FriendLink, FriendsPageConfig } from "./friendsConfig";
 export type { GalleryAlbum, GalleryConfig } from "./galleryConfig";
+export type {
+	GeneratedCoverConfig,
+	GeneratedCoverPalette,
+} from "./generatedCover";
 export type { LicenseConfig } from "./licenseConfig";
 export type { MusicPlayerConfig } from "./musicConfig";
 export type {

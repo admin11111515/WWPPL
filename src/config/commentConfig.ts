@@ -52,6 +52,10 @@ export const commentConfig: CommentConfig = {
 	},
 
 	//giscus评论系统配置
+	// 外部依赖：评论由第三方 giscus.app 提供，数据存在本仓库的 GitHub Discussions 里。
+	// 它被墙或宕机时，评论区那块会空着，文章正文、目录、翻页都照常读
+	// —— 这是有意的降级，不是故障。页脚的评论徽章只标站点真实加载的评论系统，
+	// 所以降级时徽章会跟着变（有断言把关），不会挂着一个用不了的标。
 	giscus: {
 		// 设置 Giscus 评论系统仓库
 		repo: "admin11111515/WWPPL",

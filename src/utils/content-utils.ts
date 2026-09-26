@@ -151,7 +151,9 @@ async function fetchBangumiArchiveData(): Promise<ArchiveItem[]> {
 		bangumiConfig.subjectBaseUrl || "https://bangumi.one/subject/";
 	const bangumiItems: ArchiveItem[] = [];
 
-	for (const [key, info] of Object.entries(categoryMap)) {
+	// 只需要 value（里面带 name 与 subjectType），key 用不上 —— 改成 values()，
+	// 免得留一个没人读的循环变量（biome 的 noUnusedVariables 会报）
+	for (const info of Object.values(categoryMap)) {
 		try {
 			const url = `${apiUrl}/v0/users/${username}/collections?subject_type=${info.subjectType}&limit=50&offset=0`;
 			const response = await fetch(url, {

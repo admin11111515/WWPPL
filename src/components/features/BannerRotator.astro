@@ -27,7 +27,13 @@ interface Props {
 	class?: string;
 }
 
-const { items, live = [], speed = 100, pauseTime = 2000, class: className = "" } = Astro.props;
+const {
+	items,
+	live = [],
+	speed = 100,
+	pauseTime = 2000,
+	class: className = "",
+} = Astro.props;
 
 // 数据内联，避免额外请求；首页之外不渲染这个组件
 const itemsJson = JSON.stringify(items);

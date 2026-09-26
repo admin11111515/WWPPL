@@ -172,7 +172,8 @@ export const zh_CN: Translation = {
 	[Key.animeEpStatus]: "进度",
 	[Key.animeViewDetails]: "查看详情",
 	[Key.animeNotConfigured]: "未配置追番数据源",
-	[Key.animeNotConfiguredDesc]: "请在 src/config/siteConfig.ts 中配置 Bilibili UID",
+	[Key.animeNotConfiguredDesc]:
+		"请在 src/config/siteConfig.ts 中配置 Bilibili UID",
 	[Key.animeBilibiliAvg]: "Bilibili 均分",
 	[Key.animeTmdbAvg]: "TMDB 均分",
 	[Key.animeDualSynced]: "双源已同步",
@@ -494,7 +495,8 @@ export const zh_CN: Translation = {
 
 	// 离线状态（PWA 离线兜底页）
 	[Key.offlineTitle]: "当前离线",
-	[Key.offlineDescription]: "网络连接似乎断开了。已经缓存过的内容依然可以浏览。",
+	[Key.offlineDescription]:
+		"网络连接似乎断开了。已经缓存过的内容依然可以浏览。",
 
 	// 无障碍：跳过导航直达正文
 	[Key.skipToContent]: "跳到主要内容",

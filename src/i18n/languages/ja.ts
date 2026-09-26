@@ -473,7 +473,8 @@ export const ja: LanguagePack = {
 	[Key.skipToContent]: "メインコンテンツへスキップ",
 
 	// 旧ルートの転送案内ページ
-	[Key.pageMoved]: "このページは新しいアドレスに移動しました。まもなく移動します",
+	[Key.pageMoved]:
+		"このページは新しいアドレスに移動しました。まもなく移動します",
 
 	[Key.projectsEmpty]: "プロジェクトはまだありません",
 

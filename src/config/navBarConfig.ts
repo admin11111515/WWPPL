@@ -53,41 +53,33 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 		],
 	});
 
-	// 我的及其子菜单
+	// 兴趣及其子菜单
+	// 2026-09-26 改名：原来叫「我的」，配上「友链 / 追番 / 音乐」这三项，
+	// 看不出里面装的是什么（本站审计 U6）；改成「兴趣」并让追番、音乐排前面。
+	// 父级菜单在模板里是按「有没有 children」渲染成按钮的，url 不参与跳转，
+	// 所以这里统一写 "#"，与「文章」「动态」保持一致。
 	links.push({
-		name: "我的",
+		name: "兴趣",
 		url: "#",
 		icon: "material-symbols:person",
 		children: [
-			// 友链
-			LinkPresets.Friends,
-
 			// 追番
 			LinkPresets.Anime,
 
 			// 音乐
 			LinkPresets.Music,
+
+			// 友链
+			LinkPresets.Friends,
 		],
 	});
 
-	// 关于及其子菜单
+	// 作品及其子菜单
+	// 2026-09-26 改名：原来叫「其他」（url 是 /other/，那个路径并不存在），
+	// 项目与技能归到「作品」更好认。
 	links.push({
-		name: "更多",
-		url: "/content/",
-		icon: "material-symbols:info",
-		children: [
-			// 打赏
-			LinkPresets.Sponsor,
-
-			// 关于页面
-			LinkPresets.About,
-		],
-	});
-
-	// 关于及其子菜单
-	links.push({
-		name: "其他",
-		url: "/other/",
+		name: "作品",
+		url: "#",
 		icon: "material-symbols:more-horiz",
 		children: [
 			// 项目
@@ -98,6 +90,21 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 		],
 	});
 
+	// 关于及其子菜单
+	// 2026-09-26 改名：原来叫「更多」（url 是 /content/，那个路径并不存在），
+	// 同时把「关于页面」排到「打赏」前面——先讲我是谁，再谈要不要打赏。
+	links.push({
+		name: "关于",
+		url: "#",
+		icon: "material-symbols:info",
+		children: [
+			// 关于页面
+			LinkPresets.About,
+
+			// 打赏
+			LinkPresets.Sponsor,
+		],
+	});
 
 	// 仅返回链接，其它导航搜索相关配置在模块顶层常量中独立导出
 

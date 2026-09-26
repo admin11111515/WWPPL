@@ -24,11 +24,36 @@ type ServiceMeta = {
 
 /** 评论系统：键名与 commentConfig.type 对应 */
 const COMMENT_PROVIDERS: Record<string, ServiceMeta> = {
-	twikoo: { name: "Twikoo", url: "https://twikoo.js.org/", logo: "livechat", color: "007aff" },
-	waline: { name: "Waline", url: "https://waline.js.org/", logo: "waline", color: "1e88e5" },
-	giscus: { name: "giscus", url: "https://giscus.app/", logo: "github", color: "181717" },
-	artalk: { name: "Artalk", url: "https://artalk.js.org/", logo: "chatbot", color: "ff6b6b" },
-	disqus: { name: "Disqus", url: "https://disqus.com/", logo: "disqus", color: "2e9fff" },
+	twikoo: {
+		name: "Twikoo",
+		url: "https://twikoo.js.org/",
+		logo: "livechat",
+		color: "007aff",
+	},
+	waline: {
+		name: "Waline",
+		url: "https://waline.js.org/",
+		logo: "waline",
+		color: "1e88e5",
+	},
+	giscus: {
+		name: "giscus",
+		url: "https://giscus.app/",
+		logo: "github",
+		color: "181717",
+	},
+	artalk: {
+		name: "Artalk",
+		url: "https://artalk.js.org/",
+		logo: "chatbot",
+		color: "ff6b6b",
+	},
+	disqus: {
+		name: "Disqus",
+		url: "https://disqus.com/",
+		logo: "disqus",
+		color: "2e9fff",
+	},
 };
 
 /** 统计服务：只保留真的填了标识的那几个 */
@@ -77,7 +102,11 @@ export function getServiceBadgesHtml(): string {
 	const commentProvider = COMMENT_PROVIDERS[commentConfig.type];
 	if (commentProvider) {
 		badges.push(
-			toBadge("Comments", commentProvider, `本站评论系统 ${commentProvider.name}`),
+			toBadge(
+				"Comments",
+				commentProvider,
+				`本站评论系统 ${commentProvider.name}`,
+			),
 		);
 	}
 

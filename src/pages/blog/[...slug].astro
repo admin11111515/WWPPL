@@ -1,9 +1,9 @@
 ---
+import { getSortedPosts } from "@utils/content-utils";
+import { removeFileExtension } from "@utils/url-utils";
 import { siteConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
-import { getSortedPosts } from "@utils/content-utils";
-import { removeFileExtension } from "@utils/url-utils";
 
 // 遗留路由 /blog/<slug>/ 的重定向页，指向规范路由 /posts/<slug>/
 //

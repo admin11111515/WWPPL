@@ -458,7 +458,8 @@ export const zh_TW: LanguagePack = {
 
 	// 離線狀態（PWA 離線備援頁）
 	[Key.offlineTitle]: "目前離線",
-	[Key.offlineDescription]: "網路連線似乎中斷了。已經快取過的內容仍然可以瀏覽。",
+	[Key.offlineDescription]:
+		"網路連線似乎中斷了。已經快取過的內容仍然可以瀏覽。",
 
 	// 無障礙：跳過導覽直達正文
 	[Key.skipToContent]: "跳到主要內容",

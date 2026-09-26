@@ -579,6 +579,10 @@ const COLLAPSED_HEIGHT = "9rem";
 
 <script is:inline define:vars={{ city, adcode, CACHE_KEY, CACHE_DURATION, extended }}>
 	(function () {
+		// 外部依赖：天气数据来自第三方 uapis.cn，浏览器直连。
+		// 它挂了或超时时，下面的 catch 会让卡片停在「加载失败」的样子，
+		// 页面其余部分照常，不会卡住渲染；下面的 CACHE_DURATION 还有一层本地缓存，
+		// 短时故障对回访的访客基本无感。换本地数据源的话，改这一个常量即可。
 		const API_URL = "https://uapis.cn/api/v1/misc/weather?";
 
 		// 缓存管理

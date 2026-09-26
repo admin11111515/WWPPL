@@ -37,9 +37,9 @@ function formatTimeAgo(date: Date): string {
 	const hours = Math.floor(diff / 3600000);
 	const days = Math.floor(diff / 86400000);
 	if (minutes < 1) return "刚刚";
-	if (minutes < 60) return minutes + "分钟前";
-	if (hours < 24) return hours + "小时前";
-	if (days < 30) return days + "天前";
+	if (minutes < 60) return `${minutes}分钟前`;
+	if (hours < 24) return `${hours}小时前`;
+	if (days < 30) return `${days}天前`;
 	return (
 		date.getFullYear() +
 		"-" +
@@ -190,7 +190,7 @@ function createCard(m: {
 
 	if (images.length > 0) {
 		const grid = document.createElement("div");
-		grid.className = "card-images image-cols-" + getGridCols(images.length);
+		grid.className = `card-images image-cols-${getGridCols(images.length)}`;
 		images.forEach((src) => {
 			const imgWrap = document.createElement("div");
 			imgWrap.className = "image-item";
@@ -211,9 +211,9 @@ function createCard(m: {
 		tagDiv.className = "card-tags";
 		tags.forEach((t) => {
 			const a = document.createElement("a");
-			a.href = "/archive/?tag=" + encodeURIComponent(t.trim());
+			a.href = `/archive/?tag=${encodeURIComponent(t.trim())}`;
 			a.className = "tag-item";
-			a.textContent = "#" + t.trim();
+			a.textContent = `#${t.trim()}`;
 			a.style.textDecoration = "none";
 			tagDiv.appendChild(a);
 		});
@@ -238,7 +238,7 @@ function createPinnedPreview(m: {
 	if (images.length > 0) {
 		const grid = document.createElement("div");
 		const count = Math.min(images.length, 9);
-		grid.className = "wx-pimgs wx-pimgs-" + count;
+		grid.className = `wx-pimgs wx-pimgs-${count}`;
 		images.forEach((src) => {
 			const img = document.createElement("img");
 			img.src = src;
@@ -344,7 +344,7 @@ function hasExternalMoments(): boolean {
 	const feed = document.getElementById("moments-feed");
 	if (!feed) return false;
 	return (
-		feed.hasAttribute(MARKER) || feed.querySelector("[" + MARKER + "]") !== null
+		feed.hasAttribute(MARKER) || feed.querySelector(`[${MARKER}]`) !== null
 	);
 }
 
@@ -374,8 +374,8 @@ function insertPinnedExternal(extMoments: ExternalMoment[]): void {
 	// 更新计数
 	const countEl = document.querySelector(".pinned-count");
 	if (countEl) {
-		const existing = Number.parseInt(countEl.textContent || "0") || 0;
-		countEl.textContent = existing + pinned.length + " 条";
+		const existing = Number.parseInt(countEl.textContent || "0", 10) || 0;
+		countEl.textContent = `${existing + pinned.length} 条`;
 	}
 
 	// 触发事件
@@ -386,7 +386,7 @@ function hasExternalPinned(): boolean {
 	const feed = document.getElementById("pinned-feed");
 	if (!feed) return false;
 	return (
-		feed.hasAttribute(MARKER) || feed.querySelector("[" + MARKER + "]") !== null
+		feed.hasAttribute(MARKER) || feed.querySelector(`[${MARKER}]`) !== null
 	);
 }
 
@@ -418,11 +418,11 @@ function fetchMoments(): void {
 	const headers: Record<string, string> = {
 		Accept: "application/vnd.github+json",
 	};
-	if (token) headers["Authorization"] = "Bearer " + token;
+	if (token) headers.Authorization = `Bearer ${token}`;
 
-	fetch("https://api.github.com/gists/" + config.gistId, { headers })
+	fetch(`https://api.github.com/gists/${config.gistId}`, { headers })
 		.then((r) => {
-			if (!r.ok) throw new Error("HTTP " + r.status);
+			if (!r.ok) throw new Error(`HTTP ${r.status}`);
 			return r.json();
 		})
 		.then((gist) => {
@@ -461,11 +461,11 @@ function fetchPinned(): void {
 	const headers: Record<string, string> = {
 		Accept: "application/vnd.github+json",
 	};
-	if (token) headers["Authorization"] = "Bearer " + token;
+	if (token) headers.Authorization = `Bearer ${token}`;
 
-	fetch("https://api.github.com/gists/" + config.gistId, { headers })
+	fetch(`https://api.github.com/gists/${config.gistId}`, { headers })
 		.then((r) => {
-			if (!r.ok) throw new Error("HTTP " + r.status);
+			if (!r.ok) throw new Error(`HTTP ${r.status}`);
 			return r.json();
 		})
 		.then((gist) => {

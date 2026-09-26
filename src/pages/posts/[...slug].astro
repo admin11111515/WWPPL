@@ -161,7 +161,9 @@ const jsonLd = {
 	image: ogImageUrl ? [ogImageUrl] : undefined,
 	datePublished: formatDateToYYYYMMDD(entry.data.published),
 	// updated 为可选字段，未填写时回落到发布日期
-	dateModified: formatDateToYYYYMMDD(entry.data.updated || entry.data.published),
+	dateModified: formatDateToYYYYMMDD(
+		entry.data.updated || entry.data.published,
+	),
 	inLanguage: entry.data.lang
 		? entry.data.lang.replace("_", "-")
 		: siteConfig.lang.replace("_", "-"),

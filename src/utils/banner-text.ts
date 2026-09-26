@@ -70,7 +70,11 @@ function homeText(): HomeTextConfig {
 	return (backgroundWallpaper.common?.homeText ?? {}) as HomeTextConfig;
 }
 
-export function bannerSources(): { quotes: boolean; stats: boolean; now: boolean } {
+export function bannerSources(): {
+	quotes: boolean;
+	stats: boolean;
+	now: boolean;
+} {
 	const s = homeText().sources;
 	return {
 		quotes: s?.quotes?.enable !== false,
@@ -82,7 +86,8 @@ export function bannerSources(): { quotes: boolean; stats: boolean; now: boolean
 export function ownSentences(): string[] {
 	const sub = homeText().subtitle;
 	if (typeof sub === "string") return sub.trim() ? [sub.trim()] : [];
-	if (Array.isArray(sub)) return sub.filter((s) => typeof s === "string" && s.trim());
+	if (Array.isArray(sub))
+		return sub.filter((s) => typeof s === "string" && s.trim());
 	return [];
 }
 
@@ -118,7 +123,9 @@ function readPosts(): { title: string; body: string; published: string }[] {
 		const body = fm ? raw.slice(fm[0].length) : raw;
 		if (/^draft:\s*true\s*$/m.test(front)) continue;
 		const title = (/^title:\s*"?(.*?)"?\s*$/m.exec(front)?.[1] || "").trim();
-		const published = (/^published:\s*"?([\d-]+)"?/m.exec(front)?.[1] || "").trim();
+		const published = (
+			/^published:\s*"?([\d-]+)"?/m.exec(front)?.[1] || ""
+		).trim();
 		posts.push({ title: title || "未命名", body, published });
 	}
 	return posts;
@@ -189,7 +196,11 @@ function pickQuotes(
 			const c = cursors[i];
 			if (c >= pools[i].quotes.length) continue;
 			cursors[i] = c + 1;
-			picked.push({ kind: "quote", text: pools[i].quotes[c], from: pools[i].title });
+			picked.push({
+				kind: "quote",
+				text: pools[i].quotes[c],
+				from: pools[i].title,
+			});
 			advanced = true;
 		}
 		if (!advanced) break;
@@ -198,7 +209,10 @@ function pickQuotes(
 }
 
 /** 站点实况：全部由构建期真实数据算出，不写死 */
-function buildStats(posts: { body: string; published: string }[], now: Date): BannerItem[] {
+function buildStats(
+	posts: { body: string; published: string }[],
+	now: Date,
+): BannerItem[] {
 	const out: BannerItem[] = [];
 	if (posts.length === 0) return out;
 
@@ -228,7 +242,8 @@ function buildStats(posts: { body: string; published: string }[], now: Date): Ba
 		const first = new Date(`${dates[0]}T00:00:00+08:00`);
 		const span = Math.floor((now.getTime() - first.getTime()) / 86400000);
 		const gap = span / dates.length;
-		if (gap >= 0.5) out.push({ kind: "stat", text: `平均 ${gap.toFixed(1)} 天写一篇` });
+		if (gap >= 0.5)
+			out.push({ kind: "stat", text: `平均 ${gap.toFixed(1)} 天写一篇` });
 	}
 
 	const lastRaw = dates[dates.length - 1];
@@ -242,7 +257,8 @@ function buildStats(posts: { body: string; published: string }[], now: Date): Ba
 
 	const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 	const monthCount = dates.filter((d) => d.startsWith(ym)).length;
-	if (monthCount > 0) out.push({ kind: "stat", text: `这个月写了 ${monthCount} 篇` });
+	if (monthCount > 0)
+		out.push({ kind: "stat", text: `这个月写了 ${monthCount} 篇` });
 
 	return out;
 }
@@ -298,10 +314,15 @@ export function getBannerText(): { items: BannerItem[]; live: BannerLive[] } {
 			)
 		: [];
 	const stats = statsOn ? buildStats(posts, now) : [];
-	const own: BannerItem[] = ownSentences().map((text) => ({ kind: "own", text }));
+	const own: BannerItem[] = ownSentences().map((text) => ({
+		kind: "own",
+		text,
+	}));
 
 	const items =
-		quotes.length > 0 ? interleave([...own, ...stats], quotes) : [...own, ...stats];
+		quotes.length > 0
+			? interleave([...own, ...stats], quotes)
+			: [...own, ...stats];
 
 	cache = { items, live: nowOn ? buildLive(now) : [] };
 	return cache;

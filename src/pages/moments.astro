@@ -5,8 +5,8 @@ import { Icon } from "astro-icon/components";
 import Comment from "@/components/comment/index.astro";
 import MomentCard from "@/components/moments/MomentCard.astro";
 import MomentsCover from "@/components/moments/MomentsCover.astro";
-import { externalMomentsConfig } from "@/config/externalMomentsConfig";
 import { commentConfig } from "@/config/commentConfig";
+import { externalMomentsConfig } from "@/config/externalMomentsConfig";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
@@ -25,7 +25,8 @@ const pageViewTarget: { className: string; id?: string } | null =
 
 // 动态页原有的取数脚本是 Waline 专用的（指向一个第三方统计接口），
 // 只在真的走 Waline 浏览数时才下发；否则它是一段永远匹配不到元素的死代码。
-const usesWalinePageViews = pageViewTarget?.className.includes("waline-count") ?? false;
+const usesWalinePageViews =
+	pageViewTarget?.className.includes("waline-count") ?? false;
 
 const moments = await getCollection("moments");
 const sortedMoments = moments

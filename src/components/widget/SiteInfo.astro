@@ -86,7 +86,12 @@ const licenseName = licenseConfig.enable ? licenseConfig.name : "None";
 
 // ---- 组装展示数据 ----
 // 始终显示的项目（列表）
-const mainItems: { icon: string; label: string; value: string; href?: string }[] = [];
+const mainItems: {
+	icon: string;
+	label: string;
+	value: string;
+	href?: string;
+}[] = [];
 
 // 可折叠的项目（格子布局）
 // fullWidth: true 表示独占一行

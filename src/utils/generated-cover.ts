@@ -100,7 +100,10 @@ export function splitLabel(label: string): string[] {
 	const text = truncateToWidth(label, generatedCoverConfig.maxLabelWidth * 2);
 	if (text === "") return [];
 
-	if (lineUnits(text, LABEL_LETTER_SPACING_EM) <= generatedCoverConfig.maxLabelWidth) {
+	if (
+		lineUnits(text, LABEL_LETTER_SPACING_EM) <=
+		generatedCoverConfig.maxLabelWidth
+	) {
 		return [text];
 	}
 
@@ -227,7 +230,10 @@ export function getGeneratedCoverParams(input: {
 		ringCount: (h >>> 11) % 2 === 0 ? 1 : 2,
 		overline,
 		overlineFontExpr: overline
-			? fontExpr(lineUnits(overline, OVERLINE_LETTER_SPACING_EM), OVERLINE_HEIGHT_CQH)
+			? fontExpr(
+					lineUnits(overline, OVERLINE_LETTER_SPACING_EM),
+					OVERLINE_HEIGHT_CQH,
+				)
 			: "",
 		labelLines,
 		labelFontExpr: fontExpr(labelUnits, LABEL_HEIGHT_CQH),
@@ -252,7 +258,12 @@ function buildPatternDef(p: GeneratedCoverParams): string {
 		case "cols":
 			return tile(step, CANVAS_H, `<path d="M0.75 0V${CANVAS_H}" ${stroke}/>`);
 		case "diag":
-			return tile(step, step, `<path d="M0.75 0V${step}" ${stroke}/>`, "rotate(-45)");
+			return tile(
+				step,
+				step,
+				`<path d="M0.75 0V${step}" ${stroke}/>`,
+				"rotate(-45)",
+			);
 		case "grid":
 			return tile(
 				step,
@@ -284,7 +295,9 @@ export function buildGeneratedCoverSvg(
 	const def = buildPatternDef(p);
 	if (def) parts.push(`<defs>${def}</defs>`);
 
-	parts.push(`<rect width="${CANVAS_W}" height="${CANVAS_H}" fill="${p.base}"/>`);
+	parts.push(
+		`<rect width="${CANVAS_W}" height="${CANVAS_H}" fill="${p.base}"/>`,
+	);
 
 	if (p.variant === "rings") {
 		for (let i = 0; i < 5; i++) {
@@ -293,7 +306,9 @@ export function buildGeneratedCoverSvg(
 			);
 		}
 	} else if (def) {
-		parts.push(`<rect width="${CANVAS_W}" height="${CANVAS_H}" fill="url(#${p.uid})"/>`);
+		parts.push(
+			`<rect width="${CANVAS_W}" height="${CANVAS_H}" fill="url(#${p.uid})"/>`,
+		);
 	}
 
 	// 中央圆环：给文字一个落点
@@ -315,7 +330,9 @@ export function buildGeneratedCoverSvg(
 		const lines = p.labelLines.length > 0 ? p.labelLines : [""];
 		const lineHeight = LABEL_FONT_SIZE * 1.16;
 		const blockHeight =
-			(lines.length - 1) * lineHeight + LABEL_FONT_SIZE + (p.overline ? LABEL_FONT_SIZE * 1.05 : 0);
+			(lines.length - 1) * lineHeight +
+			LABEL_FONT_SIZE +
+			(p.overline ? LABEL_FONT_SIZE * 1.05 : 0);
 		const top = CY - blockHeight / 2 + LABEL_FONT_SIZE * 0.36;
 
 		let y = top;

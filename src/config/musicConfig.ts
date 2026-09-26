@@ -55,16 +55,14 @@ export const musicPlayerConfig: MusicPlayerConfig = {
 	// lrc: "/assets/music/lrc/使一颗心免于哀伤-哼唱.lrc",
 	// 2. 或者直接填入歌词字符串内容
 	// lrc: "[00:00.00]歌词内容...",
+	//
+	// ⚠️ 2026-09-26 清空过：这里原来放着一首《迷途羔羊》（mp3 4.46 MB + lrc），
+	// 但本站 mode 是 "meting"、侧边栏又开了 syncWithGlobalPlayer，
+	// 这段 local 列表在运行时根本不会被加载，等于白占 4.46 MB 的部署体积
+	// （线上实测这个 mp3 是 200，但没有任何页面引用它）。
+	// 音频与歌词已删，原文件备份在仓库外的 .backup/2026-09-26-0802/。
+	// 哪天真要切到 mode: "local"，把音频放回 public/assets/music/ 再在这里补条目即可。
 	local: {
-		playlist: [
-			{
-				name: "迷途羔羊",
-				artist: "张震岳/大渊(顽童MJ116)",
-				url: "/assets/music/迷途羔羊.mp3",
-				cover:
-					"http://p1.music.126.net/b1eSBbx2Yia0k89ocfOnjQ==/18677404023325159.jpg?param=130y130",
-				lrc: "/assets/music/lrc/迷途羔羊.lrc",
-			},
-		],
+		playlist: [],
 	},
 };

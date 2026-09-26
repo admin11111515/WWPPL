@@ -111,14 +111,19 @@ const onKeydown = (event: KeyboardEvent): void => {
 		// 必须先拦：Chrome 里这个组合默认是「把焦点移到地址栏」，
 		// 不 preventDefault 的话按键被浏览器抢走，搜索框永远弹不出来
 		event.preventDefault();
-		const desktopInput = document.querySelector<HTMLInputElement>("#search-bar input");
+		const desktopInput =
+			document.querySelector<HTMLInputElement>("#search-bar input");
 		if (desktopInput && desktopInput.offsetParent !== null) {
 			desktopInput.focus();
 			return;
 		}
 		// 窄屏下桌面输入框是隐藏的（hidden lg:flex），改开面板并聚焦面板里的输入框
-		document.getElementById("search-panel")?.classList.remove("float-panel-closed");
-		document.querySelector<HTMLInputElement>("#search-bar-inside input")?.focus();
+		document
+			.getElementById("search-panel")
+			?.classList.remove("float-panel-closed");
+		document
+			.querySelector<HTMLInputElement>("#search-bar-inside input")
+			?.focus();
 		return;
 	}
 
@@ -126,7 +131,11 @@ const onKeydown = (event: KeyboardEvent): void => {
 	// 免得在别处按 Escape 就把用户输了一半的关键词清掉
 	if (event.key === "Escape") {
 		const active = document.activeElement;
-		if (!(active instanceof HTMLElement) || !active.closest("#search-panel, #search-bar")) return;
+		if (
+			!(active instanceof HTMLElement) ||
+			!active.closest("#search-panel, #search-bar")
+		)
+			return;
 		closeSearchPanel();
 		active.blur();
 	}

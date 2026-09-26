@@ -1,4 +1,5 @@
 ---
+import Navbar from "@components/layout/Navbar.astro";
 /**
  * 后台页面顶部：博客的导航栏 + 页面自己的标题条。
  *
@@ -9,7 +10,6 @@
  * 下面那条标题条照博客 CategoryBar 的形态来：card-base + 一行内容。
  */
 import { Icon } from "astro-icon/components";
-import Navbar from "@components/layout/Navbar.astro";
 
 interface Props {
 	/** 页面名，显示在标题条上 */

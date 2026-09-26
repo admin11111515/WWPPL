@@ -1,8 +1,11 @@
 ---
 import fs from "node:fs";
-import path from "path";
+import path from "node:path";
 import { footerConfig, profileConfig } from "@/config";
-import { getAnalyticsServicesHtml, getServiceBadgesHtml } from "@/utils/footer-services";
+import {
+	getAnalyticsServicesHtml,
+	getServiceBadgesHtml,
+} from "@/utils/footer-services";
 import { url } from "@/utils/url-utils";
 
 const currentYear = new Date().getFullYear();

@@ -168,8 +168,7 @@ export async function GET({
 				display: "flex",
 				flexDirection: "column",
 				backgroundColor: backgroundColor,
-				fontFamily:
-					`"${OG_FONT_FAMILY}", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif`,
+				fontFamily: `"${OG_FONT_FAMILY}", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif`,
 				padding: "60px",
 			},
 			children: [
