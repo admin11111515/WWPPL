@@ -49,6 +49,77 @@ function getLocalSubsetFonts(): LocalSubsetFont[] {
 // ─── 字符收集 ────────────────────────────────────────────
 
 /**
+ * HTML 里的常见符号实体。原来只替换了 &amp; &lt; &gt; &quot; &#39; &nbsp; 六个，
+ * 于是页面上的 &copy; &hellip; &mdash; 这类字符从来没进过子集 —— 显示「©」时
+ * 回退到系统字体。这里补齐常见的，再交给数字实体兜底。
+ */
+const NAMED_ENTITIES: Record<string, string> = {
+	amp: "&",
+	lt: "<",
+	gt: ">",
+	quot: '"',
+	apos: "'",
+	nbsp: " ",
+	copy: "©",
+	reg: "®",
+	trade: "™",
+	hellip: "…",
+	mdash: "—",
+	ndash: "–",
+	lsquo: "‘",
+	rsquo: "’",
+	ldquo: "“",
+	rdquo: "”",
+	laquo: "«",
+	raquo: "»",
+	times: "×",
+	divide: "÷",
+	deg: "°",
+	middot: "·",
+	sect: "§",
+	para: "¶",
+	bull: "•",
+	dagger: "†",
+	Dagger: "‡",
+	permil: "‰",
+	prime: "′",
+	Prime: "″",
+	larr: "←",
+	rarr: "→",
+	uarr: "↑",
+	darr: "↓",
+	harr: "↔",
+	minus: "−",
+	plusmn: "±",
+	frac12: "½",
+	sup2: "²",
+	sup3: "³",
+	euro: "€",
+	pound: "£",
+	yen: "¥",
+	cent: "¢",
+};
+
+/** 把 HTML 实体还原成字符：数字实体按码位转，命名实体查表，都不认就原样留着。 */
+function decodeEntities(s: string): string {
+	return s.replace(
+		/&(#x?[0-9a-fA-F]+|[a-zA-Z][a-zA-Z0-9]*);/g,
+		(whole, body: string) => {
+			if (body.startsWith("#")) {
+				const hex = body[1] === "x" || body[1] === "X";
+				const n = Number.parseInt(
+					hex ? body.slice(2) : body.slice(1),
+					hex ? 16 : 10,
+				);
+				if (!Number.isFinite(n) || n <= 0 || n > 0x10ffff) return whole;
+				return String.fromCodePoint(n);
+			}
+			return NAMED_ENTITIES[body] ?? whole;
+		},
+	);
+}
+
+/**
  * 从 HTML 字符串中提取纯文本内容（比 JSDOM 轻量得多）
  */
 function extractTextFromHtml(html: string): string {
@@ -56,14 +127,8 @@ function extractTextFromHtml(html: string): string {
 	let text = html.replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, " ");
 	// 移除所有 HTML 标签
 	text = text.replace(/<[^>]+>/g, " ");
-	// 解码常见 HTML 实体
-	text = text
-		.replace(/&amp;/g, "&")
-		.replace(/&lt;/g, "<")
-		.replace(/&gt;/g, ">")
-		.replace(/&quot;/g, '"')
-		.replace(/&#39;/g, "'")
-		.replace(/&nbsp;/g, " ");
+	// 解码 HTML 实体（含符号类，见 NAMED_ENTITIES）
+	text = decodeEntities(text);
 	// 提取 alt、title、aria-label、placeholder 属性值
 	const attrMatches = html.matchAll(
 		/(?:alt|title|aria-label|placeholder)=["']([^"']+)["']/gi,
