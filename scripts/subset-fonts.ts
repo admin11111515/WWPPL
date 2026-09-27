@@ -65,24 +65,73 @@ function extractTextFromHtml(html: string): string {
 		.replace(/&#39;/g, "'")
 		.replace(/&nbsp;/g, " ");
 	// 提取 alt、title、aria-label、placeholder 属性值
-	const attrMatches = html.matchAll(/(?:alt|title|aria-label|placeholder)=["']([^"']+)["']/gi);
+	const attrMatches = html.matchAll(
+		/(?:alt|title|aria-label|placeholder)=["']([^"']+)["']/gi,
+	);
 	for (const match of attrMatches) {
 		text += match[1];
+	}
+	// 其余属性值里的中文也要收。页面常把「渲染时才取出来显示」的文案塞进
+	// data-* 属性（例：每日一句把整段引语放进 data-quotes 的 JSON 里），
+	// 只认上面四类属性会让这些字掉出子集，显示时回退到系统字体。
+	const otherAttrs = html.matchAll(/[a-zA-Z][a-zA-Z0-9-]*=["']([^"']*)["']/gi);
+	for (const match of otherAttrs) {
+		for (const c of match[1]) {
+			const cp = c.codePointAt(0) ?? 0;
+			if (
+				(cp >= 0x4e00 && cp <= 0x9fff) ||
+				(cp >= 0x3400 && cp <= 0x4dbf) ||
+				(cp >= 0x3000 && cp <= 0x303f) ||
+				(cp >= 0xff00 && cp <= 0xffef)
+			) {
+				text += c;
+			}
+		}
 	}
 	return text;
 }
 
 /**
- * 扫描 dist/ 中所有 HTML 文件，提取页面中实际使用的所有字符
+ * 从 HTML 的 <script> 标签里提取中文字符。
+ * 页面渲染后才由 JS 写进 DOM 的文案（天气、日历、播放器提示等）不在 HTML 文本里，
+ * 只扫文本会让这些字掉出子集，运行时回退到系统字体。
  */
-async function collectChars(): Promise<string> {
-	const htmlFiles = await glob(`${DIST_DIR}/**/*.html`);
+function extractScriptCjk(html: string): string {
+	let out = "";
+	for (const m of html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)) {
+		for (const c of m[1]) {
+			const cp = c.codePointAt(0) ?? 0;
+			if (
+				(cp >= 0x4e00 && cp <= 0x9fff) || // CJK 统一表意文字
+				(cp >= 0x3400 && cp <= 0x4dbf) || // CJK 扩展 A
+				(cp >= 0x3000 && cp <= 0x303f) || // CJK 标点
+				(cp >= 0xff00 && cp <= 0xffef) // 全角符号
+			) {
+				out += c;
+			}
+		}
+	}
+	return out;
+}
+
+/**
+ * 扫描 dist/ 中的 HTML 文件，提取实际使用的所有字符。
+ * 不传 files 时扫全站；opts.scriptCjk 为 true 时额外收进脚本里的中文字符。
+ */
+async function collectChars(
+	files?: string[],
+	opts: { scriptCjk?: boolean } = {},
+): Promise<string> {
+	const htmlFiles = files ?? (await glob(`${DIST_DIR}/**/*.html`));
 	const charSet = new Set<string>();
 
 	for (const file of htmlFiles) {
 		const html = await fs.readFile(file, "utf-8");
 		const text = extractTextFromHtml(html);
 		for (const c of text) charSet.add(c);
+		if (opts.scriptCjk) {
+			for (const c of extractScriptCjk(html)) charSet.add(c);
+		}
 	}
 
 	return [...charSet].join("");
@@ -91,11 +140,7 @@ async function collectChars(): Promise<string> {
 // ─── 子集生成 ────────────────────────────────────────────
 
 function contentHash(buffer: Buffer): string {
-	return crypto
-		.createHash("sha256")
-		.update(buffer)
-		.digest("hex")
-		.slice(0, 16);
+	return crypto.createHash("sha256").update(buffer).digest("hex").slice(0, 16);
 }
 
 /**
@@ -157,46 +202,45 @@ async function main() {
 	// 2. 收集页面字符
 	console.log("🔍 Collecting characters from dist/...");
 	const pageChars = await collectChars();
-	console.log(`   Collected ${pageChars.length} unique characters.`);
+	console.log(`   Collected ${pageChars.length} unique characters (全站).`);
 
 	if (pageChars.length === 0) {
 		console.warn("⚠ No characters found in dist/. Skipping subsetting.");
 		return;
 	}
 
+	// 2b. 首页单独收一份。
+	// 字体是 preload 的阻塞资源，而全站字符集里绝大部分是文章正文的生僻字，首页根本用不到。
+	// 让首页背全站子集是纯浪费：实测首页 547 字 / 全站 2028 字。
+	// 额外收进 index.html 内联脚本里的中文，避免运行时文案回退到系统字体。
+	const HOME_HTML = path.join(DIST_DIR, "index.html");
+	let homeChars = pageChars;
+	let hasHome = false;
+	try {
+		await fs.access(HOME_HTML);
+		homeChars = await collectChars([HOME_HTML], { scriptCjk: true });
+		hasHome = true;
+		console.log(
+			`   Collected ${homeChars.length} unique characters (首页专用，含脚本文案).`,
+		);
+	} catch {
+		console.log("   ⚠ 没找到 dist/index.html，首页与全站共用子集。");
+	}
+
 	// 3. 确保输出目录存在
 	await fs.mkdir(OUTPUT_DIR, { recursive: true });
 
-	// 4. 为每个字体生成子集
+	// 4. 为每个字体生成子集（全站一份 + 首页一份）
 	const results: SubsetResult[] = [];
+	const homeResults: SubsetResult[] = [];
 
-	for (const font of localSubsetFonts) {
+	/** 生成一个子集文件；失败返回 null */
+	async function buildSubset(
+		font: LocalSubsetFont,
+		chars: string,
+		label: string,
+	): Promise<SubsetResult | null> {
 		const fontPath = resolveFontPath(font.src);
-
-		// 检查字体文件是否存在
-		try {
-			await fs.access(fontPath);
-		} catch {
-			console.error(
-				`❌ Font file not found: ${fontPath} (src: ${font.src})`,
-			);
-			continue;
-		}
-
-		// 合并页面字符和额外字符
-		let chars = pageChars;
-		if (font.subsetExtraChars) {
-			const extraSet = new Set<string>([
-				...pageChars,
-				...font.subsetExtraChars,
-			]);
-			chars = [...extraSet].join("");
-		}
-
-		console.log(
-			`⏳ Generating subset for '${font.id}' (${font.family})...`,
-		);
-
 		const fontBuffer = await fs.readFile(fontPath);
 		const originalFormat = detectFontFormat(fontPath);
 
@@ -207,8 +251,7 @@ async function main() {
 			});
 
 			const hash = contentHash(subsetBuffer);
-			const outFile = path.join(OUTPUT_DIR, `${hash}.woff2`);
-			await fs.writeFile(outFile, subsetBuffer);
+			await fs.writeFile(path.join(OUTPUT_DIR, `${hash}.woff2`), subsetBuffer);
 
 			const sizeKB = (subsetBuffer.length / 1024).toFixed(1);
 			const originalSizeKB = (fontBuffer.length / 1024).toFixed(1);
@@ -218,10 +261,10 @@ async function main() {
 			).toFixed(1);
 
 			console.log(
-				`   ✔ ${hash}.woff2 (${sizeKB} KB, original: ${originalSizeKB} KB, saved ${ratio}%)`,
+				`   ✔ [${label}] ${hash}.woff2 (${sizeKB} KB / 原 ${originalSizeKB} KB, 省 ${ratio}%)`,
 			);
 
-			results.push({
+			return {
 				id: font.id,
 				family: font.family,
 				weight: font.weight,
@@ -230,9 +273,38 @@ async function main() {
 				hash,
 				format: originalFormat,
 				originalSrc: font.src,
-			});
+			};
 		} catch (err) {
-			console.error(`   ❌ Failed to subset '${font.id}':`, err);
+			console.error(`   ❌ Failed to subset '${font.id}' [${label}]:`, err);
+			return null;
+		}
+	}
+
+	for (const font of localSubsetFonts) {
+		// 检查字体文件是否存在
+		try {
+			await fs.access(resolveFontPath(font.src));
+		} catch {
+			console.error(
+				`❌ Font file not found: ${resolveFontPath(font.src)} (src: ${font.src})`,
+			);
+			continue;
+		}
+
+		console.log(`⏳ Generating subset for '${font.id}' (${font.family})...`);
+
+		// 合并页面字符和额外字符
+		const withExtra = (base: string) =>
+			font.subsetExtraChars
+				? [...new Set([...base, ...font.subsetExtraChars])].join("")
+				: base;
+
+		const all = await buildSubset(font, withExtra(pageChars), "全站");
+		if (all) results.push(all);
+
+		if (hasHome) {
+			const home = await buildSubset(font, withExtra(homeChars), "首页");
+			if (home) homeResults.push(home);
 		}
 	}
 
@@ -245,12 +317,17 @@ async function main() {
 	//    @font-face 可能在独立 CSS 文件中，也可能在 HTML 内联 <style> 中
 	console.log("🔄 Replacing font URLs in dist/ CSS and HTML files...");
 	const filesToReplace = await glob(`${DIST_DIR}/**/*.{css,html}`);
+	const homeAbs = path.resolve(HOME_HTML);
 
 	for (const file of filesToReplace) {
+		// 只有首页换成首页专用小份；其余页面（文章正文要生僻字）继续用全站子集
+		const useHome = homeResults.length > 0 && path.resolve(file) === homeAbs;
+		const set = useHome ? homeResults : results;
+
 		let content = await fs.readFile(file, "utf-8");
 		let replaced = false;
 
-		for (const result of results) {
+		for (const result of set) {
 			const placeholder = `__SUBSET_FONT_${result.id}__`;
 			if (content.includes(placeholder)) {
 				const subsetUrl = `/_astro/fonts/${result.hash}.woff2`;
@@ -261,7 +338,7 @@ async function main() {
 
 		if (replaced) {
 			await fs.writeFile(file, content);
-			console.log(`   ✔ Updated: ${file}`);
+			console.log(`   ✔ Updated${useHome ? " [首页专用子集]" : ""}: ${file}`);
 		}
 	}
 
