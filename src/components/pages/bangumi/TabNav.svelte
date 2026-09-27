@@ -41,7 +41,7 @@ function clickTab(tabId: string) {
 
 <div class="border-b border-(--line-divider) mb-3">
   <div class="overflow-x-auto" data-tab-scroll-container>
-    <nav class="flex min-w-max space-x-8" aria-label="Tabs">
+    <nav class="flex min-w-max space-x-8" aria-label="分类切换">
       {#each tabs as tab}
         <button
           class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 {tab.id === activeTab

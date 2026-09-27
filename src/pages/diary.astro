@@ -38,7 +38,7 @@ const title = i18n(I18nKey.diary);
 const subtitle = i18n(I18nKey.diarySubtitle);
 ---
 
-<MainGridLayout title={title} description={subtitle}>
+<MainGridLayout hasVisibleTitle title={title} description={subtitle}>
 	<script is:inline src="/js/filter-tabs-handler.js"></script>
 
 	<div
@@ -120,9 +120,9 @@ const subtitle = i18n(I18nKey.diarySubtitle);
 								name="material-symbols:edit-note"
 								class="text-6xl text-black/15 dark:text-white/15 mb-4"
 							/>
-							<h3 class="text-lg font-medium text-black/90 dark:text-white/90 mb-2">
+							<h2 class="text-lg font-medium text-black/90 dark:text-white/90 mb-2">
 								{i18n(I18nKey.diaryNoResults)}
-							</h3>
+							</h2>
 						</div>
 					)
 				}

@@ -34,7 +34,7 @@ function switchWallpaperMode(newMode: WALLPAPER_MODE) {
 
 <!-- z-50 make the panel higher than other float panels -->
 <div class="relative z-50">
-	<button aria-label="Wallpaper Mode" aria-haspopup="menu" class="relative btn-plain scale-animation rounded-lg h-11 w-11 active:scale-90" id="wallpaper-mode-switch">
+	<button aria-label="壁纸模式" aria-haspopup="menu" class="relative btn-plain scale-animation rounded-lg h-11 w-11 active:scale-90" id="wallpaper-mode-switch">
 		<div class="absolute inset-0 flex items-center justify-center" class:opacity-0={mode !== WALLPAPER_BANNER}>
 			<Icon icon="material-symbols:image-outline" class="text-[1.25rem]"></Icon>
 		</div>

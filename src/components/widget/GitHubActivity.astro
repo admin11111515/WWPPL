@@ -438,7 +438,11 @@ const GITHUB_USER = "admin11111515";
 	}
 
 	initGithubActivity();
-	if (window.swup) {
+	// ⚠️ 钩子只注册一次：这段脚本每次站内跳转都会被 scripts-plugin 重跑一遍，
+	//    而 swup 的钩子不去重。多注册几份就等于每换一页打好几次 GitHub 接口
+	//    （还会一起吃掉令牌的速率配额）。
+	if (window.swup && !window.__wwpplGithubActivityBound) {
+		window.__wwpplGithubActivityBound = true;
 		window.swup.hooks.on("page:view", () => initGithubActivity());
 	}
 </script>

@@ -73,7 +73,12 @@ const showTitle = widgetConfig?.showTitle !== false;
 	const KEY = "wwppl:announcement-closed";
 
 	const hideAll = () => {
-		const nodes = document.querySelectorAll<HTMLElement>("widget-layout#announcement");
+		// 选择器必须是 widget-layout[data-id="announcement"]。
+		// WidgetLayout 把 id 放在内层折叠容器上，外层 <widget-layout> 只有 data-id，
+		// 所以原来写的 "widget-layout#announcement" 永远匹配不到 —— 点 ✕ 关不掉。
+		const nodes = document.querySelectorAll<HTMLElement>(
+			'widget-layout[data-id="announcement"]',
+		);
 		nodes.forEach((el) => {
 			el.style.display = "none";
 		});
@@ -84,21 +89,38 @@ const showTitle = widgetConfig?.showTitle !== false;
 	};
 
 	// 用事件委托：两份公告、以及换页后重建的按钮，都不用重新绑定。
-	document.addEventListener("click", (event) => {
-		const target = event.target as HTMLElement | null;
-		if (!target?.closest("[data-announcement-close]")) return;
-		sessionStorage.setItem(KEY, "1");
-		hideAll();
-	});
+	// 只挂一次 —— 本脚本每次站内跳转都会被 swup 的 scripts-plugin 重跑，
+	// 而 document 上的监听器不会随节点消失，不设开关就会每跳一次多积一份。
+	if (!window.__wwpplAnnouncementBound) {
+		window.__wwpplAnnouncementBound = true;
+		document.addEventListener("click", (event) => {
+			const target = event.target as HTMLElement | null;
+			if (!target?.closest("[data-announcement-close]")) return;
+			sessionStorage.setItem(KEY, "1");
+			hideAll();
+		});
+	}
 
 	applyState();
 
-	// swup 换页时这个脚本不会重跑，得挂钩子再应用一次。
+	// 换页后要再应用一次状态（这一页的公告可能是"已关闭"的）。
 	// 注意钩子名是 content:replace（无 d），写成 content:replaced 会被 swup 报 Unknown hook。
+	//
+	// 两件事都要幂等：本脚本每次站内跳转都会被重跑一遍，
+	//   · hooks.on 在每跳一次就多注册一个 → applyState 会被叠加执行多次；
+	//   · swup:enable 兜底监听每跳一次就多一个。
+	// 所以共用一个开关：挂上钩子就标记，后面重跑直接跳过。
 	type SwupLike = { hooks?: { on: (name: string, cb: () => void) => void } } | undefined;
 	const onSwupReady = () => {
-		(window as unknown as { swup?: SwupLike }).swup?.hooks?.on("content:replace", applyState);
+		if (window.__wwpplAnnouncementSwupBound) return;
+		const swup = (window as unknown as { swup?: SwupLike }).swup;
+		if (!swup?.hooks) return;
+		window.__wwpplAnnouncementSwupBound = true;
+		swup.hooks.on("content:replace", applyState);
 	};
 	onSwupReady();
-	document.addEventListener("swup:enable", onSwupReady);
+	if (!window.__wwpplAnnouncementSwupListenBound) {
+		window.__wwpplAnnouncementSwupListenBound = true;
+		document.addEventListener("swup:enable", onSwupReady);
+	}
 </script>

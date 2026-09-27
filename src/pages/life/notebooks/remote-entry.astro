@@ -468,7 +468,7 @@ const description = "查看笔记全文";
 		}
 	}
 
-	document.addEventListener("swup:contentReplaced", () => {
+	document.addEventListener("swup:content:replace", () => {
 		void init();
 	});
 	document.addEventListener("astro:page-load", () => {

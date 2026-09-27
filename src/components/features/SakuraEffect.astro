@@ -4,7 +4,11 @@ import { sakuraConfig } from "@/config";
 const config = sakuraConfig;
 ---
 
-<script is:inline define:vars={{ sakuraConfig: config }}>
+<!-- data-swup-ignore-script：特效画布挂在 Layout 里、不在 swup 的替换容器内，
+     脚本只需要在首屏跑一次（初始化本身已有 window.sakuraInitialized 兜底）。
+     不加这个标记的话，每跳一次站内链接就会重新执行一遍整段脚本，
+     并在 window 上多叠一个 sakuraToggle 监听（设置面板每切一次樱花开关，就被叠加地响应多次）。 -->
+<script is:inline data-swup-ignore-script define:vars={{ sakuraConfig: config }}>
 		let windowWidth = window.innerWidth;
 		let windowHeight = window.innerHeight;
 

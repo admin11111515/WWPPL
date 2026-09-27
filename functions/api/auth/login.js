@@ -1,4 +1,18 @@
-import { createSessionCookie, json, sha256Hex } from "../_lib/session.js";
+import { createSessionCookie, hexEqual, json, sha256Hex } from "../_lib/session.js";
+
+/**
+ * 口令错误时统一拖这么久再回。
+ *
+ * 这个 Worker 是无状态的，没有地方记「同一个 IP 试了几次」，所以写不出真正的限流。
+ * 但把每次失败都拖慢三百毫秒，在线爆破的速率就被压到每秒三次左右，
+ * 而正常用户手滑输错一次，多等三百毫秒是感觉不到的。
+ * 真限流要靠 Cloudflare 控制台的 Rate Limiting Rule，配置方法见 docs/后台启用清单.md。
+ */
+const FAIL_DELAY_MS = 300;
+
+function sleep(ms) {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 export async function onRequest(context) {
 	const { request, env } = context;
@@ -35,12 +49,14 @@ export async function onRequest(context) {
 
 	let ok = false;
 	if (expectedHash) {
-		ok = (await sha256Hex(password)) === expectedHash;
+		ok = hexEqual(await sha256Hex(password), expectedHash);
 	} else {
-		ok = password === expectedPassword;
+		// 回落到明文口令是历史遗留用法，能不用就不用；同样用定长比较。
+		ok = hexEqual(await sha256Hex(password), await sha256Hex(expectedPassword));
 	}
 
 	if (!ok) {
+		await sleep(FAIL_DELAY_MS);
 		return json({ ok: false, error: "密码错误" }, 401);
 	}
 

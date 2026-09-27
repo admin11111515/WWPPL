@@ -6,12 +6,23 @@ const returnTitle = "♪(^∇^*)欢迎回来！";
 
 <script is:inline define:vars={{ hiddenTitle, returnTitle }}>
 (function () {
-    const originTitle = document.title;
+    // ⚠️ is:inline 脚本会被 swup 的 scripts-plugin 在每次站内跳转后重新执行一遍。
+    //    这里必须挡住重入，原因是 document.title 的"回填"：
+    //    原先 originTitle 在脚本执行的那一刻取一次，而跳转后的那一刻新标题还没写完，
+    //    于是每跳一次就多存一份**上一页的标题**，多挂一个 visibilitychange 回调；
+    //    切走再切回来时几个回调各写各的，最后落定的是哪一页的标题全看顺序。
+    //    改成两种都要：只挂一次监听，且标题在"切走的瞬间"现取。
+    if (window.__wwpplTitleChangeBound) return;
+    window.__wwpplTitleChangeBound = true;
+
+    // 切走时记下来的、用来回填的标题
+    let originTitle = document.title;
     let titleTimer = null;
-    
 
     function handleVisibilityChange() {
         if (document.hidden) {
+            // 现取当前标题：站内跳转之后 document.title 已经换成新页面的了
+            originTitle = document.title;
             document.title = hiddenTitle;
             clearTimeout(titleTimer);
         } else {

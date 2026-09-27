@@ -13,15 +13,30 @@ export interface MusicItem {
  */
 import musicData from "./music.json";
 
-const raw: any = musicData;
-const musicList: MusicItem[] = Array.isArray(raw) ? raw : raw.songs || [];
+// music.json 由 prefetch:music 生成，有两种形状：
+//   · 旧版：直接是一个歌曲数组
+//   · 现版：{ songs: [...], playlistCounts: {...}, playlistSongs: {...} }
+// 用 unknown 收窄而不是 any —— 保留类型检查，字段名写错时构建就能发现
+// （2026-09-28 改成精确类型后，正是靠它确认了下面两个歌单字段的真实形状）。
+interface MusicDataFile {
+	songs?: MusicItem[];
+	playlistCounts?: Record<string, number>;
+	playlistSongs?: Record<string, MusicItem[]>;
+}
+
+const raw = musicData as unknown as MusicItem[] | MusicDataFile;
+const isArrayForm = Array.isArray(raw);
+
+const musicList: MusicItem[] = isArrayForm
+	? (raw as MusicItem[])
+	: (raw as MusicDataFile).songs || [];
 
 export { musicList };
 
-export const playlistCounts: Record<string, number> = Array.isArray(raw)
+export const playlistCounts: Record<string, number> = isArrayForm
 	? {}
-	: raw.playlistCounts || {};
+	: (raw as MusicDataFile).playlistCounts || {};
 
-export const playlistSongs: Record<string, MusicItem[]> = Array.isArray(raw)
+export const playlistSongs: Record<string, MusicItem[]> = isArrayForm
 	? {}
-	: raw.playlistSongs || {};
+	: (raw as MusicDataFile).playlistSongs || {};

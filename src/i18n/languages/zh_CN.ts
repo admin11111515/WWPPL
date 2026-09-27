@@ -159,6 +159,7 @@ export const zh_CN: Translation = {
 	[Key.animeTotal]: "总追番",
 	[Key.animeAverageRating]: "平均评分",
 	[Key.animeSearch]: "搜索番剧...",
+	[Key.animeSort]: "排序方式",
 	[Key.animeAllTypes]: "全部",
 	[Key.animeTV]: "TV 动画",
 	[Key.animeMovie]: "电影",

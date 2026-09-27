@@ -33,7 +33,14 @@ const len = page.data.length;
 
 <script>
   // 响应式分页处理脚本
-  document.addEventListener("DOMContentLoaded", function () {
+  //
+  // ⚠️ 这段是内联脚本，每次站内跳转都会被 swup 的 scripts-plugin 重放一遍；
+  //    而 DOMContentLoaded 一个文档只触发一次，重放注册的那个回调永远等不到事件。
+  //    结果是每跳一页就在 document 上白搭一个监听器（顺带一个永不生效的 resize 绑定）。
+  //    设备类加在 document.body 上，而 swup 不动 body，所以只需要生效一次。
+  if (!window.__wwpplDeviceClassBound) {
+    window.__wwpplDeviceClassBound = true;
+    document.addEventListener("DOMContentLoaded", function () {
     // 如果启用了响应式分页，添加相应的CSS类
     const responsiveEnabled = true; // ${siteConfig.pagination.responsive}
     if (responsiveEnabled) {
@@ -57,7 +64,8 @@ const len = page.data.length;
         }, 250);
       });
     }
-  });
+    });
+  }
 
   function getDeviceType() {
     if (typeof window === "undefined") return "desktop";

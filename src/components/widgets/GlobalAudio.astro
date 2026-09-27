@@ -18,22 +18,24 @@ const showMini = musicPlayerConfig.showMiniPlayer ?? false;
         <div id="mini-player-card" class="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md p-4 rounded-3xl shadow-lg border border-white/20 dark:border-white/10 w-64 translate-y-4 opacity-0 scale-95 transition-all duration-300 origin-bottom-left pointer-events-auto">
             <div class="flex gap-4">
                 <div class="w-16 h-16 rounded-xl overflow-hidden shadow-md shrink-0">
-                    <img id="mini-cover" src={initialSong.cover || "/favicon.svg"} class="w-full h-full object-cover" alt="cover"/>
+                    {/* 兜底图用 public/favicon/ 里真实存在的 PNG —— 原来写的 /favicon.svg 并不存在（404） */}
+                    <img id="mini-cover" src={initialSong.cover || "/favicon/favicon-light-128.png"} class="w-full h-full object-cover" alt="专辑封面"/>
                 </div>
                 <div class="flex flex-col justify-center min-w-0 flex-1">
-                    <h3 id="mini-title" class="font-bold text-gray-700 dark:text-gray-300 text-sm truncate">{initialSong.title || "Firefly Music"}</h3>
+                    {/* 歌曲名：不是页面结构里的标题，用 div（id 保留给脚本用） */}
+                    <div id="mini-title" class="font-bold text-gray-700 dark:text-gray-300 text-sm truncate">{initialSong.title || "Firefly Music"}</div>
                     <p id="mini-artist" class="text-xs text-gray-500 dark:text-gray-400 truncate mt-1">{initialSong.artist || "Music"}</p>
                 </div>
             </div>
             <div class="flex justify-between items-center mt-4 px-4">
-                <button id="mini-prev" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+                <button id="mini-prev" aria-label="上一首" title="上一首" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" x2="5" y1="19" y2="5"/></svg>
                 </button>
-                <button id="mini-play" class="w-14 h-14 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 shadow flex items-center justify-center hover:scale-105 transition-transform">
+                <button id="mini-play" aria-label="播放" title="播放 / 暂停" class="w-14 h-14 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 shadow flex items-center justify-center hover:scale-105 transition-transform">
                     <svg id="mini-icon-play" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-1 fill-current"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                     <svg id="mini-icon-pause" class="hidden fill-current" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
                 </button>
-                <button id="mini-next" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+                <button id="mini-next" aria-label="下一首" title="下一首" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/></svg>
                 </button>
             </div>
@@ -42,7 +44,7 @@ const showMini = musicPlayerConfig.showMiniPlayer ?? false;
         <!-- 悬浮圆形按钮 -->
         <button id="mini-fab" title="打开音乐播放器" class="w-16 h-16 rounded-full bg-white/90 dark:bg-gray-900/90 backdrop-blur-md shadow-lg border border-white/20 dark:border-white/10 flex items-center justify-center relative overflow-hidden group pointer-events-auto transition-transform hover:scale-105 active:scale-95 cursor-pointer">
             <div class="absolute inset-0 rounded-full animate-spin-slow" id="mini-fab-spin" style="animation-play-state: paused;">
-                <img id="mini-fab-cover" src={initialSong.cover || "/favicon.svg"} class="w-full h-full object-cover opacity-60" alt="fab-cover"/>
+                <img id="mini-fab-cover" src={initialSong.cover || "/favicon/favicon-light-128.png"} class="w-full h-full object-cover opacity-60" alt="专辑封面"/>
             </div>
             <!-- Center Icon -->
             <div class="relative z-10 w-9 h-9 rounded-full bg-black/20 backdrop-blur-sm flex items-center justify-center text-white">
@@ -63,7 +65,15 @@ const showMini = musicPlayerConfig.showMiniPlayer ?? false;
     )}
 </div>
 
-<script define:vars={{ initialPlaylist }} is:inline>
+<!-- ⚠️ data-swup-ignore-script 这个标记不能去掉。
+     这段脚本有 1700 多行（整份播放器代码），Astro 会原样内联进**每一页**的 HTML；
+     不加标记的话，swup 的 scripts-plugin 每次站内跳转都会把它重新解析执行一遍
+     （脚本在 Layout 里、不在 swup 的替换容器内，节点本来就没被换掉，重跑纯属白费）。
+     标记之后它只在首屏执行一次，之后靠构造函数里注册的 astro:page-load +
+     swup content:replace 两个回调调 handlePageLoad() 重新绑 DOM。
+     同一套写法在本项目其它 Layout 级脚本上都在用（MusicManager、Calendar、Navbar），
+     这里原先漏了。 -->
+<script define:vars={{ initialPlaylist }} is:inline data-swup-ignore-script>
     class GlobalMusicPlayer {
         constructor() {
             // First time init: assume elements are present
@@ -448,7 +458,9 @@ const showMini = musicPlayerConfig.showMiniPlayer ?? false;
                 this.audio.addEventListener('ended', () => this.nextSong(true));
                 this.audio.addEventListener('play', () => { this.isPlaying = true; this.updateUI(); });
                 this.audio.addEventListener('pause', () => { this.isPlaying = false; this.updateUI(); });
-                this.audio.addEventListener('error', (e) => console.error("Audio error", e));
+                // 音频源是第三方接口，配额耗尽/下线时必然触发。这属于外部依赖不可用，
+                // 用 warn 记下具体地址即可；用 error 会在每次加载都污染控制台、掩盖真正的代码错误。
+                this.audio.addEventListener('error', () => console.warn('音频源加载失败：', this.audio.currentSrc || this.audio.src));
                 this.audio.dataset.hasGlobalEvents = "true";
              }
              
@@ -471,6 +483,25 @@ const showMini = musicPlayerConfig.showMiniPlayer ?? false;
             
             this.miniCover = document.getElementById('mini-cover');
             this.miniFabCover = document.getElementById('mini-fab-cover');
+
+            // 封面兜底：歌单快照指向第三方图床，图床一挂就会露出破图图标。
+            // 回落到站点自己的图标（与本文件初始渲染的 `cover || ...` 一致）。
+            // 用「当前 src 是不是已经是兜底图」幂等去重，而不是打一次性标记 ——
+            // 打标记的话第一首失败后换歌就再也不兜底了。
+            // 挂文档级捕获监听（error 不冒泡，但捕获阶段能到 document），
+            // 这样与元素实例、脚本执行时序都无关；再对「脚本运行前就已失败」的图扫一遍。
+            const COVER_FALLBACK = '/favicon/favicon-light-128.png';
+            const COVER_SEL = '#player-cover, #player-bg-cover, #mini-cover, #mini-fab-cover';
+            const coverFallback = (img) => {
+                if (!img.naturalWidth && !img.src.endsWith(COVER_FALLBACK)) img.src = COVER_FALLBACK;
+            };
+            document.addEventListener('error', (e) => {
+                const t = e.target;
+                if (t instanceof HTMLImageElement && t.matches(COVER_SEL)) coverFallback(t);
+            }, true);
+            for (const img of document.querySelectorAll(COVER_SEL)) {
+                if (img.complete && img.naturalWidth === 0 && img.getAttribute('src')) coverFallback(img);
+            }
             this.miniTitle = document.getElementById('mini-title');
             this.miniArtist = document.getElementById('mini-artist');
             this.miniIconPlay = document.getElementById('mini-icon-play');
@@ -895,7 +926,7 @@ const showMini = musicPlayerConfig.showMiniPlayer ?? false;
                 <li class="playlist-item group flex items-center gap-3 p-3 rounded-2xl hover:bg-black/5 dark:hover:bg-white/5 border border-transparent transition-all cursor-pointer ${index === this.currentIndex ? 'active border-gray-300 dark:border-gray-600 bg-black/5 dark:bg-white/5' : ''}" data-index="${index}" data-search="${(song.title || '').replace(/"/g, '&quot;')} ${(song.artist || '').replace(/"/g, '&quot;')} ${(song.duration || '').replace(/"/g, '&quot;')}">
                     <span class="font-mono text-gray-500 dark:text-gray-400 text-sm font-bold w-6 text-center group-hover:text-gray-100 dark:text-white transition-colors">${String(index + 1).padStart(2, '0')}</span>
                     <div class="relative w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-gray-200 dark:border-gray-700/50">
-                        <img src="${song.cover || ''}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="cover" loading="lazy"/>
+                        <img src="${song.cover || ''}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="专辑封面" loading="lazy"/>
                         <div class="absolute inset-0 bg-black/10 flex items-center justify-center opacity-0 group-[.active]:opacity-100 transition-opacity">
                             <div class="w-1.5 h-4 gap-0.5 flex items-end justify-center">
                                 <div class="w-0.5 bg-white h-2 animate-pulse"></div>
@@ -905,7 +936,8 @@ const showMini = musicPlayerConfig.showMiniPlayer ?? false;
                         </div>
                     </div>
                     <div class="flex-1 min-w-0 flex flex-col justify-center gap-1">
-                        <h3 class="font-bold text-gray-700 dark:text-gray-300 truncate text-sm leading-none">${song.title || 'Unknown'}</h3>
+                        {/* 歌曲名：列表项标签，不是标题 */}
+                        <div class="font-bold text-gray-700 dark:text-gray-300 truncate text-sm leading-none">${song.title || 'Unknown'}</div>
                         <p class="text-[11px] text-gray-500 dark:text-gray-400 truncate uppercase tracking-wider">${song.artist || ''}</p>
                     </div>
                     <div class="text-xs font-mono text-gray-500 dark:text-gray-400 font-bold playlist-duration" data-song-index="${index}">${song.duration || '--:--'}</div>
@@ -1051,7 +1083,7 @@ const showMini = musicPlayerConfig.showMiniPlayer ?? false;
                 navigator.mediaSession.metadata = new MediaMetadata({
                     title: song.title || 'Unknown Title',
                     artist: song.artist || 'Unknown Artist',
-                    artwork: [{ src: song.cover || '/favicon.svg', sizes: '512x512', type: 'image/png' }]
+                    artwork: [{ src: song.cover || '/favicon/favicon-light-128.png', sizes: '512x512', type: 'image/png' }]
                 });
             }
 
@@ -1263,6 +1295,7 @@ const showMini = musicPlayerConfig.showMiniPlayer ?? false;
              if (this.isPlaying) {
                  this.miniIconPlay?.classList.add('hidden');
                  this.miniIconPause?.classList.remove('hidden');
+                 this.miniPlayBtn?.setAttribute('aria-label', '暂停');
                  
                  this.miniFabIconPlay?.classList.add('hidden');
                  this.miniFabIconPause?.classList.remove('hidden');
@@ -1278,6 +1311,7 @@ const showMini = musicPlayerConfig.showMiniPlayer ?? false;
              } else {
                  this.miniIconPlay?.classList.remove('hidden');
                  this.miniIconPause?.classList.add('hidden');
+                 this.miniPlayBtn?.setAttribute('aria-label', '播放');
                  
                  this.miniFabIconPlay?.classList.remove('hidden');
                  this.miniFabIconPause?.classList.add('hidden');
@@ -1762,29 +1796,20 @@ const showMini = musicPlayerConfig.showMiniPlayer ?? false;
     if (!window.globalMusicPlayer) {
         window.globalMusicPlayer = new GlobalMusicPlayer();
     } else {
-        // HMR Support: When file changes, we need to update the methods of the existing instance
-        // or replace the instance while preserving state.
-        const oldInstance = window.globalMusicPlayer;
-        const newInstance = new GlobalMusicPlayer();
-        
-        // Preserve State
-        newInstance.playlist = oldInstance.playlist;
-        newInstance.currentIndex = oldInstance.currentIndex;
-        newInstance.isPlaying = oldInstance.isPlaying;
-        newInstance.isShuffle = oldInstance.isShuffle;
-        newInstance.repeatMode = oldInstance.repeatMode;
-        newInstance.lyrics = oldInstance.lyrics;
-        newInstance.lrcUrl = oldInstance.lrcUrl;
-        newInstance.audio = oldInstance.audio;
-        newInstance.isMiniOpen = oldInstance.isMiniOpen;
-        newInstance.playlistSongs = oldInstance.playlistSongs;
-        newInstance.activePlaylistId = oldInstance.activePlaylistId;
-        
-        // cleanup old events/timers if necessary
-        if(oldInstance.closeTimer) clearTimeout(oldInstance.closeTimer);
-        
-        // Replace
-        window.globalMusicPlayer = newInstance;
+        // ⚠️ 这里**只能**复用已有实例，不能再 new 一个。
+        //
+        // 下面原本的写法是给 Astro dev 的热更新写的（换一份新代码、把状态搬过去），
+        // 但这段脚本是 is:inline —— swup 的 scripts-plugin 每次站内跳转都会把它整段重放，
+        // 于是"热更新"那条分支在访客每次点链接时都会走一遍：每跳一页就多一个播放器实例。
+        //
+        // 实例多出来的代价不是内存，是**功能错乱**：构造函数里有三个挂在 document 上的
+        // 点击委托（#play-btn 那一排、进度条拖拽、音量条），它们没有任何"我这个实例还有效吗"
+        // 的判断（旧实例的 container 已经脱离文档，但委托处理器照样跑）。
+        // 跳 5 页就有 5 个实例同时响应一次点击 —— 点"下一首"实际跳过 5 首，
+        // 点播放键等于按了 5 次开关键。swup 的 content:replace 钩子也会跟着每页多注册一个。
+        //
+        // handlePageLoad() 内部本来就在做"按当前 DOM 重新取一遍元素、重新绑定"，
+        // 站内跳转需要的就是这一步。
         window.globalMusicPlayer.handlePageLoad();
     }
 </script>

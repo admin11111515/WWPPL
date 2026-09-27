@@ -17,7 +17,16 @@
   Cache-Control: public, max-age=31536000, immutable
 
 # 站点图标按周缓存：更新不频繁，但换了要能生效
+# /favicon.ico（根目录那个）是给"不看 HTML、直接来要图标"的客户端准备的：
+#   RSS 阅读器、链接预览机器人、收藏夹同步之类。站点自己在 <link rel="icon"> 里
+#   声明的是 /favicon/favicon.ico，所以浏览器标签页走的是后者、不受影响。
+#   为什么要补一个：没有它的时候，这类请求会落到 Worker 的 404 兜底上，
+#   而兜底返回的是整张 404 页面（**591 KB 的 HTML**）—— 为了一个 4 KB 的图标
+#   传一份整站页面，纯浪费。两处文件内容一致，改图标时记得一起换。
 /favicon/*
+  Cache-Control: public, max-age=604800
+
+/favicon.ico
   Cache-Control: public, max-age=604800
 
 # 搜索索引每次构建都会变，缓存短一点，避免搜出已经改过的旧标题
@@ -32,3 +41,11 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), microphone=(), camera=()
+
+# 后台页面禁止被别的站点用 iframe 套住。
+# 后台的"保存"是真的往仓库里写文件，被人藏在透明 iframe 里骗一次点击，
+# 代价是实际的。只加在 /admin 下面，公开页面不动 —— 免得以后哪天真要嵌到哪里时被这条挡了。
+# （注：/_headers 只能作用在静态资源上，抓不到 Worker 直接返回的 /api/ 响应，
+#   接口侧靠 SameSite=Lax 的会话 cookie 挡跨站请求，见 functions/api/_lib/session.js）
+/admin/*
+  X-Frame-Options: SAMEORIGIN

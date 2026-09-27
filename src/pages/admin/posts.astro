@@ -1060,6 +1060,15 @@ const postsConfig = JSON.stringify(externalPostsConfig);
         }, "image/webp", quality);
       });
     }
+    // 按实际编码格式给扩展名。canvas.toBlob 编不出 webp 时会回退成 PNG
+    // （上面 canvasToBlob 就是这么写的），此时若仍硬写 .webp，存进仓库的就是
+    // 「内容是 PNG、扩展名是 .webp」的文件 —— 浏览器按 webp 解不出来，就是一张裂图。
+    function imageExtOf(blob) {
+      var t = (blob && blob.type) || "";
+      if (t.indexOf("webp") >= 0) return "webp";
+      if (t.indexOf("jpeg") >= 0 || t.indexOf("jpg") >= 0) return "jpg";
+      return "png";
+    }
     function compressImage(file, maxSide, quality) {
       return loadImage(file).then(function(img) {
         var scale = Math.min(1, maxSide / Math.max(img.width, img.height));
@@ -1096,20 +1105,22 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       btn.disabled = true;
       btn.textContent = "上传中…";
 
-      var fileName = Date.now() + ".webp";
-      var imagePath = CONFIG.imagesPath + "/" + slug + "/" + fileName;
-      var imageUrl = "/images/posts/" + slug + "/" + fileName;
       toast(purpose === "cover" ? "正在压缩封面上传…" : "正在压缩图片上传…", "");
 
       compressImage(file, 1600, 0.82)
-        .then(blobToBase64)
-        .then(function(base64) {
-          return WBGitHub.putFile({
-            owner: CONFIG.owner, repo: CONFIG.repo, path: imagePath, branch: CONFIG.branch,
-            content: base64, message: "上传文章图片: " + slug
+        .then(function(blob) {
+          // 文件名按压缩后的真实格式取，不能写死 .webp（见 imageExtOf 的注释）
+          var fileName = Date.now() + "." + imageExtOf(blob);
+          var imagePath = CONFIG.imagesPath + "/" + slug + "/" + fileName;
+          var imageUrl = "/images/posts/" + slug + "/" + fileName;
+          return blobToBase64(blob).then(function(base64) {
+            return WBGitHub.putFile({
+              owner: CONFIG.owner, repo: CONFIG.repo, path: imagePath, branch: CONFIG.branch,
+              content: base64, message: "上传文章图片: " + slug
+            }).then(function() { return imageUrl; });
           });
         })
-        .then(function() {
+        .then(function(imageUrl) {
           if (purpose === "cover") {
             $("cover-input").value = imageUrl;
             updateCoverPreview();

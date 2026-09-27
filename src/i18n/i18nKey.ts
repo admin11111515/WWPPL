@@ -159,6 +159,7 @@ enum I18nKey {
 	animeTotal = "animeTotal",
 	animeAverageRating = "animeAverageRating",
 	animeSearch = "animeSearch",
+	animeSort = "animeSort",
 	animeAllTypes = "animeAllTypes",
 	animeTV = "animeTV",
 	animeMovie = "animeMovie",

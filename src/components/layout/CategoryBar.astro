@@ -418,19 +418,38 @@ const categoriesUrl = getCategoryPageUrl();
   updateCategoryBar();
   initCategoryBarInteractions();
   initScrollFeatures();
-  document.addEventListener("astro:page-load", () => {
-    updateCategoryBar();
-    initScrollFeatures();
-  });
-  document.addEventListener("swup:contentReplaced", () => {
-    updateCategoryBar();
-    // 某些 swup 生命周期下 URL/DOM 状态同步稍晚，下一帧再校正一次避免状态残留
-    requestAnimationFrame(() => {
-      updateCategoryBar();
-    });
-  });
 
-  // 在 Swup 导航时提前更新状态，避免切换期间激活态闪烁
+  // ⚠️ 换页相关的监听器和 swup 钩子只能注册一次。
+  //    这段脚本是 Astro 打包出来的内联 module 脚本（没有 URL，进不了模块缓存），
+  //    每次站内跳转都会被 swup 的 scripts-plugin 重新执行一遍。
+  //    不设防的话：每跳一页多一个 astro:page-load / swup:content:replace 监听
+  //    和一个 visit:start 钩子，而它们**都会触发** —— 于是跳 20 次之后，
+  //    每换一页要跑 40 遍 updateCategoryBar()，里面是 querySelectorAll 加
+  //    scrollWidth / getBoundingClientRect 这类会强制重排的读取。
+  //    上面的三个直接调用留着：它们负责给"这一页新换出来的 DOM"做首次初始化。
+  if (!window.__wwpplCategoryBarBound) {
+    window.__wwpplCategoryBarBound = true;
+
+    document.addEventListener("astro:page-load", () => {
+      updateCategoryBar();
+      initScrollFeatures();
+    });
+    document.addEventListener("swup:content:replace", () => {
+      updateCategoryBar();
+      // 某些 swup 生命周期下 URL/DOM 状态同步稍晚，下一帧再校正一次避免状态残留
+      requestAnimationFrame(() => {
+        updateCategoryBar();
+      });
+    });
+
+    // 在 Swup 导航时提前更新状态，避免切换期间激活态闪烁
+    if (window.swup?.hooks) {
+      setupSwupEarlyUpdate();
+    } else {
+      document.addEventListener("swup:enable", setupSwupEarlyUpdate);
+    }
+  }
+
   function setupSwupEarlyUpdate() {
     if (!window.swup?.hooks) return;
     window.swup.hooks.on("visit:start", (visit: any) => {
@@ -439,10 +458,5 @@ const categoriesUrl = getCategoryPageUrl();
       const targetUrl = new URL(visit.to.url, window.location.href);
       setActiveCategory(bar, targetUrl);
     });
-  }
-  if (window.swup?.hooks) {
-    setupSwupEarlyUpdate();
-  } else {
-    document.addEventListener("swup:enable", setupSwupEarlyUpdate);
   }
 </script>

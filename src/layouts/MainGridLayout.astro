@@ -47,6 +47,8 @@ import "@/styles/expressive-code.css";
 
 interface Props {
 	title?: string;
+	/** 该页自己渲染了可见的 <h1> 页面标题？是则不再输出 sr-only 的 <h1>，避免一页两个 h1。 */
+	hasVisibleTitle?: boolean;
 	banner?: string;
 	description?: string;
 	keywords?: string[];
@@ -68,6 +70,7 @@ const backgroundImages = getBackgroundImages();
 
 const {
 	title,
+	hasVisibleTitle = false,
 	banner,
 	description,
 	keywords,
@@ -341,7 +344,7 @@ const fullscreenCarouselInterval = Math.max(
         {backgroundImages.mobile.length > 0 && (
             <div class="banner-image-slot-mobile absolute inset-0 block lg:hidden">
                 <ImageWrapper
-                    alt="Mobile background image of the blog"
+                    alt="站点背景（移动端）"
                     class="object-cover h-full w-full"
                     src={backgroundImages.mobile[0]}
                     position={backgroundWallpaper.banner?.position}
@@ -356,7 +359,7 @@ const fullscreenCarouselInterval = Math.max(
         {backgroundImages.mobile.slice(1).map((src) => (
             <template class="banner-tpl-mobile">
                 <ImageWrapper
-                    alt="Mobile background image of the blog"
+                    alt="站点背景（移动端）"
                     class="object-cover h-full w-full"
                     src={src}
                     position={backgroundWallpaper.banner?.position}
@@ -373,7 +376,7 @@ const fullscreenCarouselInterval = Math.max(
             <div class="banner-image-slot-desktop absolute inset-0 hidden lg:block">
                 <ImageWrapper
                     id="banner"
-                    alt="Desktop background image of the blog"
+                    alt="站点背景（桌面端）"
                     class="object-cover h-full"
                     src={backgroundImages.desktop[0]}
                     position={backgroundWallpaper.banner?.position}
@@ -389,7 +392,7 @@ const fullscreenCarouselInterval = Math.max(
             <template class="banner-tpl-desktop">
                 <ImageWrapper
                     id="banner"
-                    alt="Desktop background image of the blog"
+                    alt="站点背景（桌面端）"
                     class="object-cover h-full"
                     src={src}
                     position={backgroundWallpaper.banner?.position}
@@ -927,8 +930,8 @@ const fullscreenCarouselInterval = Math.max(
                 >
                 {/* 携带网格布局类名，用于JS更新父容器 */}
                 <div id="grid-class-carrier" data-grid-class={gridCols} class="hidden"></div>
-                {/* 为每个页面提供一个隐藏的h1标题，用于SEO和可访问性 */}
-                <h1 class="sr-only">{title}</h1>
+                {/* 文档级 h1：页面自带可见标题时不再重复输出，否则用 sr-only 标题兜底 */}
+                {!hasVisibleTitle && <h1 class="sr-only">{title}</h1>}
                 <div id="content-wrapper" class="onload-animation transition-leaving">
                     <slot></slot>
                 </div>

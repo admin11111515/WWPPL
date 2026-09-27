@@ -439,13 +439,22 @@ const liveJson = JSON.stringify(live);
 		run();
 	}
 
-	document.addEventListener("swup:contentReplaced", run);
-	document.addEventListener("swup:content:replace", run);
-	document.addEventListener("swup:page:view", run);
-	if (typeof window !== "undefined" && (window as unknown as { swup?: { hooks?: any } }).swup?.hooks) {
-		const hooks = (window as unknown as { swup: { hooks: any } }).swup.hooks;
-		hooks.on("content:replace", run);
-		hooks.on("page:view", run);
+	// ⚠️ 这一段只注册一次。
+	//    下面挂了双保险（swup 的 DOM 事件 + swup 的钩子），两种都会真的触发，
+	//    而这段脚本每次站内跳转都会被 scripts-plugin 重跑一遍 ——
+	//    来回首页几次就叠几份，`run` 会被反复调用十来次。
+	//    run 内部是现查 .banner-rotator 的（见上面的 forEachElement），
+	//    所以只要有一份注册在，跳转后照样能重新初始化。
+	if (!window.__wwpplBannerRotatorBound) {
+		window.__wwpplBannerRotatorBound = true;
+
+		document.addEventListener("swup:content:replace", run);
+		document.addEventListener("swup:page:view", run);
+		if (typeof window !== "undefined" && (window as unknown as { swup?: { hooks?: any } }).swup?.hooks) {
+			const hooks = (window as unknown as { swup: { hooks: any } }).swup.hooks;
+			hooks.on("content:replace", run);
+			hooks.on("page:view", run);
+		}
 	}
 </script>
 

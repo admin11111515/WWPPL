@@ -105,7 +105,15 @@ const hasChildren = processedLink.children && processedLink.children.length > 0;
 
 <script>
 	// 键盘导航支持
-	document.addEventListener('DOMContentLoaded', function() {
+	//
+	// ⚠️ 这段是 Astro 打包出的内联 module 脚本（没有 URL，模块缓存兜不住），
+	//    每次站内跳转都会被 swup 的 scripts-plugin 重跑一遍。
+	//    DOMContentLoaded 一个文档只会触发一次，重跑时注册的那个回调永远等不到事件，
+	//    于是每跳一页就在 document 上白搭一个监听器。加个一次性开关挡掉。
+	//    下拉菜单在导航栏里、不在 swup 的替换容器内，节点不会被换掉，绑一次就够。
+	if (!window.__wwpplDropdownKeynavBound) {
+		window.__wwpplDropdownKeynavBound = true;
+		document.addEventListener('DOMContentLoaded', function() {
 		const dropdowns = document.querySelectorAll('[data-dropdown]');
 		
 		dropdowns.forEach(dropdown => {
@@ -162,7 +170,8 @@ const hasChildren = processedLink.children && processedLink.children.length > 0;
 				}
 			});
 		});
-	});
+		});
+	}
 	
 	function toggleDropdown(_dropdown: Element, trigger: Element, menu: Element) {
 		const isOpen = trigger.getAttribute('aria-expanded') === 'true';

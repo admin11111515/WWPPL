@@ -546,7 +546,7 @@ $effect(() => {
                 before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2"
             >
                 {i18n(I18nKey.themeColor)}
-                <button aria-label="Reset to Default" class="btn-regular w-7 h-7 rounded-md  active:scale-90"
+                <button aria-label="恢复默认" class="btn-regular w-7 h-7 rounded-md  active:scale-90"
                         class:opacity-0={hue === defaultHue} class:pointer-events-none={hue === defaultHue} onclick={resetHue}>
                     <div class="text-(--btn-content)">
                         <Icon icon="fa7-solid:arrow-rotate-left" class="text-[0.875rem]"></Icon>
@@ -575,7 +575,7 @@ $effect(() => {
                 before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2"
             >
                 {i18n(I18nKey.wallpaperMode)}
-                <button aria-label="Reset to Default" class="btn-regular w-7 h-7 rounded-md  active:scale-90"
+                <button aria-label="恢复默认" class="btn-regular w-7 h-7 rounded-md  active:scale-90"
                         class:opacity-0={wallpaperMode === defaultWallpaperMode} class:pointer-events-none={wallpaperMode === defaultWallpaperMode} onclick={resetWallpaperMode}>
                     <div class="text-(--btn-content)">
                         <Icon icon="fa7-solid:arrow-rotate-left" class="text-[0.875rem]"></Icon>
@@ -633,7 +633,7 @@ $effect(() => {
                 before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2"
             >
                 {i18n(I18nKey.overlaySettings)}
-                <button aria-label="Reset to Default" class="btn-regular w-7 h-7 rounded-md active:scale-90"
+                <button aria-label="恢复默认" class="btn-regular w-7 h-7 rounded-md active:scale-90"
                         class:opacity-0={overlaySettingsIsDefault} class:pointer-events-none={overlaySettingsIsDefault} onclick={resetOverlaySettings}>
                     <div class="text-(--btn-content)">
                         <Icon icon="fa7-solid:arrow-rotate-left" class="text-[0.875rem]"></Icon>
@@ -673,7 +673,7 @@ $effect(() => {
                 before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2"
             >
                 {i18n(I18nKey.wallpaperSettings)}
-                <button aria-label="Reset to Default" class="btn-regular w-7 h-7 rounded-md  active:scale-90"
+                <button aria-label="恢复默认" class="btn-regular w-7 h-7 rounded-md  active:scale-90"
                         class:opacity-0={bannerSettingsIsDefault} class:pointer-events-none={bannerSettingsIsDefault} onclick={resetBannerSettings}>
                     <div class="text-(--btn-content)">
                         <Icon icon="fa7-solid:arrow-rotate-left" class="text-[0.875rem]"></Icon>
@@ -783,7 +783,7 @@ $effect(() => {
                 before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2"
             >
                 {i18n(I18nKey.effectsSettings)}
-                <button aria-label="Reset to Default" class="btn-regular w-7 h-7 rounded-md  active:scale-90"
+                <button aria-label="恢复默认" class="btn-regular w-7 h-7 rounded-md  active:scale-90"
                         class:opacity-0={sakuraEnabled === defaultSakuraEnabled} class:pointer-events-none={sakuraEnabled === defaultSakuraEnabled} onclick={() => { sakuraEnabled = defaultSakuraEnabled; setSakuraEnabled(defaultSakuraEnabled); }}>
                     <div class="text-(--btn-content)">
                         <Icon icon="fa7-solid:arrow-rotate-left" class="text-[0.875rem]"></Icon>
@@ -818,7 +818,7 @@ $effect(() => {
                 before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2"
             >
                 {i18n(I18nKey.postListLayout)}
-                <button aria-label="Reset to Default" class="btn-regular w-7 h-7 rounded-md  active:scale-90"
+                <button aria-label="恢复默认" class="btn-regular w-7 h-7 rounded-md  active:scale-90"
                         class:opacity-0={currentLayout === effectiveDefaultLayout} class:pointer-events-none={currentLayout === effectiveDefaultLayout} onclick={resetLayout}>
                     <div class="text-(--btn-content)">
                         <Icon icon="fa7-solid:arrow-rotate-left" class="text-[0.875rem]"></Icon>
@@ -866,7 +866,7 @@ $effect(() => {
                 before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2"
             >
                 {i18n(I18nKey.postCoverImage)}
-                <button aria-label="Reset to Default" class="btn-regular w-7 h-7 rounded-md  active:scale-90"
+                <button aria-label="恢复默认" class="btn-regular w-7 h-7 rounded-md  active:scale-90"
                         class:opacity-0={postCoverImageEnabled === defaultPostCoverImageEnabled} class:pointer-events-none={postCoverImageEnabled === defaultPostCoverImageEnabled} onclick={() => { postCoverImageEnabled = defaultPostCoverImageEnabled; setPostCoverImageEnabled(defaultPostCoverImageEnabled); }}>
                     <div class="text-(--btn-content)">
                         <Icon icon="fa7-solid:arrow-rotate-left" class="text-[0.875rem]"></Icon>

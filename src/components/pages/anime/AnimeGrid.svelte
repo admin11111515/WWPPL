@@ -149,6 +149,7 @@ function closeDetail() {
 				</svg>
 				<input
 					type="text"
+					aria-label={i18n(I18nKey.animeSearch)}
 					placeholder={i18n(I18nKey.animeSearch)}
 					value={searchQuery}
 					oninput={handleSearch}
@@ -156,6 +157,7 @@ function closeDetail() {
 				/>
 			</div>
 			<select
+				aria-label={i18n(I18nKey.animeSort)}
 				value={sortBy}
 				onchange={(e) => setSort((e.target as HTMLSelectElement).value as typeof sortBy)}
 				class="rounded-xl border border-(--line-divider) bg-(--card-bg) px-3 text-sm text-neutral-600 dark:text-neutral-400 outline-none cursor-pointer shrink-0"

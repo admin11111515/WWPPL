@@ -6,6 +6,14 @@
 
 <script is:inline>
 (function () {
+    // ⚠️ 这是 is:inline 脚本，swup 的 scripts-plugin 会在**每次站内跳转后重新执行一遍**
+    //    （它把 <script> 复制一份再 replaceWith，inline 脚本因此会重跑）。
+    //    下面这两行是必要的：window 上的监听器不会随节点被替换而消失，
+    //    每次跳转再挂一遍就会累积 —— 跳 20 次之后一次 scroll 事件要跑 20 个回调。
+    //    进度条本身在 Layout 里、不在 swup 的替换容器内，节点一直在，所以只挂一次就够。
+    if (window.__wwpplScrollProgressBound) return;
+    window.__wwpplScrollProgressBound = true;
+
     let progressBar = null;
     let cachedScrollHeight = 0;
     let cachedClientHeight = 0;
@@ -32,7 +40,8 @@
 
     function handleScroll() {
         requestAnimationFrame(function() {
-            if (!progressBar) {
+            // 缓存的节点万一被换掉了（换主题、进后台预览之类），重新取一次
+            if (!progressBar || !progressBar.isConnected) {
                 progressBar = document.getElementById('scroll-progress-bar');
                 if (!progressBar) return;
             }
@@ -69,6 +78,9 @@
         // Add resize listener
         window.addEventListener('resize', handleResize, { passive: true });
     }
+
+    // 每次跳转后页面高度变了，把缓存作废，下次滚动重新量
+    document.addEventListener('swup:content:replace', handleResize);
 
     // Ensure DOM is fully loaded before initialization
     if (document.readyState === 'loading') {

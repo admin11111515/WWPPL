@@ -87,6 +87,12 @@ const processedLinks = Astro.props.links;
 </style>
 
 <script>
+    // ⚠️ 同 DropdownMenu：这是 Astro 打包出的内联 module 脚本，每次站内跳转都会重跑，
+    //    而 DOMContentLoaded 只会触发一次 —— 重跑时注册的回调永远等不到事件，
+    //    等于每跳一页往 document 上白搭一个监听器。移动端菜单挂在导航栏里，
+    //    不在 swup 的替换容器内，节点不会被换掉，绑一次就够。
+    if (!window.__wwpplMobileMenuBound) {
+    window.__wwpplMobileMenuBound = true;
     document.addEventListener('DOMContentLoaded', function() {
         const mobileDropdowns = document.querySelectorAll('[data-mobile-dropdown]');
 
@@ -118,4 +124,5 @@ const processedLinks = Astro.props.links;
             });
         });
     });
+    }
 </script>

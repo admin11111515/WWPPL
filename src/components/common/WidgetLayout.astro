@@ -30,7 +30,7 @@ const className = Astro.props.class;
 ---
 <widget-layout
     data-id={id}
-    data-is-collapsed={String(isCollapsed)}
+    data-is-collapsed={String(isCollapsed === true)}
     data-use-expanded-button-spacing={String(useExpandedButtonSpacing)}
     class:list={["card-base", {"pb-4": contentPadding}, className]}
     style={style}
@@ -43,7 +43,7 @@ const className = Astro.props.class;
             <slot name="title-icon" />
         </div>
     )}
-    <div id={id} class:list={["collapse-wrapper overflow-hidden", {"px-4": contentPadding, "collapsed": isCollapsed, "pt-4": contentPadding && (!name || !showTitle)}]}>
+    <div data-widget={id} class:list={["collapse-wrapper overflow-hidden", {"px-4": contentPadding, "collapsed": isCollapsed, "pt-4": contentPadding && (!name || !showTitle)}]}>
         <slot></slot>
     </div>
     {isCollapsed && <div class="expand-btn px-4 -mb-2">
@@ -63,6 +63,7 @@ const className = Astro.props.class;
                 class="btn-plain rounded-lg w-full h-9"
                 title={i18n(I18nKey.more)}
                 aria-label={i18n(I18nKey.more)}
+                aria-expanded="false"
                 data-show-more={i18n(I18nKey.more)}
                 data-show-less={i18n(I18nKey.collapse)}
                 data-expanded="false"
@@ -97,9 +98,12 @@ const className = Astro.props.class;
 
             this.dataset.expanded = 'false';
 
-            const id = this.dataset.id;
+            // 内层折叠容器用属性定位，不再给它 id。
+            // 原因：同一个组件在桌面侧栏与移动端底部各渲染一份，写死 id 会让
+            // 100 多个页面出现重复 id（HTML 无效，getElementById 只认第一个）。
+            // querySelector 的作用域是本自定义元素，所以类名足够精确。
             const btn = this.querySelector('.expand-btn button') as HTMLButtonElement | null;
-            const wrapper = this.querySelector(`#${id}`)
+            const wrapper = this.querySelector('.collapse-wrapper')
 
             if (!btn || !wrapper)
                 return;
@@ -116,6 +120,8 @@ const className = Astro.props.class;
                 this.dataset.expanded = String(expanded);
                 btn.title = label;
                 btn.setAttribute('aria-label', label);
+                // 这是展开/折叠控件，把状态暴露给辅助技术
+                btn.setAttribute('aria-expanded', String(expanded));
                 if (text)
                     text.textContent = label;
                 moreIcon?.classList.toggle('hidden', expanded);

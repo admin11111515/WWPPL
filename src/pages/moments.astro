@@ -45,8 +45,12 @@ const momentAssets = import.meta.glob<{ default: ImageMetadata }>(
 );
 
 // 解析图片路径
-const parseImages = (imagesData: any): (string | ImageMetadata)[] => {
-	let rawPaths: string[] = [];
+// 类型直接对齐 moments 集合的 schema：images 允许 (ImageMetadata | string)[]，
+// 也允许一个逗号/分号分隔的字符串。原来是 any，等于把类型检查关掉了。
+const parseImages = (
+	imagesData: (string | ImageMetadata)[] | string | undefined,
+): (string | ImageMetadata)[] => {
+	let rawPaths: (string | ImageMetadata)[] = [];
 	if (Array.isArray(imagesData)) {
 		rawPaths = imagesData.map((img) =>
 			typeof img === "string" ? img : img.src || img,
@@ -60,6 +64,9 @@ const parseImages = (imagesData: any): (string | ImageMetadata)[] => {
 
 	return Array.from(new Set(rawPaths))
 		.map((img) => {
+			if (typeof img !== "string") {
+				return img;
+			}
 			if (
 				img.startsWith("http://") ||
 				img.startsWith("https://") ||
@@ -134,7 +141,7 @@ const pinnedData = pinnedMoments.map((m) => ({
         <div class="wx-empty-icon">
           <Icon name="material-symbols:sentiment-neutral-outline" />
         </div>
-        <h3>还没有发布任何说说</h3>
+        <h2>还没有发布任何说说</h2>
         <p>快去记录你的生活点滴吧</p>
       </div>
     )}
@@ -239,7 +246,7 @@ const pinnedData = pinnedMoments.map((m) => ({
     font-size: 2rem;
   }
 
-  .wx-empty h3 {
+  .wx-empty h2 {
     font-size: 1rem;
     font-weight: 600;
     color: var(--text-color);

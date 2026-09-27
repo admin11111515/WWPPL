@@ -41,94 +41,108 @@ const { class: className, style } = Astro.props;
 </div>
 
 <script is:inline>
-  const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  // ⚠ 本脚本会被 swup 的 scripts-plugin 在**每次站内跳转后重新执行一遍**
+  //（它把文档里所有未标 data-swup-ignore-script 的脚本克隆重插一遍）。所以这里必须：
+  //   ① 顶层不留 const/let —— 否则第二遍执行会抛
+  //      "Identifier 'weekDays' has already been declared"，整块脚本直接作废；
+  //   ② document 级监听器与定时器只挂一次 —— 否则每跳一次就多积一份。
+  (() => {
+    const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-  if (!window.timeGreetingImage) {
-      window.timeGreetingImage = `https://random-api.czl.net/pic/fj?t=${new Date().getTime()}`;
-  }
-
-  function updateTimeGreeting() {
-    const dayDisplays = document.querySelectorAll('.date-day');
-    const monthDisplays = document.querySelectorAll('.date-month');
-    const weekDisplays = document.querySelectorAll('.date-week');
-    const timeDisplays = document.querySelectorAll('.time-display');
-    const greetingTexts = document.querySelectorAll('.greeting-text');
-    const greetingIcons = document.querySelectorAll('.greeting-icons');
-    const imageContainers = document.querySelectorAll('.time-image');
-
-    if (dayDisplays.length === 0) return;
-
-    const now = new Date();
-    const hours = now.getHours();
-    const minutes = now.getMinutes();
-
-    const month = (now.getMonth() + 1).toString().padStart(2, '0');
-    const day = now.getDate().toString().padStart(2, '0');
-    const weekDay = weekDays[now.getDay()];
-
-    const hoursStr = hours.toString().padStart(2, '0');
-    const minutesStr = minutes.toString().padStart(2, '0');
-
-    let greeting = '';
-    let period = '';
-
-    if (hours >= 0 && hours < 6) {
-        greeting = '夜深了，早点休息！';
-        period = 'night';
-    } else if (hours >= 6 && hours < 9) {
-        greeting = '早上好，新的一天！';
-        period = 'morning';
-    } else if (hours >= 9 && hours < 12) {
-        greeting = '上午好，充满活力！';
-        period = 'noon';
-    } else if (hours >= 12 && hours < 14) {
-        greeting = '中午好，记得午休！';
-        period = 'noon';
-    } else if (hours >= 14 && hours < 18) {
-        greeting = '下午好，继续加油！';
-        period = 'noon';
-    } else if (hours >= 18 && hours < 24) {
-        greeting = '晚上好，放松一下！';
-        period = 'evening';
+    if (!window.timeGreetingImage) {
+        window.timeGreetingImage = `https://random-api.czl.net/pic/fj?t=${new Date().getTime()}`;
     }
 
-    dayDisplays.forEach(el => el.textContent = day);
-    monthDisplays.forEach(el => el.textContent = `/${month}`);
-    weekDisplays.forEach(el => el.textContent = weekDay);
-    timeDisplays.forEach(el => el.textContent = `${hoursStr}:${minutesStr}`);
-    greetingTexts.forEach(el => el.textContent = greeting);
+    function updateTimeGreeting() {
+      const dayDisplays = document.querySelectorAll('.date-day');
+      const monthDisplays = document.querySelectorAll('.date-month');
+      const weekDisplays = document.querySelectorAll('.date-week');
+      const timeDisplays = document.querySelectorAll('.time-display');
+      const greetingTexts = document.querySelectorAll('.greeting-text');
+      const greetingIcons = document.querySelectorAll('.greeting-icons');
+      const imageContainers = document.querySelectorAll('.time-image');
 
-    greetingIcons.forEach(container => {
-        const icons = container.querySelectorAll('svg');
-        icons.forEach(icon => {
-            if (icon.classList.contains(`icon-${period}`)) {
-                icon.classList.remove('hidden');
-            } else {
-                icon.classList.add('hidden');
-            }
-        });
-    });
+      if (dayDisplays.length === 0) return;
 
-    imageContainers.forEach(el => {
-        if (el.getAttribute('data-image-set') !== 'true') {
-            el.style.backgroundImage = `url('${window.timeGreetingImage}')`;
-            el.setAttribute('data-image-set', 'true');
-            setTimeout(() => {
-                el.classList.remove('opacity-0');
-                el.classList.add('opacity-100');
-            }, 50);
-        }
-    });
-  }
+      const now = new Date();
+      const hours = now.getHours();
+      const minutes = now.getMinutes();
 
-  if (window.timeGreetingInterval) {
-    clearInterval(window.timeGreetingInterval);
-  }
-  window.timeGreetingInterval = setInterval(updateTimeGreeting, 60000);
+      const month = (now.getMonth() + 1).toString().padStart(2, '0');
+      const day = now.getDate().toString().padStart(2, '0');
+      const weekDay = weekDays[now.getDay()];
 
-  updateTimeGreeting();
+      const hoursStr = hours.toString().padStart(2, '0');
+      const minutesStr = minutes.toString().padStart(2, '0');
 
-  document.addEventListener("swup:contentReplaced", () => {
+      let greeting = '';
+      let period = '';
+
+      if (hours >= 0 && hours < 6) {
+          greeting = '夜深了，早点休息！';
+          period = 'night';
+      } else if (hours >= 6 && hours < 9) {
+          greeting = '早上好，新的一天！';
+          period = 'morning';
+      } else if (hours >= 9 && hours < 12) {
+          greeting = '上午好，充满活力！';
+          period = 'noon';
+      } else if (hours >= 12 && hours < 14) {
+          greeting = '中午好，记得午休！';
+          period = 'noon';
+      } else if (hours >= 14 && hours < 18) {
+          greeting = '下午好，继续加油！';
+          period = 'noon';
+      } else if (hours >= 18 && hours < 24) {
+          greeting = '晚上好，放松一下！';
+          period = 'evening';
+      }
+
+      dayDisplays.forEach(el => el.textContent = day);
+      monthDisplays.forEach(el => el.textContent = `/${month}`);
+      weekDisplays.forEach(el => el.textContent = weekDay);
+      timeDisplays.forEach(el => el.textContent = `${hoursStr}:${minutesStr}`);
+      greetingTexts.forEach(el => el.textContent = greeting);
+
+      greetingIcons.forEach(container => {
+          const icons = container.querySelectorAll('svg');
+          icons.forEach(icon => {
+              if (icon.classList.contains(`icon-${period}`)) {
+                  icon.classList.remove('hidden');
+              } else {
+                  icon.classList.add('hidden');
+              }
+          });
+      });
+
+      imageContainers.forEach(el => {
+          if (el.getAttribute('data-image-set') !== 'true') {
+              el.style.backgroundImage = `url('${window.timeGreetingImage}')`;
+              el.setAttribute('data-image-set', 'true');
+              setTimeout(() => {
+                  el.classList.remove('opacity-0');
+                  el.classList.add('opacity-100');
+              }, 50);
+          }
+      });
+    }
+
+    // 定时器只建一个。updateTimeGreeting 每次都按 class 现查节点，
+    // 所以一个定时器就够应付跳转后换出来的新 DOM，重跑时再建只是白跑一个。
+    if (!window.timeGreetingInterval) {
+      window.timeGreetingInterval = setInterval(updateTimeGreeting, 60000);
+    }
+
+    // 首屏也跑一次（换页时由上面的 swup:content:replace 触发）
     updateTimeGreeting();
-  });
+
+    // 换页监听只挂一次。事件名必须是 swup v4 的 swup:content:replace；
+    // 原来写的 swup:contentReplaced 是 v3 的旧名，v4 下**永远不会触发**（实测 0 次）。
+    if (!window.timeGreetingSwupBound) {
+      window.timeGreetingSwupBound = true;
+      document.addEventListener("swup:content:replace", () => {
+        updateTimeGreeting();
+      });
+    }
+  })();
 </script>

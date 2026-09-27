@@ -662,8 +662,11 @@ const siteLang = lang.replace("_", "-");
     {/* PWA：注册 Service Worker，提供离线兜底与静态资源缓存。
         放在 body 末尾以免阻塞首屏；等 load 事件后再注册，把带宽优先让给页面本身。
         注册失败不提示也不重试 —— 没有 Service Worker 时站点功能完全不受影响，
-        只是失去离线能力，没有必要打扰访客。 */}
-    <script is:inline>
+        只是失去离线能力，没有必要打扰访客。
+
+        data-swup-ignore-script：不标就会被每跳一次站内链接重放一次，
+        在 window 上叠一个永远等不到第二次 load 的监听器。 */}
+    <script is:inline data-swup-ignore-script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
           navigator.serviceWorker
@@ -1041,7 +1044,7 @@ function disableAnimation() {
 
       // Handle mobile single image banner - 使用与电脑端相同的逻辑
       const mobileBanner = document.querySelector(
-        '.block.lg\\:hidden[alt="Mobile banner image of the blog"]'
+        '.block.lg\\:hidden[alt="站点横幅（移动端）"]'
       );
       if (mobileBanner) {
         // 移动端使用与电脑端相同的初始化逻辑
@@ -1806,8 +1809,14 @@ function disableAnimation() {
   }
 
   initImageLoadFadeIn();
-  document.addEventListener('astro:page-load', initImageLoadFadeIn);
-  document.addEventListener('swup:contentReplaced', () => {
-    requestAnimationFrame(initImageLoadFadeIn);
-  });
+  // 只挂一次：本脚本（以及页面里几乎每个脚本）在每次 swup 站内跳转后都会被
+  // scripts-plugin 重跑一遍，而 document 级监听器不随节点消失 —— 不设开关的话
+  // 每跳一次就多积一份（实测 +1/次，长会话里会一直涨）。
+  if (!window.__wwpplImagesFadeBound) {
+    window.__wwpplImagesFadeBound = true;
+    document.addEventListener('astro:page-load', initImageLoadFadeIn);
+    document.addEventListener('swup:content:replace', () => {
+      requestAnimationFrame(initImageLoadFadeIn);
+    });
+  }
 </script>

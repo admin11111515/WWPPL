@@ -26,7 +26,7 @@ const sidebarPosition = sidebarLayoutConfig.position;
   <FloatingButton
     id="floating-toc-btn"
     icon="material-symbols:format-list-bulleted"
-    ariaLabel="Table of Contents"
+    ariaLabel="目录"
     onclick="window.toggleFloatingTOC()"
     class="hide"
   />
@@ -42,14 +42,15 @@ const sidebarPosition = sidebarLayoutConfig.position;
         style="background-color: var(--card-bg-transparent);"
     >
         <div class="flex items-center justify-between">
-        <h3
+        {/* 面板标题：用 h2 —— 页面的 h1 是布局里的 sr-only 文档标题，此处是它下面的一级区块 */}
+        <h2
             class="text-lg font-bold text-(--primary) flex items-center gap-2"
         >
             {i18n(I18nKey.tableOfContents)}
-        </h3>
+        </h2>
         <button
             onclick="window.toggleFloatingTOC()"
-            aria-label="Close TOC"
+            aria-label="关闭目录"
             class="btn-plain rounded-lg h-8 w-8 active:scale-90"
         >
             <Icon is:inline name="material-symbols:close" class="text-lg" />
@@ -164,19 +165,30 @@ const sidebarPosition = sidebarLayoutConfig.position;
 
   // 关闭 TOC 面板
   function closeTOC() {
-    const panel = window.FloatingTOC.panel;
+    // 每次都按当前的 id 找节点，不缓存引用 —— 面板跟着 #floating-toc-wrapper
+    // 在每次站内跳转后被整块换掉，缓存下来的会是已经脱离文档的旧节点。
+    const panel = document.getElementById("floating-toc-panel") || window.FloatingTOC.panel;
     if (panel && !panel.classList.contains("hide")) {
       panel.classList.add("hide");
       panel.classList.remove("show");
     }
   }
 
-  // 设置自动关闭功能
+  // 设置自动关闭功能。
+  // ⚠️ 只能在整站生命周期里挂一次。
+  //   这些监听器全部挂在 document / window 上 —— 它们不会随节点被替换而消失，
+  //   而 initFloatingTOC 每次跳转都会跑（而且 swup:content:replace 与 astro:page-load
+  //   会各触发一次，一次跳转跑两遍）。原先它每跑一遍就重挂 7 个监听器，
+  //   并把 history.pushState / replaceState 再包一层：
+  //   跳 20 次就是 20 层包装，一次 pushState 会顺着这条链把 closeTOC 调 20 遍。
   function setupAutoClose() {
-    // 监听页面卸载和隐藏 - 使用 pagehide 替代已废弃的 unload
+    if (window.__wwpplFloatingTOCAutoCloseBound) return;
+    window.__wwpplFloatingTOCAutoCloseBound = true;
+
+    // 这些回调都靠 closeTOC 现查 DOM，所以挂一次就够，跳页后依然作用于新面板。
     window.addEventListener("pagehide", closeTOC);
     window.addEventListener("popstate", closeTOC);
-    
+
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) closeTOC();
     });
@@ -232,15 +244,17 @@ const sidebarPosition = sidebarLayoutConfig.position;
       return false;
     }
 
-    const wrapper = document.querySelector('.floating-toc-wrapper');
-    const sidebarPosition = wrapper?.getAttribute('data-sidebar-position') || 'left';
-    const showBothSidebarsOnPost = wrapper?.getAttribute('data-show-both-sidebars-on-post') === 'true';
+    // 配置从当前这份 DOM 上现读，别用模块加载时抓到的旧值
+    const el = document.querySelector('.floating-toc-wrapper');
+    const sidebarPosition = el?.getAttribute('data-sidebar-position') || 'left';
+    const showBothSidebarsOnPost = el?.getAttribute('data-show-both-sidebars-on-post') === 'true';
+    const sidebarTocEnabled = el?.getAttribute('data-is-sidebar-toc-enabled') === 'true' || isSidebarTocEnabled;
 
     // 双侧边栏模式（含文章页临时双侧栏）：小屏幕或侧边栏目录未启用时显示悬浮目录
     const effectiveIsBothSidebars = sidebarPosition === 'both' || showBothSidebarsOnPost;
     if (effectiveIsBothSidebars) {
       const isSmallScreen = window.innerWidth < 1280;
-      return isSmallScreen || !isSidebarTocEnabled;
+      return isSmallScreen || !sidebarTocEnabled;
     }
 
     // 单侧边栏模式（left或right），对侧没有侧边栏目录，始终显示悬浮目录
@@ -302,11 +316,24 @@ const sidebarPosition = sidebarLayoutConfig.position;
         }, { capture: true });
       }
 
-      // 设置自动关闭
+      // 设置自动关闭（内部只真正生效一次，见 setupAutoClose 的说明）
       setupAutoClose();
     } catch (error) {
       console.error("Failed to load TOCManager:", error);
     }
+  }
+
+  // 一次跳转会先后收到 swup:content:replace 和 astro:page-load 两个事件，
+  // 分别去 init 就会跑两遍：多建一个 TOCManager、多挂一遍监听器。
+  // 合成一次，谁先到谁排队。
+  let initScheduled = false;
+  function scheduleInit(delay = 100) {
+    if (initScheduled) return;
+    initScheduled = true;
+    setTimeout(() => {
+      initScheduled = false;
+      initFloatingTOC();
+    }, delay);
   }
 
   // 初始化
@@ -317,18 +344,18 @@ const sidebarPosition = sidebarLayoutConfig.position;
     window.floatingTOCListenersInitialized = true;
 
     // Swup 路由切换
-    document.addEventListener("swup:contentReplaced", () => {
-      setTimeout(initFloatingTOC, 100);
+    document.addEventListener("swup:content:replace", () => {
+      scheduleInit(100);
     });
     
     // Astro 页面切换事件
     document.addEventListener("astro:page-load", () => {
-      setTimeout(initFloatingTOC, 100);
+      scheduleInit(100);
     });
     
     // 浏览器导航事件
     window.addEventListener("popstate", () => {
-      setTimeout(initFloatingTOC, 200);
+      scheduleInit(200);
     });
 
     // 监听布局模式切换（通过自定义事件）
@@ -338,7 +365,7 @@ const sidebarPosition = sidebarLayoutConfig.position;
 
     // 密码解密后重新初始化 TOC
     document.addEventListener("password:decrypted", () => {
-      setTimeout(initFloatingTOC, 200);
+      scheduleInit(200);
     });
 
     // 监听窗口大小变化

@@ -26,7 +26,7 @@ const tabs = [
 ];
 ---
 
-<MainGridLayout title={title} description={subtitle} keywords={notebooks}>
+<MainGridLayout hasVisibleTitle title={title} description={subtitle} keywords={notebooks}>
   <div class="flex w-full rounded-[var(--radius-large)] overflow-hidden relative min-h-32">
     <div class="card-base z-10 px-6 sm:px-9 py-6 relative w-full">
       <PageHeader title={title} subtitle={subtitle} />
@@ -355,7 +355,7 @@ const tabs = [
 		});
 	}
 
-	document.addEventListener("swup:contentReplaced", init);
+	document.addEventListener("swup:content:replace", init);
 	document.addEventListener("astro:page-load", init);
 	if (document.readyState === "loading") {
 		document.addEventListener("DOMContentLoaded", init);

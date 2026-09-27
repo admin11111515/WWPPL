@@ -111,9 +111,10 @@ function getTypeColor(seasonType: number): string {
 	<!-- 底部信息 -->
 	<div class="p-3">
 		<!-- 标题 -->
-		<h3 class="mb-1 line-clamp-1 text-sm font-semibold text-neutral-900 dark:text-neutral-100" title={anime.title}>
+		<!-- 卡片标题：页面 h1 是布局的 sr-only 文档标题，卡片是它下面的一级条目 -->
+		<h2 class="mb-1 line-clamp-1 text-sm font-semibold text-neutral-900 dark:text-neutral-100" title={anime.title}>
 			{anime.title}
-		</h3>
+		</h2>
 		<!-- 原文标题 -->
 		{#if anime.originalTitle && anime.originalTitle !== anime.title}
 			<p class="mb-2 line-clamp-1 text-xs text-neutral-500 dark:text-neutral-400" title={anime.originalTitle}>

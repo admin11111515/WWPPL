@@ -138,23 +138,35 @@ const MIME = {
 	".webmanifest": "application/manifest+json",
 };
 
-function serveStatic(req, res) {
-	let p = decodeURIComponent(new URL(req.url, "http://x").pathname);
+/** 把 URL 路径解成产物里的真实文件；不存在返回 null */
+function resolveStatic(urlPath) {
+	let p = decodeURIComponent(urlPath);
 	if (p.endsWith("/")) p += "index.html";
 	let full = path.join(DIST.dir, p);
 	// 目录形式（/admin/posts）也当索引页
 	if (!fs.existsSync(full) && fs.existsSync(full + "/index.html")) full += "/index.html";
 	if (!fs.existsSync(full) && fs.existsSync(full + ".html")) full += ".html";
-	if (!fs.existsSync(full) || fs.statSync(full).isDirectory()) {
-		res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
-		res.end("404 " + p);
-		return;
-	}
+	if (!fs.existsSync(full) || fs.statSync(full).isDirectory()) return null;
+	return full;
+}
+
+function sendFile(res, full) {
 	res.writeHead(200, {
 		"content-type": MIME[path.extname(full).toLowerCase()] || "application/octet-stream",
 		"cache-control": "no-store",
 	});
 	fs.createReadStream(full).pipe(res);
+}
+
+function serveStatic(req, res, urlPath) {
+	const p = urlPath ?? new URL(req.url, "http://x").pathname;
+	const full = resolveStatic(p);
+	if (!full) {
+		res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+		res.end("404 " + p);
+		return;
+	}
+	sendFile(res, full);
 }
 
 /** 假贡献数据：铺满 53 周，够画一整年热力图。
@@ -280,6 +292,14 @@ function handleApi(req, res, url) {
 			},
 		});
 	}
+
+	// 落到这里说明没有对应的假接口。但 /api/ 下**也有构建产物**——
+	// 比如 /api/allPostMeta.json 是 astro build 生成的静态文件，线上由
+	// Worker 的静态资源直接给出。预览里必须同样回落到产物，否则日历、
+	// 「猜你喜欢」这些在运行时 fetch 它的组件会在本地假性报错
+	// （HTTP 404），把本地验收带偏。
+	const staticFile = resolveStatic(p);
+	if (staticFile) return sendFile(res, staticFile);
 
 	return json(res, { error: "预览模式没有这个接口：" + p }, 404);
 }

@@ -504,19 +504,10 @@ if (document.readyState === "loading") {
 	initMoments();
 }
 
-// Swup 页面切换后重新加载（监听两种事件名称）
+// Swup 页面切换后重新加载。
+// 事件名必须是 swup v4 的 swup:content:replace；原来还并列注册了一份
+// swup:contentReplaced（v3 旧名），在 v4 下永远不触发，已删除。
 document.addEventListener("swup:content:replace", () => {
-	setTimeout(() => {
-		if (document.getElementById("moments-feed") && !hasExternalMoments()) {
-			fetchMoments();
-		}
-		if (document.getElementById("pinned-feed") && !hasExternalPinned()) {
-			fetchPinned();
-		}
-	}, 50);
-});
-
-document.addEventListener("swup:contentReplaced", () => {
 	setTimeout(() => {
 		if (document.getElementById("moments-feed") && !hasExternalMoments()) {
 			fetchMoments();

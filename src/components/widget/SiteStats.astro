@@ -182,7 +182,11 @@ const stats = [
   updateDynamicStats();
 
   // 页面切换时重新更新
-  document.addEventListener("swup:contentReplaced", () => {
-    setTimeout(updateDynamicStats, 100);
-  });
+  // 只挂一次：本脚本每次站内跳转都会被重跑，document 级监听器不会自动消失
+  if (!window.__wwpplSiteStatsBound) {
+    window.__wwpplSiteStatsBound = true;
+    document.addEventListener("swup:content:replace", () => {
+      setTimeout(updateDynamicStats, 100);
+    });
+  }
 </script>

@@ -225,15 +225,20 @@ const { class: className, style } = Astro.props;
   const init = () => {
     calculateProgress();
 
-    // 每天更新
+    // 每天更新。
+    // ⚠️ 本脚本是 is:inline，每次站内跳转都会整段重跑（swup 的 scripts-plugin 会把它复制重放）。
+    //    定时器句柄必须放在 window 上并"先清后设"：原先它是个隐式全局，
+    //    新的一轮只是把变量指向新定时器，**旧那条 updateDaily 链已经在跑、还会一直递归下去**，
+    //    跳 10 次就有 10 条链同时算日期。pagehide 上的 cleanup 同理，只能挂一次。
     const now = new Date();
     const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
-    dayTimer = setTimeout(function updateDaily() {
+    clearTimeout(window.__wwpplScheduleDayTimer);
+    window.__wwpplScheduleDayTimer = setTimeout(function updateDaily() {
       calculateProgress();
       const nextDay = new Date();
       nextDay.setDate(nextDay.getDate() + 1);
       nextDay.setHours(0, 0, 0, 0);
-      dayTimer = setTimeout(updateDaily, nextDay - new Date());
+      window.__wwpplScheduleDayTimer = setTimeout(updateDaily, nextDay - new Date());
     }, tomorrow - now);
   };
 
@@ -241,12 +246,9 @@ const { class: className, style } = Astro.props;
   waitForElement(init);
 
   // 清理
-  const cleanup = () => {
-    clearTimeout(dayTimer);
-  };
-
-  if (window) {
-    window.addEventListener('pagehide', cleanup);
+  if (window && !window.__wwpplScheduleCleanupBound) {
+    window.__wwpplScheduleCleanupBound = true;
+    window.addEventListener('pagehide', () => clearTimeout(window.__wwpplScheduleDayTimer));
   }
 })();
 </script>

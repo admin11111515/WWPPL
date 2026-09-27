@@ -51,17 +51,25 @@ import { i18n } from "@/i18n/translation";
     };
   }
   // ... existing initialization logic ...
-  // 页面加载完成后初始化
-  document.addEventListener("DOMContentLoaded", () => {
+  //
+  // ⚠️ 这段 is:inline 脚本每次站内跳转都会重跑一遍（swup 的 scripts-plugin 会把
+  //    inline 脚本复制重放）。原来这里有三处 new BackToTopManager()：
+  //    首屏 DOMContentLoaded 那处是无条件注册的，下面 readyState 分支还会再建一个，
+  //    于是**首屏就建了两个**，之后每跳一页再加一个，每个都往 window 上挂一个 scroll 回调。
+  //    按钮本身在 swup 的替换容器之外，节点一直是同一个，所以建一个就够一辈子。
+  //    只在真的拿到按钮时才落标记：万一脚本执行时按钮还没进文档，
+  //    留给下一次机会，不会把它永久判死。
+  function initBackToTop() {
+    if (window.__wwpplBackToTopInited) return;
+    if (!document.getElementById("back-to-top-btn")) return;
+    window.__wwpplBackToTopInited = true;
     new BackToTopManager();
-  });
+  }
 
-  // 如果页面已经加载完成，立即初始化
+  // 页面加载完成后初始化
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => {
-      new BackToTopManager();
-    });
+    document.addEventListener("DOMContentLoaded", initBackToTop);
   } else {
-    new BackToTopManager();
+    initBackToTop();
   }
 </script>

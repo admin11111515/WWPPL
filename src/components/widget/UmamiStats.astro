@@ -215,7 +215,11 @@ function initUmamiStatsVisibility() {
 
 initUmamiStatsVisibility();
 
-if (window.swup) {
+// ⚠️ 只注册一次。本脚本每次站内跳转都会被 swup 的 scripts-plugin 重跑一遍，
+//    而 swup 的钩子不会去重 —— 不设开关的话，跳 N 次就有 N 个 page:view 处理器，
+//    每换一页 initUmamiStatsVisibility() 要跑 N 遍（里面在建 IntersectionObserver）。
+if (window.swup && !window.__wwpplUmamiStatsBound) {
+    window.__wwpplUmamiStatsBound = true;
     window.swup.hooks.on('page:view', () => {
         // 只重置"本轮是否已取过数"，分享配置仍然复用，避免每次切页都多打一次接口
         __umamiStatsStarted = false;

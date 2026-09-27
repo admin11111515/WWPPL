@@ -269,8 +269,15 @@ const detailItems: {
   }
 
   updateCurrentTime();
-  setInterval(updateCurrentTime, 1000);
-  document.addEventListener("swup:contentReplaced", () => {
-    setTimeout(updateCurrentTime, 100);
-  });
+  // 定时器与换页监听都只挂一次：本脚本每次站内跳转都会被重跑，而 window/document
+  // 上的东西不会随节点消失 —— 不设开关的话每跳一次就多一个定时器 + 一个监听器。
+  if (!window.__wwpplSiteInfoTimer) {
+    window.__wwpplSiteInfoTimer = setInterval(updateCurrentTime, 1000);
+  }
+  if (!window.__wwpplSiteInfoBound) {
+    window.__wwpplSiteInfoBound = true;
+    document.addEventListener("swup:content:replace", () => {
+      setTimeout(updateCurrentTime, 100);
+    });
+  }
 </script>

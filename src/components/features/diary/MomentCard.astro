@@ -57,7 +57,7 @@ const getVideoSrc = (videoUrl: string): string => {
 			<div class="flex-shrink-0">
 				<img
 					src={avatarUrl}
-					alt="avatar"
+					alt="头像"
 					class="w-10 h-10 rounded-lg object-cover bg-gray-100 dark:bg-gray-180"
 				/>
 			</div>
@@ -182,7 +182,7 @@ const getVideoSrc = (videoUrl: string): string => {
 									>
 										<img
 											src={image}
-											alt="diary moment image"
+											alt="说说配图"
 											class="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
 											loading="lazy"
 											decoding="async"
@@ -521,150 +521,168 @@ const getVideoSrc = (videoUrl: string): string => {
 
 <script is:inline>
 	// 轮播图交互逻辑
-	const initCarousels = () => {
-		// 获取所有轮播容器
-		const carouselContainers = document.querySelectorAll('.carousel-container');
-		
-		carouselContainers.forEach((container) => {
-			const track = container.querySelector('[data-carousel-track]');
-			const prevBtn = container.querySelector('[data-carousel-prev]');
-			const nextBtn = container.querySelector('[data-carousel-next]');
-			const indicators = container.querySelectorAll('[data-carousel-indicator]');
-			const currentSpan = container.querySelector('[data-carousel-current]');
-			
-			if (!track || !prevBtn || !nextBtn) return;
-			
-			const slides = track.querySelectorAll('.carousel-slide');
-			const slideCount = slides.length;
-			let currentIndex = 0;
-			let autoPlayInterval = null;
-			
-			// 获取轮播配置（从数据属性读取）
-			const interval = 4000; // 默认4秒
-			const autoPlay = true; // 默认开启自动播放
-			
-			// 更新轮播位置
-			const updateCarousel = (index) => {
-				// 确保索引在有效范围内（无限循环）
-				if (index < 0) {
-					currentIndex = slideCount - 1;
-				} else if (index >= slideCount) {
-					currentIndex = 0;
-				} else {
-					currentIndex = index;
-				}
-				
-				// 更新轨道位置
-				const translateX = -currentIndex * 100;
-				track.style.transform = `translateX(${translateX}%)`;
-				
-				// 更新指示器
-				indicators.forEach((indicator, i) => {
-					indicator.classList.toggle('active', i === currentIndex);
-				});
-				
-				// 更新计数器
-				if (currentSpan) {
-					currentSpan.textContent = currentIndex + 1;
-				}
-			};
-			
-			// 上一张
-			const goToPrev = () => {
-				updateCarousel(currentIndex - 1);
-				resetAutoPlay();
-			};
-			
-			// 下一张
-			const goToNext = () => {
-				updateCarousel(currentIndex + 1);
-				resetAutoPlay();
-			};
-			
-			// 跳转到指定索引
-			const goToIndex = (index) => {
-				updateCarousel(index);
-				resetAutoPlay();
-			};
-			
-			// 重置自动播放定时器
-			const resetAutoPlay = () => {
-				if (autoPlayInterval) {
-					clearInterval(autoPlayInterval);
-				}
-				startAutoPlay();
-			};
-			
-			// 开始自动播放
-			const startAutoPlay = () => {
-				if (autoPlay && slideCount > 1) {
-					autoPlayInterval = setInterval(() => {
-						goToNext();
-					}, interval);
-				}
-			};
-			
-			// 暂停自动播放
-			const pauseAutoPlay = () => {
-				if (autoPlayInterval) {
-					clearInterval(autoPlayInterval);
-					autoPlayInterval = null;
-				}
-			};
-			
-			// 触摸滑动支持
-			let touchStartX = 0;
-			let touchEndX = 0;
-			const touchThreshold = 50; // 滑动阈值（像素）
-			
-			const handleTouchStart = (e) => {
-				touchStartX = e.touches[0].clientX;
-				pauseAutoPlay();
-			};
-			
-			const handleTouchMove = (e) => {
-				touchEndX = e.touches[0].clientX;
-			};
-			
-			const handleTouchEnd = () => {
-				const diff = touchStartX - touchEndX;
-				if (Math.abs(diff) > touchThreshold) {
-					if (diff > 0) {
-						goToNext();
-					} else {
-						goToPrev();
-					}
-				}
-				startAutoPlay();
-			};
-			
-			// 绑定事件
-			prevBtn.addEventListener('click', goToPrev);
-			nextBtn.addEventListener('click', goToNext);
-			
-			indicators.forEach((indicator, i) => {
-				indicator.addEventListener('click', () => goToIndex(i));
-			});
-			
-			// 鼠标悬停暂停
-			container.addEventListener('mouseenter', pauseAutoPlay);
-			container.addEventListener('mouseleave', startAutoPlay);
-			
-			// 触摸事件
-			container.addEventListener('touchstart', handleTouchStart, { passive: true });
-			container.addEventListener('touchmove', handleTouchMove, { passive: true });
-			container.addEventListener('touchend', handleTouchEnd);
-			
-			// 初始化
-			updateCarousel(0);
-			startAutoPlay();
-		});
-	};
+	//
+	// ⚠ 本组件会在列表里按条目重复渲染，而 is:inline 脚本会被**原样复制多份**。
+	//   经典脚本共享同一个全局作用域 —— 顶层 const 从第二份起会整段抛
+	//     SyntaxError: Identifier 'initCarousels' has already been declared
+	//   于是那个脚本块完全不执行。所以：包 IIFE 各自独立作用域，并用全局标记去重，
+	//   只让第一份真正挂载（否则 N 份各跑一遍，自动播放定时器会翻 N 倍）。
+	(() => {
+		if (window.__diaryCarouselReady) return;
+		window.__diaryCarouselReady = true;
 
-	// 如果 DOM 已经加载完成，立即执行初始化
-	if (document.readyState === 'loading') {
-		document.addEventListener('DOMContentLoaded', initCarousels);
-	} else {
-		initCarousels();
-	}
+		const initCarousels = () => {
+			// 获取所有轮播容器
+			const carouselContainers = document.querySelectorAll('.carousel-container');
+		
+			carouselContainers.forEach((container) => {
+				const track = container.querySelector('[data-carousel-track]');
+				const prevBtn = container.querySelector('[data-carousel-prev]');
+				const nextBtn = container.querySelector('[data-carousel-next]');
+				const indicators = container.querySelectorAll('[data-carousel-indicator]');
+				const currentSpan = container.querySelector('[data-carousel-current]');
+			
+				if (!track || !prevBtn || !nextBtn) return;
+			
+				const slides = track.querySelectorAll('.carousel-slide');
+				const slideCount = slides.length;
+				let currentIndex = 0;
+				let autoPlayInterval = null;
+			
+				// 获取轮播配置（从数据属性读取）
+				const interval = 4000; // 默认4秒
+				const autoPlay = true; // 默认开启自动播放
+			
+				// 更新轮播位置
+				const updateCarousel = (index) => {
+					// 确保索引在有效范围内（无限循环）
+					if (index < 0) {
+						currentIndex = slideCount - 1;
+					} else if (index >= slideCount) {
+						currentIndex = 0;
+					} else {
+						currentIndex = index;
+					}
+				
+					// 更新轨道位置
+					const translateX = -currentIndex * 100;
+					track.style.transform = `translateX(${translateX}%)`;
+				
+					// 更新指示器
+					indicators.forEach((indicator, i) => {
+						indicator.classList.toggle('active', i === currentIndex);
+					});
+				
+					// 更新计数器
+					if (currentSpan) {
+						currentSpan.textContent = currentIndex + 1;
+					}
+				};
+			
+				// 上一张
+				const goToPrev = () => {
+					updateCarousel(currentIndex - 1);
+					resetAutoPlay();
+				};
+			
+				// 下一张
+				const goToNext = () => {
+					updateCarousel(currentIndex + 1);
+					resetAutoPlay();
+				};
+			
+				// 跳转到指定索引
+				const goToIndex = (index) => {
+					updateCarousel(index);
+					resetAutoPlay();
+				};
+			
+				// 重置自动播放定时器
+				const resetAutoPlay = () => {
+					if (autoPlayInterval) {
+						clearInterval(autoPlayInterval);
+					}
+					startAutoPlay();
+				};
+			
+				// 开始自动播放
+				const startAutoPlay = () => {
+					if (autoPlay && slideCount > 1) {
+						autoPlayInterval = setInterval(() => {
+							goToNext();
+						}, interval);
+					}
+				};
+			
+				// 暂停自动播放
+				const pauseAutoPlay = () => {
+					if (autoPlayInterval) {
+						clearInterval(autoPlayInterval);
+						autoPlayInterval = null;
+					}
+				};
+			
+				// 触摸滑动支持
+				let touchStartX = 0;
+				let touchEndX = 0;
+				const touchThreshold = 50; // 滑动阈值（像素）
+			
+				const handleTouchStart = (e) => {
+					touchStartX = e.touches[0].clientX;
+					pauseAutoPlay();
+				};
+			
+				const handleTouchMove = (e) => {
+					touchEndX = e.touches[0].clientX;
+				};
+			
+				const handleTouchEnd = () => {
+					const diff = touchStartX - touchEndX;
+					if (Math.abs(diff) > touchThreshold) {
+						if (diff > 0) {
+							goToNext();
+						} else {
+							goToPrev();
+						}
+					}
+					startAutoPlay();
+				};
+			
+				// 绑定事件
+				prevBtn.addEventListener('click', goToPrev);
+				nextBtn.addEventListener('click', goToNext);
+			
+				indicators.forEach((indicator, i) => {
+					indicator.addEventListener('click', () => goToIndex(i));
+				});
+			
+				// 鼠标悬停暂停
+				container.addEventListener('mouseenter', pauseAutoPlay);
+				container.addEventListener('mouseleave', startAutoPlay);
+			
+				// 触摸事件
+				container.addEventListener('touchstart', handleTouchStart, { passive: true });
+				container.addEventListener('touchmove', handleTouchMove, { passive: true });
+				container.addEventListener('touchend', handleTouchEnd);
+			
+				// 初始化
+				updateCarousel(0);
+				startAutoPlay();
+			});
+		};
+
+		// 首次加载执行
+		const boot = () => {
+			if (document.readyState === 'loading') {
+				document.addEventListener('DOMContentLoaded', initCarousels);
+			} else {
+				initCarousels();
+			}
+		};
+		boot();
+
+		// swup 站内换页后重新初始化（钩子名必须是 content:replace，没有 d；
+		// 写成 content:replaced 时 swup 会报 Unknown hook，回调永不执行）
+		document.addEventListener('swup:content:replace', () => setTimeout(initCarousels, 50));
+	})();
 </script>

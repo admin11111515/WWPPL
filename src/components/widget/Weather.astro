@@ -555,9 +555,11 @@ const COLLAPSED_HEIGHT = "9rem";
 		}
 	}
 
-	/* 桌面端：折叠高度加大，避免温度范围被裁切 */
+	/* 桌面端：折叠高度加大，避免温度范围被裁切。
+	   用属性选择器而不是 #weather-widget —— 该组件在桌面侧栏与移动端底部各有一份，
+	   写 id 会产生重复 id；属性选择器同样能命中两份。 */
 	@media (min-width: 768px) {
-		:global(#weather-widget.collapsed) {
+		:global([data-widget="weather-widget"].collapsed) {
 			height: 10rem;
 		}
 	}

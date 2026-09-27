@@ -137,6 +137,7 @@ const handleInput = () => {
             </div>
             <input
                 type="text"
+                aria-label={i18n(I18nKey.search)}
                 class="block w-full p-4 pl-10 text-sm bg-transparent border border-black/10 dark:border-white/10 rounded-lg focus:ring-2 focus:ring-(--primary) focus:border-(--primary) hover:border-black/20 dark:hover:border-white/20 text-75 placeholder:opacity-50 transition-colors outline-hidden"
                 placeholder={i18n(I18nKey.search)}
                 bind:value={keyword}
@@ -158,9 +159,10 @@ const handleInput = () => {
                 {#each results as result}
                     <div class="card-base p-6 block rounded-(--radius-large)">
                         <a href={result.url} class="block group">
-                            <h5 class="mb-2 text-2xl font-bold tracking-tight text-90 group-hover:text-(--primary) transition-colors">
+                            <!-- 搜索结果标题：h2 —— 页面的 h1 是布局里的 sr-only 文档标题 -->
+                            <h2 class="mb-2 text-2xl font-bold tracking-tight text-90 group-hover:text-(--primary) transition-colors">
                                 {@html result.meta.title}
-                            </h5>
+                            </h2>
                             <p class="font-normal text-75">
                                 {@html result.excerpt}
                             </p>

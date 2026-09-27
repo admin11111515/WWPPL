@@ -482,7 +482,7 @@ function portal(node: HTMLElement) {
 <button 
   class="btn-regular rounded-lg h-12 px-6 gap-2 hover:scale-105 active:scale-95 whitespace-nowrap"
   on:click={generatePoster}
-  aria-label="Generate Share Poster"
+  aria-label="生成分享图"
 >
   <Icon icon="material-symbols:share" size="md" />
   <span>{i18n(I18nKey.shareArticle)}</span>
@@ -499,7 +499,7 @@ function portal(node: HTMLElement) {
       
       <div class="p-6 flex justify-center bg-gray-50 dark:bg-gray-900 min-h-[200px] items-center">
         {#if posterImage}
-          <img src={posterImage} alt="Poster" class="max-w-full h-auto shadow-lg rounded-lg" />
+          <img src={posterImage} alt="分享海报" class="max-w-full h-auto shadow-lg rounded-lg" />
         {:else}
            <div class="flex flex-col items-center gap-3">
              <div class="w-8 h-8 border-2 border-gray-200 rounded-full animate-spin" style="border-top-color: {themeColor}"></div>
