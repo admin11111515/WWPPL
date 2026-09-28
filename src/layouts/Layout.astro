@@ -1158,10 +1158,8 @@ function disableAnimation() {
       // 只处理katex元素的容器，使用浏览器原生滚动条
       scheduleContentOverflowEnhancements();
 
-      // 重新初始化图标加载器
-      import("@/utils/icon-loader").then(({ initIconLoader }) => {
-        initIconLoader();
-      });
+      // 重新初始化图标加载器（换页后 DOM 已经换过，重新问一遍用不用得上）
+      initIconLoaderIfNeeded();
 
       // 检查当前页面是否为文章页面（有TOC元素）
       const tocWrapper = document.getElementById("toc-wrapper");
@@ -1767,21 +1765,43 @@ function disableAnimation() {
 
   // Initialize wallpaper mode
   import { initWallpaperMode, initThemeListener } from "@/utils/setting-utils";
-  import { initIconLoader } from "@/utils/icon-loader";
+
+  /**
+   * 只有页面里真的存在 <iconify-icon> 时，才去加载那个第三方 web component。
+   *
+   * 站内图标现在几乎都是 astro-icon：构建期就内联成 <svg> 了，不需要额外脚本。
+   * 唯一例外是 /skills/ 的技术栈图标 —— 它取自 logos / devicon 两个图标集，
+   * 这两个没进 astro-icon 的打包范围，只能运行时取。
+   * 全站产物实测：只有 /skills/ 含 <iconify-icon>（29 个），其余页面一律 0 个。
+   *
+   * 所以这里不能无条件调用 initIconLoader()：那等于每个页面都白下一份
+   * code.iconify.design 上的第三方 js，还白白多一次外部请求。
+   * 改成先问一句 DOM，用不上就根本不加载。
+   *
+   * 动态 import 是故意的：静态 import 会把整个 icon-loader 打进每个页面的
+   * 初始 chunk，哪怕这个页面一个图标都不用。
+   */
+  function initIconLoaderIfNeeded() {
+    if (!document.querySelector("iconify-icon")) return;
+    import("@/utils/icon-loader").then(({ initIconLoader }) => {
+      initIconLoader();
+    });
+  }
+
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
       updateMainGridCols();
       updateSidebarComponentsVisibility();
       initWallpaperMode();
       initThemeListener();
-      initIconLoader();
+      initIconLoaderIfNeeded();
     });
   } else {
     updateMainGridCols();
     updateSidebarComponentsVisibility();
     initWallpaperMode();
     initThemeListener();
-    initIconLoader();
+    initIconLoaderIfNeeded();
   }
 
   // LQIP fade-in：图片加载完成后淡出占位渐变

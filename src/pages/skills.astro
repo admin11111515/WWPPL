@@ -71,7 +71,11 @@ const subtitle = i18n(I18nKey.skillsSubtitle);
 
 <MainGridLayout hasVisibleTitle title={title} description={subtitle}>
 	<script>
-		// import("../scripts/right-sidebar-layout.js");
+		// 全站唯一需要运行时图标组件的地方：SkillCard 里的技术栈图标取自
+		// logos / devicon 两个图标集，没进 astro-icon 的构建期打包范围。
+		// Layout 里的 initIconLoaderIfNeeded() 靠 DOM 探测也会加载它，
+		// 这里再显式写一句，是为了不把这份依赖藏起来 —— 看页面代码就知道
+		// 它依赖一个外部脚本。
 		import { loadIconify } from "../utils/icon-loader";
 
 		loadIconify().catch((error) => {

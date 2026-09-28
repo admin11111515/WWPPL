@@ -67,7 +67,9 @@ export const siteConfig: SiteConfig = {
 		logo: {
 			type: "image",
 			value: "assets/images/logo.webp",
-			alt: "🍀",
+			// alt 是给读屏和图片加载失败时用的，写清楚是什么，
+			// 不要拿 emoji 或装饰符号顶替
+			alt: "WWPPL 站标",
 		},
 		// 导航栏标题
 		title: "WWPPL",

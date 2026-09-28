@@ -158,6 +158,8 @@ const tabs = [
 </style>
 
 <script>
+	import { uiIcon } from "@/constants/ui-icons";
+
 	interface NotebookEntry {
 		id?: string;
 		notebook?: string;
@@ -282,10 +284,11 @@ const tabs = [
 		}
 	}
 
-	function showMessage(host: HTMLElement, icon: string, text: string): void {
+	/** iconName 传 material-symbols 图标名，这里换成内联 SVG 再塞进空态 */
+	function showMessage(host: HTMLElement, iconName: string, text: string): void {
 		host.innerHTML = `
 			<div class="col-span-full flex flex-col items-center justify-center gap-3 py-16 text-(--content-meta)">
-				<span class="text-5xl opacity-40">${icon}</span>
+				<span class="text-5xl opacity-40">${uiIcon(iconName)}</span>
 				<span>${escapeHtml(text)}</span>
 			</div>
 		`;
@@ -308,7 +311,7 @@ const tabs = [
 		cache = all;
 
 		if (all.length === 0) {
-			showMessage(host, "📭", "笔记本里还没有内容");
+			showMessage(host, "material-symbols:inbox", "笔记本里还没有内容");
 			return;
 		}
 		host.innerHTML = all.map(renderCard).join("");
@@ -351,7 +354,7 @@ const tabs = [
 		}
 
 		loadAll(host, gists).catch(() => {
-			showMessage(host, "⚠️", "笔记读取失败，请检查网络后刷新重试");
+			showMessage(host, "material-symbols:warning", "笔记读取失败，请检查网络后刷新重试");
 		});
 	}
 

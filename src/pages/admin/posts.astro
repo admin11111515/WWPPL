@@ -5,6 +5,8 @@ import AdminTheme from "@/components/admin/AdminTheme.astro";
 import AdminTopBar from "@/components/admin/AdminTopBar.astro";
 import { adminBodyClass, adminHtmlClass } from "@/components/admin/adminShell";
 import { externalPostsConfig } from "@/config/externalPostsConfig";
+// 后台不走博客 Layout，也就没有 iconify 运行时，图标用构建期内联的 SVG
+import { uiIcon } from "@/constants/ui-icons";
 
 const postsConfig = JSON.stringify(externalPostsConfig);
 ---
@@ -123,7 +125,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
   <div class="container">
     {/* 上次没有保存就离开时，把本地留存的草稿提示出来 */}
     <div class="restore-bar hidden" id="restore-bar">
-      <span class="restore-icon">🕘</span>
+      <span class="restore-icon" set:html={uiIcon("material-symbols:history")} />
       <span class="restore-text" id="restore-text"></span>
       <div class="restore-actions">
         <button class="btn btn-sm" onclick="restoreDraft()">恢复</button>
@@ -135,7 +137,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       <!-- ===== 左：文章列表 ===== -->
       <aside class="card post-list-card">
         <div class="list-header">
-          <div class="field-label" style="margin:0"><span class="icon">📋</span> 已有文章</div>
+          <div class="field-label" style="margin:0"><span class="icon" set:html={uiIcon("material-symbols:article")} /> 已有文章</div>
           <span class="count" id="list-count"></span>
         </div>
         <button class="btn" onclick="startNewPost()" style="width:100%;margin-bottom:0.75rem;">＋ 新建文章</button>
@@ -157,7 +159,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       <main class="card editor-card" id="editor-card">
         <div class="editor-body">
           <div class="editor-head">
-            <div class="field-label"><span class="icon">✍️</span> <span id="editor-title">写文章</span></div>
+            <div class="field-label"><span class="icon" set:html={uiIcon("material-symbols:edit-note")} /> <span id="editor-title">写文章</span></div>
           </div>
 
           <div class="form-grid">
@@ -227,14 +229,14 @@ const postsConfig = JSON.stringify(externalPostsConfig);
                     <button type="button" class="toolbar-btn" onclick="insertMd('**','**')" title="加粗（Ctrl+B）"><b>B</b></button>
                     <button type="button" class="toolbar-btn" onclick="insertMd('*','*')" title="斜体（Ctrl+I）"><i>I</i></button>
                     <button type="button" class="toolbar-btn" onclick="insertMd('`','`')" title="行内代码">&lt;&gt;</button>
-                    <button type="button" class="toolbar-btn" onclick="insertMd('```\n','\n```')" title="代码块">{ }</button>
-                    <button type="button" class="toolbar-btn" onclick="insertMd('[','](url)','链接文字')" title="链接（Ctrl+K）">🔗</button>
-                    <button type="button" class="toolbar-btn" id="body-upload-btn" onclick="pickBodyImage()" title="上传图片">🖼</button>
-                    <button type="button" class="toolbar-btn" onclick="insertBlock('> 引用')" title="引用">❝</button>
-                    <button type="button" class="toolbar-btn" onclick="insertBlock('- 列表项')" title="无序列表">≡</button>
+                    <button type="button" class="toolbar-btn" onclick="insertMd('```\n','\n```')" title="代码块" set:html={uiIcon("material-symbols:code-blocks")} />
+                    <button type="button" class="toolbar-btn" onclick="insertMd('[','](url)','链接文字')" title="链接（Ctrl+K）" set:html={uiIcon("material-symbols:link")} />
+                    <button type="button" class="toolbar-btn" id="body-upload-btn" onclick="pickBodyImage()" title="上传图片" set:html={uiIcon("material-symbols:image")} />
+                    <button type="button" class="toolbar-btn" onclick="insertBlock('> 引用')" title="引用" set:html={uiIcon("material-symbols:format-quote")} />
+                    <button type="button" class="toolbar-btn" onclick="insertBlock('- 列表项')" title="无序列表" set:html={uiIcon("material-symbols:format-list-bulleted")} />
                     <button type="button" class="toolbar-btn" onclick="insertBlock('1. 列表项')" title="有序列表">1.</button>
-                    <button type="button" class="toolbar-btn" onclick="insertBlock('- [ ] 待办')" title="待办列表">☑</button>
-                    <button type="button" class="toolbar-btn" onclick="insertBlock('| 列 1 | 列 2 |\n| --- | --- |\n| 内容 | 内容 |')" title="表格">▦</button>
+                    <button type="button" class="toolbar-btn" onclick="insertBlock('- [ ] 待办')" title="待办列表" set:html={uiIcon("material-symbols:checklist")} />
+                    <button type="button" class="toolbar-btn" onclick="insertBlock('| 列 1 | 列 2 |\n| --- | --- |\n| 内容 | 内容 |')" title="表格" set:html={uiIcon("material-symbols:table")} />
                     <button type="button" class="toolbar-btn" onclick="insertBlock('---')" title="分割线">—</button>
                   </div>
                 </div>
@@ -282,9 +284,15 @@ const postsConfig = JSON.stringify(externalPostsConfig);
 
   <script is:inline src="/js/editor-commons.js"></script>
   <script is:inline src="/js/admin-github.js"></script>
-  <script is:inline data-config={postsConfig}>
+  <script is:inline data-config={postsConfig}
+    data-icons={JSON.stringify({
+      note: uiIcon("material-symbols:note"),
+      filterOff: uiIcon("material-symbols:filter-list-off"),
+    })}>
     var _script = document.currentScript;
     var CONFIG = JSON.parse(_script.getAttribute("data-config") || "{}");
+    // 图标走属性传进来：SVG 字符串里有引号，直接写进脚本正文会打架
+    var ICONS = JSON.parse(_script.getAttribute("data-icons") || "{}");
     var posts = [];
     var editingPath = "";
     var editingSha = "";
@@ -460,11 +468,11 @@ const postsConfig = JSON.stringify(externalPostsConfig);
         ? posts.length + " 篇"
         : shown.length + " / " + posts.length + " 篇";
       if (!posts.length) {
-        $("post-list").innerHTML = '<div class="empty-state"><div class="icon">📝</div><p>还没有文章，点「新建文章」开始</p></div>';
+        $("post-list").innerHTML = '<div class="empty-state"><div class="icon">' + ICONS.note + '</div><p>还没有文章，点「新建文章」开始</p></div>';
         return;
       }
       if (!shown.length) {
-        $("post-list").innerHTML = '<div class="empty-state"><div class="icon">🔍</div><p>没有符合条件的文章</p></div>';
+        $("post-list").innerHTML = '<div class="empty-state"><div class="icon">' + ICONS.filterOff + '</div><p>没有符合条件的文章</p></div>';
         return;
       }
       $("post-list").innerHTML = "";

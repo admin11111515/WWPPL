@@ -1,11 +1,11 @@
 import type { AnnouncementConfig } from "../types/announcementConfig";
 
 export const announcementConfig: AnnouncementConfig = {
-	// 公告标题
-	title: "📢 欢迎来访者",
+	// 公告标题（图标由 Announcement 组件补，这里只写文字）
+	title: "欢迎来访者",
 
-	// 公告内容
-	content: "👋🏻 Hi，欢迎来到 WWPPL 的博客！",
+	// 公告内容（开头的挥手图标同样由 Announcement 组件补，理由见上面的 title）
+	content: "Hi，欢迎来到 WWPPL 的博客！",
 
 	// 是否允许用户关闭公告
 	// 2026-09-27 起为 true：原来只有一句常驻欢迎语，关不掉；现在可关，

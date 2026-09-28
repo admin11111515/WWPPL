@@ -268,6 +268,8 @@ const description = "查看笔记全文";
 </style>
 
 <script>
+	import { uiIcon } from "@/constants/ui-icons";
+
 	const ENTRY_LIST_PAGE = "/life/notebooks/";
 	// 渲染库优先用站内副本：它本来就在产物里，跟着页面一起分发，
 	// 不依赖第三方 CDN（国内访问 jsdelivr 经常超时）；取不到再退回 CDN。
@@ -302,10 +304,11 @@ const description = "查看笔记全文";
 			.replace(/"/g, "&quot;");
 	}
 
-	function renderState(host: HTMLElement, icon: string, text: string, extra = ""): void {
+	/** iconName 传 material-symbols 图标名，这里换成内联 SVG 再塞进提示块 */
+	function renderState(host: HTMLElement, iconName: string, text: string, extra = ""): void {
 		host.innerHTML = `
 			<div class="notebook-state">
-				<span class="notebook-state-icon" aria-hidden="true">${icon}</span>
+				<span class="notebook-state-icon" aria-hidden="true">${uiIcon(iconName)}</span>
 				<p>${escapeHtml(text)}</p>
 				${extra}
 			</div>
@@ -416,7 +419,7 @@ const description = "查看笔记全文";
 		if (!notebook || !id) {
 			renderState(
 				host,
-				"🧭",
+				"material-symbols:explore",
 				"没有指定要看的笔记，请从列表进入",
 				`<a class="notebook-back" href="${ENTRY_LIST_PAGE}">去笔记列表</a>`,
 			);
@@ -428,7 +431,7 @@ const description = "查看笔记全文";
 		if (!gistId) {
 			renderState(
 				host,
-				"⚠️",
+				"material-symbols:warning",
 				`没有找到名为「${notebook}」的笔记本`,
 				`<a class="notebook-back" href="${ENTRY_LIST_PAGE}">去笔记列表</a>`,
 			);
@@ -447,8 +450,8 @@ const description = "查看笔记全文";
 			if (!entry) {
 				renderState(
 					host,
-					"🔍",
-					"这篇笔记不存在，可能已经被删除",
+				"material-symbols:search",
+				"这篇笔记不存在，可能已经被删除",
 					`<a class="notebook-back" href="${ENTRY_LIST_PAGE}">去笔记列表</a>`,
 				);
 				host.dataset.rendered = "1";
@@ -460,7 +463,7 @@ const description = "查看笔记全文";
 			const reason = error instanceof Error ? error.message : "未知原因";
 			renderState(
 				host,
-				"⚠️",
+				"material-symbols:warning",
 				`笔记读取失败：${reason}`,
 				`<a class="notebook-back" href="${ENTRY_LIST_PAGE}">去笔记列表</a>`,
 			);

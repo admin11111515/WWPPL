@@ -20,24 +20,27 @@ export const externalNotebooksConfig = {
 
 	// 笔记模板（Admin 页面快速选择）
 	// {name} 会被替换为今天的日期，如 2026-06-11
+	// icon 写图标名（material-symbols:xxx），后台会把它换成内联 SVG 渲染；
+	// 取不到的名字会原样显示，所以填 emoji 也能用，只是不推荐。
+	// title / content 是写进笔记正文的文字，照原样保留，不在图标化的范围内。
 	templates: [
 		{
 			id: "daily",
-			icon: "📅",
+			icon: "material-symbols:calendar-today",
 			name: "每日总结",
 			title: "{name} 每日总结",
 			content: "✅️今天做了：  \n🤔今日感悟：  \n⏰明天计划：",
 		},
 		{
 			id: "diary",
-			icon: "📖",
+			icon: "material-symbols:menu-book",
 			name: "日记",
 			title: "{name}",
 			content: "## 天气\n\n## 今天发生了什么\n\n## 心情\n\n## 想说的话\n\n",
 		},
 		{
 			id: "reading",
-			icon: "📚",
+			icon: "material-symbols:auto-stories",
 			name: "读书笔记",
 			title: "",
 			content:
@@ -45,14 +48,14 @@ export const externalNotebooksConfig = {
 		},
 		{
 			id: "idea",
-			icon: "💡",
+			icon: "material-symbols:lightbulb",
 			name: "灵感",
 			title: "💡 {name} 灵感",
 			content: "## 灵感来源\n\n## 具体想法\n\n## 下一步行动\n\n- [ ] \n",
 		},
 		{
 			id: "todo",
-			icon: "✅",
+			icon: "material-symbols:checklist",
 			name: "待办",
 			title: "📋 {name} 待办",
 			content:
@@ -60,13 +63,14 @@ export const externalNotebooksConfig = {
 		},
 		{
 			id: "free",
-			icon: "📝",
+			icon: "material-symbols:note",
 			name: "空白",
 			title: "",
 			content: "",
 		},
 	] as Array<{
 		id: string;
+		/** material-symbols 图标名（后台渲染成内联 SVG） */
 		icon: string;
 		name: string;
 		title: string;

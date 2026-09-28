@@ -5,9 +5,21 @@ import AdminTheme from "@/components/admin/AdminTheme.astro";
 import AdminTopBar from "@/components/admin/AdminTopBar.astro";
 import { adminBodyClass, adminHtmlClass } from "@/components/admin/adminShell";
 import { externalNotebooksConfig } from "@/config/externalNotebooksConfig";
+// 后台不走博客 Layout，也就没有 iconify 运行时，图标用构建期内联的 SVG
+import { uiIcon } from "@/constants/ui-icons";
 
 // 从配置读取笔记本列表
 const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
+
+// 模板按钮的图标也在这里换成内联 SVG：
+// 配置里的 icon 现在写的是图标名（material-symbols:xxx），
+// 万一有人填了取不到的名字，就退回原值，按钮至少还有东西显示。
+const templatesForAdmin = (externalNotebooksConfig.templates || []).map(
+	(t) => ({
+		...t,
+		svg: uiIcon(t.icon) || t.icon,
+	}),
+);
 ---
 
 <html lang="zh-CN" class={adminHtmlClass}>
@@ -122,7 +134,7 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
 
       {/* 上次没有保存就离开时，把本地留存的草稿提示出来 */}
       <div class="restore-bar hidden" id="restore-bar">
-        <span class="restore-icon">🕘</span>
+        <span class="restore-icon" set:html={uiIcon("material-symbols:history")} />
         <span class="restore-text" id="restore-text"></span>
         <div class="restore-actions">
           <button class="btn btn-sm" onclick="restoreDraft()">恢复</button>
@@ -133,25 +145,25 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
 
       <!-- 选择笔记本 -->
       <div class="card">
-        <div class="field-label"><span class="icon">📓</span> 选择笔记本</div>
+        <div class="field-label"><span class="icon" set:html={uiIcon("material-symbols:menu-book")} /> 选择笔记本</div>
         <div class="notebook-tabs" id="notebook-tabs">
           {notebookList.map((name) => {
             const hasGist = externalNotebooksConfig.notebookGists?.[name];
             return (
               <button class="notebook-tab" data-notebook={name}>
-                {hasGist ? "✅ " : "⚠️ "}{name}
+                <span class="admin-i" set:html={uiIcon(hasGist ? "material-symbols:check-circle" : "material-symbols:warning")} />{name}
               </button>
             );
           })}
         </div>
         <div style="margin-top:0.5rem;font-size:0.75rem;color:var(--text-3);">
-          ⚠️ = 未配置 Gist（首次保存自动创建，需手动填回配置） ✅ = 已配置
+          <span class="admin-i" set:html={uiIcon("material-symbols:warning")} /> = 未配置 Gist（首次保存自动创建，需手动填回配置） <span class="admin-i" set:html={uiIcon("material-symbols:check-circle")} /> = 已配置
         </div>
       </div>
 
       <!-- 写笔记 -->
       <div class="card" id="editor-card">
-        <div class="field-label"><span class="icon">✍️</span> 写笔记 → <strong id="target-notebook" style="margin-left:0.25rem;">未选择</strong></div>
+        <div class="field-label"><span class="icon" set:html={uiIcon("material-symbols:edit-note")} /> 写笔记 → <strong id="target-notebook" style="margin-left:0.25rem;">未选择</strong></div>
         <div class="field">
           <div class="field-label">快速模板</div>
           <div id="template-buttons" style="display:flex;gap:0.375rem;flex-wrap:wrap;"></div>
@@ -174,11 +186,11 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
                   <button class="toolbar-btn" onclick="insertMd('**','**')" title="加粗">B</button>
                   <button class="toolbar-btn" onclick="insertMd('*','*')" title="斜体">I</button>
                   <button class="toolbar-btn" onclick="insertMd('`','`')" title="行内代码">&lt;&gt;</button>
-                  <button class="toolbar-btn" onclick="insertMd('\n```\n','\n```\n')" title="代码块">{}</button>
-                  <button class="toolbar-btn" onclick="insertMd('[','](url)')" title="链接">🔗</button>
-                  <button class="toolbar-btn" onclick="insertMd('![','](url)')" title="图片">🖼</button>
-                  <button class="toolbar-btn" onclick="insertMd('> ','')" title="引用">❝</button>
-                  <button class="toolbar-btn" onclick="insertMd('- ','')" title="列表">☰</button>
+                  <button class="toolbar-btn" onclick="insertMd('\n```\n','\n```\n')" title="代码块" set:html={uiIcon("material-symbols:code-blocks")} />
+                  <button class="toolbar-btn" onclick="insertMd('[','](url)')" title="链接" set:html={uiIcon("material-symbols:link")} />
+                  <button class="toolbar-btn" onclick="insertMd('![','](url)')" title="图片" set:html={uiIcon("material-symbols:image")} />
+                  <button class="toolbar-btn" onclick="insertMd('> ','')" title="引用" set:html={uiIcon("material-symbols:format-quote")} />
+                  <button class="toolbar-btn" onclick="insertMd('- ','')" title="列表" set:html={uiIcon("material-symbols:format-list-bulleted")} />
                 </div>
               </div>
               <textarea class="editor-textarea" id="content-input" placeholder="用 Markdown 写下你的笔记..."></textarea>
@@ -207,7 +219,7 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
       <!-- 已有笔记 -->
       <div class="card">
         <div class="list-header">
-          <div class="field-label" style="margin:0"><span class="icon">📋</span> <span id="list-title">已有笔记</span></div>
+          <div class="field-label" style="margin:0"><span class="icon" set:html={uiIcon("material-symbols:article")} /> <span id="list-title">已有笔记</span></div>
           <span class="count" id="list-count"></span>
         </div>
         <div id="entries-list">
@@ -226,10 +238,17 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
   <script is:inline src="/js/admin-github.js"></script>
   <script is:inline
     data-gists={JSON.stringify(externalNotebooksConfig.notebookGists || {})}
-    data-templates={JSON.stringify(externalNotebooksConfig.templates || [])}>
+    data-templates={JSON.stringify(templatesForAdmin)}
+    data-icons={JSON.stringify({
+      warning: uiIcon("material-symbols:warning"),
+      check: uiIcon("material-symbols:check-circle"),
+      note: uiIcon("material-symbols:note"),
+    })}>
     var _script = document.currentScript;
     var NOTEBOOK_GISTS = JSON.parse(_script.getAttribute("data-gists") || "{}");
     var TEMPLATES = JSON.parse(_script.getAttribute("data-templates") || "[]");
+    // 图标走属性传进来：SVG 字符串里有引号，直接写进脚本正文会打架
+    var ICONS = JSON.parse(_script.getAttribute("data-icons") || "{}");
     var FILE_NAME = "notebooks-entries.json";
 
     var currentNotebook = "";
@@ -303,7 +322,7 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
       if (!currentNotebook) return;
       var gistId = NOTEBOOK_GISTS[currentNotebook];
       if (!gistId) {
-        $("entries-list").innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>该笔记本未配置 Gist<br><span style="font-size:0.75rem;">首次保存时自动创建</span></p></div>';
+        $("entries-list").innerHTML = '<div class="empty-state"><div class="icon">' + ICONS.warning + '</div><p>该笔记本未配置 Gist<br><span style="font-size:0.75rem;">首次保存时自动创建</span></p></div>';
         $("list-count").textContent = "";
         return;
       }
@@ -331,7 +350,7 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
       $("list-count").textContent = filtered.length + " 篇";
 
       if (!filtered.length) {
-        list.innerHTML = '<div class="empty-state"><div class="icon">📝</div><p>该笔记本还没有远程笔记</p></div>';
+        list.innerHTML = '<div class="empty-state"><div class="icon">' + ICONS.note + '</div><p>该笔记本还没有远程笔记</p></div>';
         return;
       }
 
@@ -362,7 +381,7 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
       TEMPLATES.forEach(function(tpl) {
         var btn = document.createElement("button");
         btn.className = "btn btn-sm";
-        btn.textContent = tpl.icon + " " + tpl.name;
+        btn.innerHTML = tpl.svg + " " + tpl.name;
         btn.onclick = function() { applyTemplate(tpl); };
         container.appendChild(btn);
       });
@@ -528,7 +547,7 @@ const notebookList = Object.keys(externalNotebooksConfig.notebookGists).sort();
               // 更新标签状态
               tabs.forEach(function(t) {
                 if (t.getAttribute("data-notebook") === currentNotebook) {
-                  t.textContent = "✅ " + currentNotebook;
+                  t.innerHTML = ICONS.check + currentNotebook;
                 }
               });
             } else {

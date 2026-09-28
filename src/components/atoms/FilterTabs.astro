@@ -67,7 +67,10 @@ const {
 		white-space: nowrap;
 	}
 
-	.filter-tabs-item iconify-icon {
+	/* 图标用 astro-icon 渲染成内联 <svg>，所以选择器要写 svg。
+	   原来写的是 iconify-icon（那个 web component 的老写法），迁移到 astro-icon
+	   之后就一直匹配不到 —— 图标既没有 0.7 的默认透明度，hover/选中也不会变实心。 */
+	.filter-tabs-item svg {
 		flex-shrink: 0;
 		opacity: 0.7;
 		transition: opacity 0.2s ease;
@@ -78,7 +81,7 @@ const {
 		border-color: var(--primary);
 	}
 
-	.filter-tabs-item:hover:not(.active) iconify-icon {
+	.filter-tabs-item:hover:not(.active) svg {
 		opacity: 1;
 	}
 
@@ -88,7 +91,7 @@ const {
 		border-color: var(--primary);
 	}
 
-	.filter-tabs-item.active iconify-icon {
+	.filter-tabs-item.active svg {
 		opacity: 1;
 	}
 

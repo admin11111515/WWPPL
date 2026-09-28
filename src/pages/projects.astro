@@ -73,12 +73,12 @@ const hasProjects = projectsData.length > 0;
 ---
 
 <MainGridLayout hasVisibleTitle title={title} description={subtitle}>
-	<script>
-		import { initIconLoader } from "../utils/icon-loader";
-
-		initIconLoader();
-	</script>
-
+	{/*
+		这里原来有一句 initIconLoader()，是白写的：本页一个 <iconify-icon> 都没有
+		（筛选栏的图标走 astro-icon，构建期就内联成 <svg> 了），
+		而 Layout 里的 initIconLoaderIfNeeded() 已经会在真用得上时兜底。
+		留着的唯一效果是让每个访客白下一次第三方脚本，所以删掉。
+	*/}
 	<script is:inline src="/js/filter-tabs-handler.js"></script>
 
 	<div

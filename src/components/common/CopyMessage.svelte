@@ -1,6 +1,7 @@
 <!-- 复制内容提示组件 -->
 <script lang="ts">
 import { onMount } from "svelte";
+import Icon from "@/components/common/Icon.svelte";
 
 const SHOW_DURATION = 3000;
 let isVisible = $state(false);
@@ -44,7 +45,7 @@ onMount(() => {
 		<div class="progress-bar" class:active={isVisible}></div>
 	</div>
 	<div class="message-content">
-		<span class="text">✨️ 复制成功，转载请标注本文地址</span>
+		<span class="text"><Icon icon="material-symbols:check" class="align-middle mr-1" />复制成功，转载请标注本文地址</span>
 	</div>
 </div>
 

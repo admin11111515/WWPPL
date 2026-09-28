@@ -13,7 +13,62 @@ import { getIconData, iconToSVG, iconToHTML, replaceIDs } from "@iconify/utils";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = join(__dirname, "..");
 const SRC_DIR = join(ROOT_DIR, "src");
+// ① 扫描 .svelte 得到的图标 → Svelte 组件用（common/Icon.svelte）
 const OUTPUT_FILE = join(SRC_DIR, "constants", "icons.ts");
+// ② 显式清单得到的图标 → 不走博客 Layout 的独立页面（后台）与其它免 CDN 场景
+const UI_OUTPUT_FILE = join(SRC_DIR, "constants", "ui-icons.ts");
+
+/**
+ * 显式图标清单
+ *
+ * 为什么不靠扫描？后台页面（src/pages/admin/*）是独立 HTML：不 import
+ * common/Icon.svelte，也不加载 iconify 运行时，所以只能吃构建期内联的 SVG。
+ * 而 icons.ts 是给 Svelte 用的，让后台 import 它会把 Svelte 那套图标一起拖进去。
+ *
+ * 名字写错会直接让脚本报错退出 —— 显式清单不允许静默少一个图标。
+ * 命名统一用 material-symbols，与前台主导图标集保持一致。
+ */
+const EXPLICIT_ICONS = [
+	// 后台四个入口 / 内容种类
+	"material-symbols:edit-note", // 写文章、写作
+	"material-symbols:menu-book", // 笔记本、书籍
+	"material-symbols:chat-bubble", // 说说
+	"material-symbols:photo-library", // 图库、图片集
+	// 字段标签
+	"material-symbols:notes", // 内容
+	"material-symbols:image-outline", // 图片（带外框，用于字段标签）
+	"material-symbols:sell", // 标签
+	"material-symbols:location-on", // 位置
+	"material-symbols:my-location", // 获取当前位置
+	"material-symbols:schedule", // 发布时间
+	"material-symbols:push-pin", // 置顶
+	"material-symbols:article", // 已发布 / 已有条目
+	"material-symbols:history", // 草稿恢复
+	// 编辑器工具栏
+	"material-symbols:link", // 链接
+	"material-symbols:image", // 插入图片
+	"material-symbols:format-quote", // 引用
+	"material-symbols:format-list-bulleted", // 无序列表
+	"material-symbols:checklist", // 待办列表
+	"material-symbols:table", // 表格
+	"material-symbols:code-blocks", // 代码块
+	"material-symbols:playlist-add", // 批量添加
+	// 状态
+	"material-symbols:check-circle", // 已配置
+	"material-symbols:warning", // 待配置 / 读取失败
+	"material-symbols:progress-activity", // 进行中
+	"material-symbols:inbox", // 空列表
+	"material-symbols:note", // 空笔记 / 空文章
+	"material-symbols:search", // 找不到
+	"material-symbols:filter-list-off", // 无匹配结果
+	// 笔记模板
+	"material-symbols:calendar-today", // 每日总结
+	"material-symbols:lightbulb", // 灵感
+	"material-symbols:auto-stories", // 读书笔记
+	"material-symbols:explore", // 没指定笔记时的提示
+	// 后台首页
+	"material-symbols:waving-hand", // 欢迎回来
+];
 
 // 支持的图标集及其包名
 const ICON_SETS = {
@@ -197,6 +252,51 @@ export default iconSvgData;
 }
 
 /**
+ * 生成 ui-icons.ts（显式清单专用）
+ */
+function generateUiIconsFile(iconsMap) {
+	const iconEntries = Array.from(iconsMap.entries())
+		.sort(([a], [b]) => a.localeCompare(b))
+		.map(([name, svg]) => `\t"${name}":\n\t\t'${svg.replace(/'/g, "\\'")}'`)
+		.join(",\n");
+
+	return `/**
+ * 自动生成的图标数据文件（显式清单）
+ * 由 scripts/generate-icons.js 生成，请勿手动编辑
+ *
+ * 与 icons.ts 的分工：icons.ts 是「扫描 .svelte 得到」的，供 Svelte 组件用；
+ * 本文件是「显式声明」的，给不走博客 Layout、不加载 iconify 运行时的独立页面
+ * （后台 /admin/*）用。要增删图标，改 scripts/generate-icons.js 的 EXPLICIT_ICONS。
+ */
+
+const uiIconSvgData: Record<string, string> = {
+${iconEntries}
+};
+
+/**
+ * 按 iconify 图标名取内联 SVG
+ * @param iconName 如 "material-symbols:edit-note"
+ * @returns SVG HTML 字符串；名字不存在时返回空串
+ */
+export function uiIcon(iconName: string): string {
+	return uiIconSvgData[iconName] || "";
+}
+
+/** 图标是否可用 */
+export function hasUiIcon(iconName: string): boolean {
+	return iconName in uiIconSvgData;
+}
+
+/** 全部可用图标名 */
+export function getUiIconNames(): string[] {
+	return Object.keys(uiIconSvgData);
+}
+
+export default uiIconSvgData;
+`;
+}
+
+/**
  * 主函数
  */
 async function main() {
@@ -264,6 +364,36 @@ async function main() {
 
 	console.log(`\n📝 已生成: ${OUTPUT_FILE}`);
 	console.log(`📦 文件大小: ${(Buffer.byteLength(output, "utf-8") / 1024).toFixed(2)} KB\n`);
+
+	// ── 显式清单（后台等独立页面用）─────────────────────────────
+	const uiMap = new Map();
+	const missing = [];
+
+	for (const iconName of EXPLICIT_ICONS) {
+		const svg = await getIconSvg(iconName);
+		if (svg) {
+			uiMap.set(iconName, svg);
+		} else {
+			missing.push(iconName);
+		}
+	}
+
+	// 显式清单写错名字要立刻失败，不能静默少一个图标
+	if (missing.length) {
+		console.error(`❌ 显式清单里有 ${missing.length} 个图标取不到：`);
+		for (const m of missing) {
+			console.error(`   ${m}`);
+		}
+		process.exit(1);
+	}
+
+	const uiOutput = generateUiIconsFile(uiMap);
+	writeFileSync(UI_OUTPUT_FILE, uiOutput, "utf-8");
+
+	console.log(`📝 已生成: ${UI_OUTPUT_FILE}`);
+	console.log(
+		`📦 文件大小: ${(Buffer.byteLength(uiOutput, "utf-8") / 1024).toFixed(2)} KB（${uiMap.size} 个图标）\n`,
+	);
 }
 
 main().catch(console.error);

@@ -26,10 +26,21 @@ const showTitle = widgetConfig?.showTitle !== false;
   class={className}
   style={style}
 >
+  {/* 标题图标走 WidgetLayout 的 title-icon 插槽，不写进 config.title —— 
+      那样配置里就得塞 emoji，改文案时还要小心别把它删掉 */}
+  <Icon slot="title-icon" name="material-symbols:campaign" class="text-lg" />
   <div>
     <!-- 公告栏内容 -->
-    <div class="text-neutral-600 dark:text-neutral-300 leading-relaxed mb-3">
-      {config.content}
+    <!-- 开头原来是个 👋🏻 写在 config.content 里。挪出来换成图标，理由和标题一样：
+         配置里只留能读的文字，图标归组件管。 -->
+    <div
+      class="text-neutral-600 dark:text-neutral-300 leading-relaxed mb-3 flex items-start gap-1.5"
+    >
+      <Icon
+        name="material-symbols:waving-hand"
+        class="text-lg shrink-0 leading-relaxed"
+      />
+      <span>{config.content}</span>
     </div>
 
     <!-- 可选链接和关闭按钮 -->
