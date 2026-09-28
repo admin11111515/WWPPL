@@ -47,7 +47,6 @@ export const notes = [
           </div>
           <div>
             <h2 class="text-lg font-bold">{site.name}</h2>
-            <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{site.desc}</p>
           </div>
         </div>
 
@@ -64,7 +63,6 @@ export const notes = [
           </button>
           {[
             { label: "站点名称", value: site.name },
-            { label: "站点描述", value: site.desc },
             { label: "站点链接", value: site.url },
             { label: "头像链接", value: site.avatar },
           ].map((item) => (

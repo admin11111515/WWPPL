@@ -922,6 +922,9 @@ const showMini = musicPlayerConfig.showMiniPlayer ?? false;
 
             if (batch.length === 0) return;
 
+            // 列表项的歌曲名用 div 而不是标题标签（页面结构里的标题归文章管）。
+            // 这句说明只能写成 JS 注释：模板字符串里的每个字符都会进 DOM，
+            // 写成 {/* *\/} 会原样显示在播放列表里（2026-09-28 修）。
             const renderItem = (song, index) => `
                 <li class="playlist-item group flex items-center gap-3 p-3 rounded-2xl hover:bg-black/5 dark:hover:bg-white/5 border border-transparent transition-all cursor-pointer ${index === this.currentIndex ? 'active border-gray-300 dark:border-gray-600 bg-black/5 dark:bg-white/5' : ''}" data-index="${index}" data-search="${(song.title || '').replace(/"/g, '&quot;')} ${(song.artist || '').replace(/"/g, '&quot;')} ${(song.duration || '').replace(/"/g, '&quot;')}">
                     <span class="font-mono text-gray-500 dark:text-gray-400 text-sm font-bold w-6 text-center group-hover:text-gray-100 dark:text-white transition-colors">${String(index + 1).padStart(2, '0')}</span>
@@ -936,7 +939,6 @@ const showMini = musicPlayerConfig.showMiniPlayer ?? false;
                         </div>
                     </div>
                     <div class="flex-1 min-w-0 flex flex-col justify-center gap-1">
-                        {/* 歌曲名：列表项标签，不是标题 */}
                         <div class="font-bold text-gray-700 dark:text-gray-300 truncate text-sm leading-none">${song.title || 'Unknown'}</div>
                         <p class="text-[11px] text-gray-500 dark:text-gray-400 truncate uppercase tracking-wider">${song.artist || ''}</p>
                     </div>
