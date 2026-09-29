@@ -368,7 +368,25 @@ async function generatePoster() {
 			ctx.closePath();
 			ctx.clip();
 
-			ctx.drawImage(avatarImg, avatarX, footerY, avatarSize, avatarSize);
+			// 头像先按「居中裁成正方形」再画。
+			// drawImage 的五参形式是「把整张源图缩放着塞进目标方框」——
+			// 头像不是正方形时就会被横向拉宽（站长的 412×512 会被拉宽约 24%），
+			// 脸上看着就是胖了一圈。九参形式先取源图里的中心正方形区域，
+			// 效果跟页面上的 object-cover 一致。
+			const sw = avatarImg.naturalWidth || avatarImg.width;
+			const sh = avatarImg.naturalHeight || avatarImg.height;
+			const side = Math.min(sw, sh);
+			ctx.drawImage(
+				avatarImg,
+				(sw - side) / 2,
+				(sh - side) / 2,
+				side,
+				side,
+				avatarX,
+				footerY,
+				avatarSize,
+				avatarSize,
+			);
 			ctx.restore();
 
 			// Border for avatar

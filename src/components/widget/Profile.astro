@@ -21,10 +21,17 @@ import { url } from "@/utils/url-utils";
         class="transition opacity-0 scale-90 group-hover:scale-100 group-hover:opacity-100 text-white text-5xl"
       />
     </div>
+    {/* aspect-square 是这里的重点：头像必须是正方形。
+        原来写的是 h-full，但父元素 <a> 没有固定高度，height:100% 会解析成 auto，
+        于是高度完全由图片自己的比例决定 —— 传一张 412×512 的竖图，
+        这里就渲染成 254×316 的竖长方形。
+        改成 width:100% + aspect-ratio:1/1：宽度跟着卡片走，高度由宽度定死。
+        ImageWrapper 里的图片本来就是 object-cover，所以多出来的部分是从中间裁掉，
+        不是拉伸变形；换任何比例的头像都不会再走样。 */}
     <ImageWrapper
       src={profileConfig.avatar || ""}
       alt="站长头像"
-      class="mx-auto lg:w-full h-full lg:mt-0"
+      class="mx-auto w-full aspect-square lg:mt-0"
       loading="eager"
       fetchpriority="high"
       widths={[350]}
