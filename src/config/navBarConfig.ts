@@ -20,7 +20,7 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 	links.push({
 		name: "文章",
 		url: "#",
-		icon: "fluent-color:document-text-24",
+		icon: "material-symbols:article",
 		children: [
 			// 归档
 			LinkPresets.Archive,
@@ -61,7 +61,7 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 	links.push({
 		name: "兴趣",
 		url: "#",
-		icon: "fluent-color:person-24",
+		icon: "material-symbols:person",
 		children: [
 			// 追番
 			LinkPresets.Anime,
@@ -132,67 +132,67 @@ export const LinkPresets: Record<string, NavBarLink> = {
 	Home: {
 		name: "主页",
 		url: "/",
-		icon: "fluent-color:home-24",
+		icon: "material-symbols:home",
 	},
 	Archive: {
 		name: "归档",
 		url: "/archive/",
-		icon: "fluent-color:drafts-24",
+		icon: "material-symbols:archive",
 	},
 	Categories: {
 		name: "分类",
 		url: "/categories/",
-		icon: "fluent-color:document-folder-24",
+		icon: "material-symbols:folder-open-rounded",
 	},
 	Tags: {
 		name: "标签",
 		url: "/tags/",
-		icon: "fluent-color:bookmark-24",
+		icon: "material-symbols:label",
 	},
 	Friends: {
 		name: "友链",
 		url: "/friends/",
-		icon: "fluent-color:people-team-24",
+		icon: "material-symbols:group",
 		pageKey: "friends",
 	},
 	Sponsor: {
 		name: "打赏",
 		url: "/sponsor/",
-		icon: "fluent-color:heart-24",
+		icon: "material-symbols:favorite",
 		pageKey: "sponsor",
 	},
 	Guestbook: {
 		name: "留言",
 		url: "/guestbook/",
-		icon: "fluent-color:chat-24",
+		icon: "material-symbols:chat",
 		pageKey: "guestbook",
 	},
 	About: {
 		name: "关于我",
 		url: "/about/",
-		icon: "fluent-color:person-24",
+		icon: "material-symbols:person",
 	},
 	Anime: {
 		name: "追番",
 		url: "/anime/",
-		icon: "fluent-color:video-24",
+		icon: "material-symbols:movie",
 		pageKey: "anime",
 	},
 	Gallery: {
 		name: "相册",
 		url: "/gallery/",
-		icon: "fluent-color:image-24",
+		icon: "material-symbols:photo-library",
 		pageKey: "gallery",
 	},
 	Diary: {
 		name: "日记",
 		url: "/diary/",
-		icon: "fluent-color:book-24",
+		icon: "material-symbols:book",
 	},
 	Projects: {
 		name: "项目",
 		url: "/projects/",
-		icon: "fluent-color:briefcase-24",
+		icon: "material-symbols:work",
 	},
 	Skills: {
 		name: "技能",
@@ -212,7 +212,7 @@ export const LinkPresets: Record<string, NavBarLink> = {
 	Admin: {
 		name: "登录",
 		url: "/admin/",
-		icon: "fluent-color:lock-closed-24",
+		icon: "material-symbols:lock",
 	},
 };
 
