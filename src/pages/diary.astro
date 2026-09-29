@@ -20,7 +20,7 @@ const filterTabs = [
 	{
 		value: "all",
 		label: i18n(I18nKey.diary),
-		icon: "material-symbols:apps",
+		icon: "fluent-color:apps-24",
 		count: moments.length,
 	},
 	...allTags.map((tag) => ({
@@ -105,7 +105,7 @@ const subtitle = i18n(I18nKey.diarySubtitle);
 
 				<div id="no-results" class="hidden text-center py-16">
 					<Icon
-						name="material-symbols:edit-note"
+						name="fluent-color:clipboard-text-edit-24"
 						class="text-6xl text-black/15 dark:text-white/15 mb-4"
 					/>
 					<p class="text-black/40 dark:text-white/40 text-lg">
@@ -117,7 +117,7 @@ const subtitle = i18n(I18nKey.diarySubtitle);
 					moments.length === 0 && (
 						<div class="text-center py-16">
 							<Icon
-								name="material-symbols:edit-note"
+								name="fluent-color:clipboard-text-edit-24"
 								class="text-6xl text-black/15 dark:text-white/15 mb-4"
 							/>
 							<h2 class="text-lg font-medium text-black/90 dark:text-white/90 mb-2">

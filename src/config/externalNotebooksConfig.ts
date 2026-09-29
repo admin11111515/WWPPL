@@ -26,21 +26,21 @@ export const externalNotebooksConfig = {
 	templates: [
 		{
 			id: "daily",
-			icon: "material-symbols:calendar-today",
+			icon: "fluent-color:calendar-24",
 			name: "每日总结",
 			title: "{name} 每日总结",
 			content: "✅️今天做了：  \n🤔今日感悟：  \n⏰明天计划：",
 		},
 		{
 			id: "diary",
-			icon: "material-symbols:menu-book",
+			icon: "fluent-color:book-open-24",
 			name: "日记",
 			title: "{name}",
 			content: "## 天气\n\n## 今天发生了什么\n\n## 心情\n\n## 想说的话\n\n",
 		},
 		{
 			id: "reading",
-			icon: "material-symbols:auto-stories",
+			icon: "fluent-color:book-open-24",
 			name: "读书笔记",
 			title: "",
 			content:
@@ -48,14 +48,14 @@ export const externalNotebooksConfig = {
 		},
 		{
 			id: "idea",
-			icon: "material-symbols:lightbulb",
+			icon: "fluent-color:lightbulb-24",
 			name: "灵感",
 			title: "💡 {name} 灵感",
 			content: "## 灵感来源\n\n## 具体想法\n\n## 下一步行动\n\n- [ ] \n",
 		},
 		{
 			id: "todo",
-			icon: "material-symbols:checklist",
+			icon: "fluent-color:clipboard-task-24",
 			name: "待办",
 			title: "📋 {name} 待办",
 			content:
@@ -63,7 +63,7 @@ export const externalNotebooksConfig = {
 		},
 		{
 			id: "free",
-			icon: "material-symbols:note",
+			icon: "fluent-color:document-text-24",
 			name: "空白",
 			title: "",
 			content: "",

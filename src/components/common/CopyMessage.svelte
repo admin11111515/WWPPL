@@ -45,7 +45,7 @@ onMount(() => {
 		<div class="progress-bar" class:active={isVisible}></div>
 	</div>
 	<div class="message-content">
-		<span class="text"><Icon icon="material-symbols:check" class="align-middle mr-1" />复制成功，转载请标注本文地址</span>
+		<span class="text"><Icon icon="fluent-color:checkmark-circle-24" class="align-middle mr-1" />复制成功，转载请标注本文地址</span>
 	</div>
 </div>
 

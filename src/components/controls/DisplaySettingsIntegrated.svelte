@@ -589,7 +589,7 @@ $effect(() => {
                     class:bg-(--btn-regular-bg-hover)={wallpaperMode === WALLPAPER_BANNER}
                     onclick={() => switchWallpaperMode(WALLPAPER_BANNER)}
                 >
-                    <Icon icon="material-symbols:image-outline" class="text-[1.25rem] shrink-0"></Icon>
+                    <Icon icon="fluent-color:image-24" class="text-[1.25rem] shrink-0"></Icon>
                     <span class="text-xs font-medium">{i18n(I18nKey.wallpaperBannerMode)}</span>
                 </button>
                 <button
@@ -618,7 +618,7 @@ $effect(() => {
                     class:bg-(--btn-regular-bg-hover)={wallpaperMode === WALLPAPER_NONE}
                     onclick={() => switchWallpaperMode(WALLPAPER_NONE)}
                 >
-                    <Icon icon="material-symbols:hide-image-outline" class="text-[1.25rem] shrink-0"></Icon>
+                    <Icon icon="fluent-color:image-off-24" class="text-[1.25rem] shrink-0"></Icon>
                     <span class="text-xs font-medium">{i18n(I18nKey.wallpaperNoneMode)}</span>
                 </button>
             </div>
@@ -742,7 +742,7 @@ $effect(() => {
                     class:bg-(--btn-regular-bg-hover)={wavesEnabled}
                     onclick={toggleWavesEnabled}
                 >
-                    <Icon icon="material-symbols:airwave-rounded" class="text-[1.25rem] shrink-0"></Icon>
+                    <Icon icon="fluent-color:wifi-24" class="text-[1.25rem] shrink-0"></Icon>
                     <span class="text-sm flex-1">{i18n(I18nKey.wavesAnimation)}</span>
                     <div class="w-10 h-5 rounded-full transition-all duration-200 relative"
                          class:bg-(--primary)={wavesEnabled}
@@ -760,7 +760,7 @@ $effect(() => {
                     class:bg-(--btn-regular-bg-hover)={gradientEnabled}
                     onclick={toggleGradientEnabled}
                 >
-                    <Icon icon="material-symbols:gradient" class="text-[1.25rem] shrink-0"></Icon>
+                    <Icon icon="fluent-color:paint-brush-24" class="text-[1.25rem] shrink-0"></Icon>
                     <span class="text-sm flex-1">{i18n(I18nKey.gradientTransition)}</span>
                     <div class="w-10 h-5 rounded-full transition-all duration-200 relative"
                          class:bg-(--primary)={gradientEnabled}
@@ -879,7 +879,7 @@ $effect(() => {
                     class:bg-(--btn-regular-bg-hover)={postCoverImageEnabled}
                     onclick={togglePostCoverImageEnabled}
                 >
-                    <Icon icon="material-symbols:image" class="text-[1.25rem] shrink-0"></Icon>
+                    <Icon icon="fluent-color:image-24" class="text-[1.25rem] shrink-0"></Icon>
                     <span class="text-sm flex-1">{i18n(I18nKey.postCoverImage)}</span>
                     <div class="w-10 h-5 rounded-full transition-all duration-200 relative"
                          class:bg-(--primary)={postCoverImageEnabled}

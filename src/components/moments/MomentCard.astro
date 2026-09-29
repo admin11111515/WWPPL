@@ -57,7 +57,7 @@ const formatTimeAgo = (date: Date): string => {
 				<span class="user-name">{author || defaultAuthor}</span>
 				{pinned && (
 					<span class="pinned-badge">
-						<Icon name="material-symbols:pinboard" class="pinned-icon" />
+						<Icon is:inline name="fluent-color:pin-24" class="pinned-icon" />
 						<span>置顶</span>
 					</span>
 				)}
@@ -73,8 +73,8 @@ const formatTimeAgo = (date: Date): string => {
 					<>
 						<span class="meta-dot">·</span>
 						<span class="location">
-							<Icon
-								name="material-symbols:location-on-outline"
+							<Icon is:inline
+								name="fluent-color:location-ripple-24"
 								class="location-icon"
 							/>
 							{location}

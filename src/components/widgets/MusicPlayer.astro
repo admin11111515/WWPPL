@@ -364,8 +364,8 @@ import { i18n } from "@/i18n/translation";
             <!-- 静音按钮 -->
             {/* min-h/w-[24px]：md 断点以下 html 根字号是 14px，min-h-6 只算出 21px */}
             <button id="btn-volume-mute" class="hover:text-primary transition-colors p-0.5 rounded-md flex items-center justify-center min-h-[24px] min-w-[24px]" title="静音切换" aria-label="静音切换">
-              <Icon name="material-symbols:volume-up-rounded" class=" icon-vol-high text-lg dark:text-neutral-100" aria-hidden="true" />
-              <Icon name="material-symbols:volume-off-rounded" class="icon-vol-mute text-lg hidden" aria-hidden="true" />
+              <Icon is:inline name="material-symbols:volume-up-rounded" class=" icon-vol-high text-lg dark:text-neutral-100" aria-hidden="true" />
+              <Icon is:inline name="material-symbols:volume-off-rounded" class="icon-vol-mute text-lg hidden" aria-hidden="true" />
             </button>
             <!-- 音量滑块：点击或拖拽调节音量 -->
             <div class="w-28 h-1.5 bg-gray-300 dark:bg-gray-700 rounded-full relative overflow-hidden cursor-pointer" id="volume-control">

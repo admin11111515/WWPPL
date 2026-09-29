@@ -56,6 +56,9 @@ importers:
       '@iconify-json/fa7-solid':
         specifier: ^1.2.4
         version: 1.2.4
+      '@iconify-json/fluent-color':
+        specifier: ^1.2.0
+        version: 1.2.21
       '@iconify-json/material-symbols':
         specifier: ^1.2.79
         version: 1.2.79
@@ -1587,6 +1590,9 @@ packages:
 
   '@iconify-json/fa7-solid@1.2.4':
     resolution: {integrity: sha512-Ns+ABU21PQpTjMZZ8idaQ9CDNYxjCJ/HY4+gkDsnAiJLkISMB2WIjoR2sjEj+Yok72sFwhXdYKBxwfRaGlwVpA==}
+
+  '@iconify-json/fluent-color@1.2.21':
+    resolution: {integrity: sha512-VETjGx7BMpVsCR3HV5g5t6oBGZ92XKzIRClS5xUvDn1YHAkQTF9OyF/aFdtxYOC8JROoI1SNO/Ql6jZeK7mroA==}
 
   '@iconify-json/iconoir@1.2.11':
     resolution: {integrity: sha512-clBrCsZPkmdksYOkufVp7aoAU1j1hFQPrLUooWWmoYIMvKskUHQ+IDnwV7agTR+tGYHbud7OP2SRfYEpnqFDNw==}
@@ -7707,6 +7713,10 @@ snapshots:
       '@iconify/types': 2.0.0
 
   '@iconify-json/fa7-solid@1.2.4':
+    dependencies:
+      '@iconify/types': 2.0.0
+
+  '@iconify-json/fluent-color@1.2.21':
     dependencies:
       '@iconify/types': 2.0.0
 

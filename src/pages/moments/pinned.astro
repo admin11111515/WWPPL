@@ -17,11 +17,11 @@ const pinnedMoments = moments
   <div class="pinned-page-header">
     <div class="pinned-header-row">
       <a href="/moments/" class="back-btn">
-        <Icon name="material-symbols:arrow-back-rounded" class="back-icon" />
+        <Icon is:inline name="material-symbols:arrow-back-rounded" class="back-icon" />
         <span>返回说说</span>
       </a>
       <div class="pinned-page-title">
-        <Icon name="material-symbols:push-pin" class="pinned-title-icon" />
+        <Icon is:inline name="fluent-color:pin-24" class="pinned-title-icon" />
         <p style="var(--color-neutral-400)">置顶说说</p>
         <span class="pinned-count">{pinnedMoments.length} 条</span>
       </div>
@@ -40,12 +40,12 @@ const pinnedMoments = moments
     ) : (
       <div class="empty-state">
         <div class="empty-icon">
-          <Icon name="material-symbols:push-pin" />
+          <Icon is:inline name="fluent-color:pin-24" />
         </div>
         <p class="empty-title">还没有置顶任何说说</p>
         <p class="empty-desc">在说说的 frontmatter 中添加 pinned: true 即可置顶</p>
         <a href="/moments/" class="empty-link">
-          <Icon name="material-symbols:arrow-back-rounded" />
+          <Icon is:inline name="material-symbols:arrow-back-rounded" />
           <span>去看看说说</span>
         </a>
       </div>

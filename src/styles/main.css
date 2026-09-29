@@ -580,3 +580,99 @@ html {
   @apply text-sm text-(--text-secondary) text-center mb-2;
 }
 
+/* ── 内容类图标的语义着色 ────────────────────────────────────────────────
+ *
+ * 全站内容类图标已换成 fluent-color（微软官方彩色图标集，自带渐变填充）。
+ * 但 fluent-color 只有 199 个基础图标，**没有** info / psychology / music-note /
+ * quote / waving-hand 这些 —— 它们在页面上仍由 material-symbols 以
+ * currentColor 单色渲染，混在彩色图标里就是几个扎眼的黑块。
+ *
+ * 这里按语义给它们上色，色板与 fluent-color 的观感对齐（同一语义在别处是
+ * 什么色，这里就用相近的色）。**控件类不在其列**：箭头 / chevron / 播放 /
+ * 音量 / 菜单 / 更多 / 关闭 / 壁纸 / 排版 / 轮播等一律保持单色 —— 彩色化
+ * 操作控件会让界面显杂乱，这是刻意的设计选择，不是漏掉。
+ *
+ * 选择器用 data-icon 属性（astro-icon 渲染的 svg 都带），所以一处覆盖全站，
+ * 不必去几十个调用点加 class。优先级落在 components 层：站点自己的
+ * `text-*` 工具类（utilities 层）仍可覆盖它，反转不了。
+ */
+@layer components {
+  /* 提示 / 说明 —— 关于、各类提示 */
+  svg[data-icon="material-symbols:info"],
+  svg[data-icon="material-symbols:info-outline"] {
+    color: #f59e0b;
+  }
+
+  /* 心理 / 智能 —— 技能、AI 摘要 */
+  svg[data-icon="material-symbols:psychology"] {
+    color: #10b981;
+  }
+
+  /* 挥手问候 —— 欢迎公告、后台欢迎语 */
+  svg[data-icon="material-symbols:waving-hand"] {
+    color: #f59e0b;
+  }
+
+  /* 闪电 —— 动态、速度 */
+  svg[data-icon="material-symbols:bolt-outline"] {
+    color: #f59e0b;
+  }
+
+  /* 音符 —— 音乐 */
+  svg[data-icon="material-symbols:music-note-rounded"] {
+    color: #8b5cf6;
+  }
+
+  /* 每日一句的引用号 */
+  svg[data-icon="material-symbols:format-quote"] {
+    color: #3b82f6;
+  }
+
+  /* 推荐阅读 */
+  svg[data-icon="material-symbols:signpost"],
+  svg[data-icon="material-symbols:recommend"] {
+    color: #ef4444;
+  }
+
+  /* 空态指引 */
+  svg[data-icon="material-symbols:explore"] {
+    color: #ef4444;
+  }
+
+  /* 心情 —— 说说页 */
+  svg[data-icon="material-symbols:sentiment-sad"],
+  svg[data-icon="material-symbols:sentiment-neutral-outline"] {
+    color: #eab308;
+  }
+
+  /* 技能卡的动效 / 三维 */
+  svg[data-icon="material-symbols:animation"],
+  svg[data-icon="material-symbols:3d-rotation"] {
+    color: #ec4899;
+  }
+
+  /* 订阅 */
+  svg[data-icon="material-symbols:rss-feed"] {
+    color: #10b981;
+  }
+
+  /* 天气面板里 fluent-color 没有的那几个（气象类用天蓝） */
+  svg[data-icon="material-symbols:partly-cloudy-day"],
+  svg[data-icon="material-symbols:ac-unit"] {
+    color: #0ea5e9;
+  }
+
+  /* 社交 / 名片 —— 微信按品牌绿，名片按靛蓝
+     注意：envelope / qq / github / rss 这几个原本就由站点自己的样式上了色，
+     不要写进来 —— 本层规则会盖掉「继承来的」颜色，等于把好好的颜色改掉。 */
+  svg[data-icon="mdi:wechat"] {
+    color: #07c160;
+  }
+
+  svg[data-icon="fa7-regular:address-card"],
+  svg[data-icon="fa7-solid:address-card"] {
+    color: #6366f1;
+  }
+}
+
+

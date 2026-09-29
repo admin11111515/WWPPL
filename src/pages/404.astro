@@ -22,7 +22,7 @@ const recentPosts = (await getSortedPostsList()).slice(0, 5);
 
             <!-- 404 图标 -->
             <div class="mb-6">
-                <Icon is:inline name="material-symbols:error-outline" class="text-6xl text-(--primary)" />
+                <Icon is:inline name="fluent-color:error-circle-24" class="text-6xl text-(--primary)" />
             </div>
 
             <!-- 标题：404 页的可见标题即本文档的 h1 -->
@@ -51,7 +51,7 @@ const recentPosts = (await getSortedPostsList()).slice(0, 5);
                         type="submit"
                         class="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-(--radius-large) bg-(--primary) text-white font-medium hover:opacity-90 transition-opacity"
                     >
-                        <Icon is:inline name="material-symbols:search" class="text-lg" />
+                        <Icon is:inline name="fluent-color:search-visual-24" class="text-lg" />
                         搜索
                     </button>
                 </div>
@@ -95,7 +95,7 @@ const recentPosts = (await getSortedPostsList()).slice(0, 5);
                 href={url("/")}
                 class="nf-home inline-flex items-center gap-2 px-6 py-3 bg-(--primary) text-white rounded-(--radius-large) hover:bg-(--btn-content) transition-colors duration-200 font-medium"
             >
-                <Icon is:inline name="material-symbols:home" class="text-xl" />
+                <Icon is:inline name="fluent-color:home-24" class="text-xl" />
                 {i18n(I18nKey.backToHome)}
             </a>
 
@@ -104,7 +104,7 @@ const recentPosts = (await getSortedPostsList()).slice(0, 5);
                 <Icon is:inline name="material-symbols:sentiment-sad" class="text-4xl text-(--primary)" />
             </div>
             <div class="absolute bottom-4 right-4 opacity-10">
-                <Icon is:inline name="material-symbols:search-off" class="text-4xl text-(--primary)" />
+                <Icon is:inline name="fluent-color:search-visual-24" class="text-4xl text-(--primary)" />
             </div>
         </div>
     </div>

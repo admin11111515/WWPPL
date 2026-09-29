@@ -36,17 +36,17 @@ const getCategoryText = (category: string) => {
 const getCategoryIcon = (category: string) => {
 	switch (category) {
 		case "frontend":
-			return "material-symbols:web";
+			return "fluent-color:globe-24";
 		case "backend":
-			return "material-symbols:dns";
+			return "fluent-color:database-24";
 		case "database":
-			return "material-symbols:storage";
+			return "fluent-color:database-24";
 		case "tools":
-			return "material-symbols:build";
+			return "fluent-color:wrench-24";
 		case "other":
-			return "material-symbols:widgets";
+			return "fluent-color:apps-24";
 		default:
-			return "material-symbols:category";
+			return "fluent-color:apps-list-24";
 	}
 };
 
@@ -54,7 +54,7 @@ const filterTabs = [
 	{
 		value: "all",
 		label: i18n(I18nKey.friendsFilterAll),
-		icon: "material-symbols:apps",
+		icon: "fluent-color:apps-24",
 		count: skillsData.length,
 	},
 	...categories.map((category) => ({
@@ -100,8 +100,8 @@ const subtitle = i18n(I18nKey.skillsSubtitle);
 			</div>
 
 			<div id="no-results" class="hidden text-center py-16">
-				<Icon
-					name="material-symbols:search-off-rounded"
+				<Icon is:inline
+					name="fluent-color:search-visual-24"
 					class="text-6xl text-black/15 dark:text-white/15 mb-4"
 				/>
 				<p class="text-black/40 dark:text-white/40 text-lg">

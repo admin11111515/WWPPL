@@ -211,7 +211,7 @@ import { uiIcon } from "@/constants/ui-icons";
 
       {/* 上次没有保存就离开时，把本地留存的草稿提示出来 */}
       <div class="restore-bar hidden" id="restore-bar">
-        <span class="restore-icon" set:html={uiIcon("material-symbols:history")} />
+        <span class="restore-icon" set:html={uiIcon("fluent-color:history-24")} />
         <span class="restore-text" id="restore-text"></span>
         <div class="restore-actions">
           <button class="btn btn-sm" onclick="restoreDraft()">恢复</button>
@@ -223,7 +223,7 @@ import { uiIcon } from "@/constants/ui-icons";
       <!-- 写说说 -->
       <div class="card">
         <div class="field">
-          <div class="field-label"><span class="icon" set:html={uiIcon("material-symbols:notes")} /> 内容</div>
+          <div class="field-label"><span class="icon" set:html={uiIcon("fluent-color:document-text-24")} /> 内容</div>
           <textarea id="content-input" placeholder="分享此刻的想法..."></textarea>
           <div class="field-footer">
             <span id="content-counter">0 字</span>
@@ -231,7 +231,7 @@ import { uiIcon } from "@/constants/ui-icons";
           </div>
         </div>
         <div class="field">
-          <div class="field-label"><span class="icon" set:html={uiIcon("material-symbols:image-outline")} /> 图片</div>
+          <div class="field-label"><span class="icon" set:html={uiIcon("fluent-color:image-24")} /> 图片</div>
           <div class="input-row">
             <input type="text" id="image-input" placeholder="粘贴图片链接，回车添加" />
             <button class="btn btn-sm" onclick="addImage()">添加</button>
@@ -246,20 +246,20 @@ import { uiIcon } from "@/constants/ui-icons";
           <div class="img-list" id="img-preview"></div>
         </div>
         <div class="field">
-          <div class="field-label"><span class="icon" set:html={uiIcon("material-symbols:sell")} /> 标签</div>
+          <div class="field-label"><span class="icon" set:html={uiIcon("fluent-color:bookmark-24")} /> 标签</div>
           <input type="text" class="input-single" id="tags-input" placeholder="逗号分隔，如：日常, 生活" value="日常" />
         </div>
         <div class="field">
-          <div class="field-label"><span class="icon" set:html={uiIcon("material-symbols:location-on")} /> 位置</div>
+          <div class="field-label"><span class="icon" set:html={uiIcon("fluent-color:location-ripple-24")} /> 位置</div>
           <div class="input-row">
             <input type="text" class="input-single" id="location-input" placeholder="可选" style="flex:1;" />
-            <button class="btn btn-sm" onclick="fetchLocation()" id="geo-btn" title="获取当前位置" set:html={uiIcon("material-symbols:my-location")} />
+            <button class="btn btn-sm" onclick="fetchLocation()" id="geo-btn" title="获取当前位置" set:html={uiIcon("fluent-color:location-ripple-24")} />
           </div>
           <div id="geo-status" style="margin-top:0.25rem;font-size:0.6875rem;color:var(--text-3);display:none;"></div>
         </div>
         <div class="field">
           <label class="toggle-row" for="custom-time-toggle">
-            <span class="toggle-label"><span class="icon" set:html={uiIcon("material-symbols:schedule")} /> 自定义发布时间</span>
+            <span class="toggle-label"><span class="icon" set:html={uiIcon("fluent-color:clock-24")} /> 自定义发布时间</span>
             <input type="checkbox" id="custom-time-toggle" class="toggle-checkbox" onchange="toggleCustomTime()" />
             <span class="toggle-switch"></span>
           </label>
@@ -269,7 +269,7 @@ import { uiIcon } from "@/constants/ui-icons";
         </div>
         <div class="field">
           <label class="toggle-row" for="pinned-input">
-            <span class="toggle-label"><span class="icon" set:html={uiIcon("material-symbols:push-pin")} /> 置顶</span>
+            <span class="toggle-label"><span class="icon" set:html={uiIcon("fluent-color:pin-24")} /> 置顶</span>
             <input type="checkbox" id="pinned-input" class="toggle-checkbox" />
             <span class="toggle-switch"></span>
           </label>
@@ -286,7 +286,7 @@ import { uiIcon } from "@/constants/ui-icons";
       <!-- 已有说说 -->
       <div class="card">
         <div class="list-header">
-          <div class="field-label" style="margin:0"><span class="icon" set:html={uiIcon("material-symbols:article")} /> 已发布</div>
+          <div class="field-label" style="margin:0"><span class="icon" set:html={uiIcon("fluent-color:document-text-24")} /> 已发布</div>
           <span class="count" id="list-count"></span>
         </div>
         <div id="moments-list">
@@ -307,10 +307,10 @@ import { uiIcon } from "@/constants/ui-icons";
     data-gist={externalMomentsConfig.gistId || ""}
     data-file={externalMomentsConfig.fileName || "moments.json"}
     data-icons={JSON.stringify({
-      location: uiIcon("material-symbols:my-location"),
+      location: uiIcon("fluent-color:location-ripple-24"),
       loading: uiIcon("material-symbols:progress-activity"),
-      pin: uiIcon("material-symbols:location-on"),
-      comment: uiIcon("material-symbols:chat-bubble"),
+      pin: uiIcon("fluent-color:location-ripple-24"),
+      comment: uiIcon("fluent-color:chat-24"),
     })}>
     var _script = document.currentScript;
     var GIST_ID = _script.getAttribute("data-gist") || "";

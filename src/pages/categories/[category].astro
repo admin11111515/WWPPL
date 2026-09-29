@@ -116,7 +116,7 @@ const initialLayoutClass =
     <div class="card-base px-6 py-4 mb-6">
         <nav class="flex items-center gap-2 text-sm text-30">
             <a href="/" class="hover:text-(--primary) transition-colors">
-                <Icon name="material-symbols:home" class="inline-block align-middle" />
+                <Icon is:inline name="fluent-color:home-24" class="inline-block align-middle" />
             </a>
             <span class="opacity-50">/</span>
             <a href={getCategoryPageUrl()} class="hover:text-(--primary) transition-colors">
@@ -131,7 +131,7 @@ const initialLayoutClass =
     <div class="card-base px-8 py-6 mb-6">
         <div class="flex items-center gap-4">
             <div class="w-14 h-14 rounded-full bg-(--primary)/10 flex items-center justify-center flex-shrink-0">
-                <Icon name="material-symbols:folder-open" class="text-3xl text-(--primary)" />
+                <Icon is:inline name="fluent-color:document-folder-24" class="text-3xl text-(--primary)" />
             </div>
             <div>
                 <h1 class="text-2xl font-bold text-90">{decodedCategory}</h1>
@@ -147,7 +147,7 @@ const initialLayoutClass =
         tags.length > 0 && (
             <div class="card-base px-6 py-5 mb-6">
                 <div class="flex items-center gap-3 mb-3">
-                    <Icon name="material-symbols:label" class="text-lg text-(--primary)" />
+                    <Icon is:inline name="fluent-color:bookmark-24" class="text-lg text-(--primary)" />
                     <span class="text-sm font-medium text-90">{i18n(I18nKey.tags)}</span>
                     <span class="text-xs text-30">({tags.length})</span>
                 </div>
@@ -202,7 +202,7 @@ const initialLayoutClass =
                 ))
             ) : (
                 <div class="card-base px-8 py-12 text-center w-full">
-                    <Icon name="material-symbols:article" class="text-5xl text-30 mx-auto mb-4" />
+                    <Icon is:inline name="fluent-color:document-text-24" class="text-5xl text-30 mx-auto mb-4" />
                     <p class="text-30">{i18n(I18nKey.bangumiNoData)}</p>
                 </div>
             )

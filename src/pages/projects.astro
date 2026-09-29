@@ -39,15 +39,15 @@ const getCategoryText = (category: string) => {
 const getCategoryIcon = (category: string) => {
 	switch (category) {
 		case "web":
-			return "material-symbols:language";
+			return "fluent-color:globe-24";
 		case "mobile":
-			return "material-symbols:smartphone";
+			return "fluent-color:phone-24";
 		case "desktop":
-			return "material-symbols:desktop-windows";
+			return "fluent-color:laptop-24";
 		case "other":
-			return "material-symbols:widgets";
+			return "fluent-color:apps-24";
 		default:
-			return "material-symbols:folder";
+			return "fluent-color:document-folder-24";
 	}
 };
 
@@ -55,7 +55,7 @@ const filterTabs = [
 	{
 		value: "all",
 		label: i18n(I18nKey.friendsFilterAll),
-		icon: "material-symbols:apps",
+		icon: "fluent-color:apps-24",
 		count: projectsData.length,
 	},
 	...categories.map((category) => ({
@@ -107,8 +107,8 @@ const hasProjects = projectsData.length > 0;
 			{
 				!hasProjects && (
 					<div class="text-center py-16">
-						<Icon
-							name="material-symbols:folder-open-rounded"
+						<Icon is:inline
+							name="fluent-color:document-folder-24"
 							class="text-6xl text-black/15 dark:text-white/15 mb-4"
 						/>
 						<p class="text-black/40 dark:text-white/40 text-lg">
@@ -125,8 +125,8 @@ const hasProjects = projectsData.length > 0;
 			}
 
 			<div id="no-results" class="hidden text-center py-16">
-				<Icon
-					name="material-symbols:search-off-rounded"
+				<Icon is:inline
+					name="fluent-color:search-visual-24"
 					class="text-6xl text-black/15 dark:text-white/15 mb-4"
 				/>
 				<p class="text-black/40 dark:text-white/40 text-lg">

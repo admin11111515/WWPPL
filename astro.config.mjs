@@ -104,6 +104,9 @@ export default defineConfig({
 		icon({
 			include: {
 				"material-symbols": ["*"],
+				// 彩色 UI 图标（微软官方）。站内内容类图标改用这套 —— 原 material-symbols
+				// 的「无后缀 = Filled」是这批里最重最黑的一档，正是「图标显黑显笨」的根因
+				"fluent-color": ["*"],
 				"fa7-brands": ["*"],
 				"fa7-regular": ["*"],
 				"fa7-solid": ["*"],

@@ -484,7 +484,7 @@ function portal(node: HTMLElement) {
   on:click={generatePoster}
   aria-label="生成分享图"
 >
-  <Icon icon="material-symbols:share" size="md" />
+  <Icon icon="fluent-color:share-android-24" size="md" />
   <span>{i18n(I18nKey.shareArticle)}</span>
 </button>
 
@@ -514,10 +514,10 @@ function portal(node: HTMLElement) {
           on:click={copyLink}
         >
           {#if copied}
-            <Icon icon="material-symbols:check" size="md" />
+            <Icon icon="fluent-color:checkmark-circle-24" size="md" />
             <span>{i18n(I18nKey.copied)}</span>
           {:else}
-            <Icon icon="material-symbols:link" size="md" />
+            <Icon icon="fluent-color:link-24" size="md" />
             <span>{i18n(I18nKey.copyLink)}</span>
           {/if}
         </button>

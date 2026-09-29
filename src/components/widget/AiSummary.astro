@@ -11,7 +11,7 @@ const { description, descriptionSource = "ai" } = Astro.props;
 const isManual = descriptionSource === "manual";
 const sourceLabel = isManual ? "人工编写" : "AI 摘要";
 const iconName = isManual
-	? "material-symbols:person"
+	? "fluent-color:person-24"
 	: "material-symbols:psychology";
 ---
 
@@ -19,7 +19,7 @@ const iconName = isManual
   <div class="ai-summary">
     <div class="ai-summary-header">
       <div class="ai-summary-icon">
-        <Icon name={iconName} class="text-base" />
+        <Icon is:inline name={iconName} class="text-base" />
       </div>
       <span class="ai-summary-label">{sourceLabel}</span>
     </div>

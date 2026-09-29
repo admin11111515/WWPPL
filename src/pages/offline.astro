@@ -16,7 +16,7 @@ import { url } from "@/utils/url-utils";
   <div class="flex w-full rounded-(--radius-large) overflow-hidden relative min-h-96">
     <div class="card-base z-10 px-9 py-12 relative w-full flex flex-col items-center justify-center text-center">
       <div class="mb-6">
-        <Icon is:inline name="material-symbols:cloud-off-rounded" class="text-6xl text-(--primary)" />
+        <Icon is:inline name="fluent-color:cloud-dismiss-24" class="text-6xl text-(--primary)" />
       </div>
 
       <div class="text-3xl md:text-4xl font-bold mb-4 text-90">
@@ -32,7 +32,7 @@ import { url } from "@/utils/url-utils";
           href={url("/")}
           class="inline-flex items-center gap-2 px-6 py-3 bg-(--primary) text-white rounded-(--radius-large) hover:bg-(--btn-content) transition-colors duration-200 font-medium"
         >
-          <Icon is:inline name="material-symbols:home" class="text-xl" />
+          <Icon is:inline name="fluent-color:home-24" class="text-xl" />
           {i18n(I18nKey.backToHome)}
         </a>
         {/*
@@ -46,7 +46,7 @@ import { url } from "@/utils/url-utils";
           data-retry-url={url("/")}
           class="inline-flex items-center gap-2 px-6 py-3 rounded-(--radius-large) border border-(--line-color) text-90 hover:bg-(--btn-plain-bg-hover) transition-colors duration-200 font-medium cursor-pointer"
         >
-          <Icon is:inline name="material-symbols:refresh" class="text-xl" />
+          <Icon is:inline name="fluent-color:arrow-sync-24" class="text-xl" />
           <span id="offline-retry-label">重新连接</span>
         </button>
       </div>

@@ -237,8 +237,8 @@ const getVideoSrc = (videoUrl: string): string => {
 				{
 					moment.location && (
 						<div class="flex items-center gap-1.5">
-							<Icon
-								name="material-symbols:location-on"
+							<Icon is:inline
+								name="fluent-color:location-ripple-24"
 								class="text-xs w-3.5 h-3.5"
 							/>
 							{moment.locationUrl ? (
@@ -257,8 +257,8 @@ const getVideoSrc = (videoUrl: string): string => {
 					)
 				}
 				<div class="flex items-center gap-1.5">
-					<Icon
-						name="material-symbols:schedule"
+					<Icon is:inline
+						name="fluent-color:clock-24"
 						class="text-xs w-3.5 h-3.5"
 					/>
 					<time datetime={moment.date}>{relativeTime}</time>

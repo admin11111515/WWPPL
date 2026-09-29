@@ -250,7 +250,7 @@ const relatedPosts = await getRelatedPosts(entry, 5);
           <div
             class="transition h-6 w-6 rounded-md bg-black/5 dark:bg-white/10 text-black/50 dark:text-white/50 flex items-center justify-center mr-2"
           >
-            <Icon is:inline name="material-symbols:notes-rounded" />
+            <Icon is:inline name="fluent-color:document-text-24" />
           </div>
           <div class="text-sm">
             {remarkPluginFrontmatter.words}
@@ -261,7 +261,7 @@ const relatedPosts = await getRelatedPosts(entry, 5);
           <div
             class="transition h-6 w-6 rounded-md bg-black/5 dark:bg-white/10 text-black/50 dark:text-white/50 flex items-center justify-center mr-2"
           >
-            <Icon is:inline name="material-symbols:schedule-outline-rounded" />
+            <Icon is:inline name="fluent-color:clock-24" />
           </div>
           <div class="text-sm">
             {remarkPluginFrontmatter.minutes}
@@ -280,7 +280,7 @@ const relatedPosts = await getRelatedPosts(entry, 5);
             <div
               class="transition h-6 w-6 rounded-md bg-black/5 dark:bg-white/10 text-black/50 dark:text-white/50 flex items-center justify-center mr-2"
             >
-              <Icon is:inline name="material-symbols:lock-outline" />
+              <Icon is:inline name="fluent-color:lock-closed-24" />
             </div>
             <div class="text-sm">
               {i18n(I18nKey.postEncrypted)}
@@ -368,8 +368,8 @@ const relatedPosts = await getRelatedPosts(entry, 5);
                         <Icon is:inline
                           name={sponsorConfig.showButtonInPost &&
                           siteConfig.pages.sponsor
-                            ? "material-symbols:favorite"
-                            : "material-symbols:share"}
+                            ? "fluent-color:heart-24"
+                            : "fluent-color:share-android-24"}
                           class="text-2xl"
                         />
                       </div>
@@ -456,8 +456,8 @@ const relatedPosts = await getRelatedPosts(entry, 5);
                         <Icon is:inline
                           name={sponsorConfig.showButtonInPost &&
                           siteConfig.pages.sponsor
-                            ? "material-symbols:favorite"
-                            : "material-symbols:share"}
+                            ? "fluent-color:heart-24"
+                            : "fluent-color:share-android-24"}
                           class="text-2xl"
                         />
                       </div>
@@ -549,7 +549,7 @@ const relatedPosts = await getRelatedPosts(entry, 5);
           <div class="flex items-center gap-2">
             <div class="transition h-9 w-9 rounded-lg overflow-hidden relative flex items-center justify-center mr-0">
               <Icon is:inline
-                name="material-symbols:history-rounded"
+                name="fluent-color:history-24"
                 class="text-4xl text-(--primary) transition-transform group-hover:translate-x-0.5 bg-(--enter-btn-bg) p-2 rounded-md"
               />
             </div>

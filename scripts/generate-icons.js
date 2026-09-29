@@ -26,45 +26,49 @@ const UI_OUTPUT_FILE = join(SRC_DIR, "constants", "ui-icons.ts");
  * 而 icons.ts 是给 Svelte 用的，让后台 import 它会把 Svelte 那套图标一起拖进去。
  *
  * 名字写错会直接让脚本报错退出 —— 显式清单不允许静默少一个图标。
- * 命名统一用 material-symbols，与前台主导图标集保持一致。
+ *
+ * 命名分两类，与前台保持一致：
+ *   fluent-color     内容类图标（彩色 UI 图标，带语义色），绝大多数走这个
+ *   material-symbols 控件类（引用 / 批量添加 / 进度 / 挥手）—— 这些是操作控件，
+ *                    染色反而杂乱，保持中性
  */
 const EXPLICIT_ICONS = [
 	// 后台四个入口 / 内容种类
-	"material-symbols:edit-note", // 写文章、写作
-	"material-symbols:menu-book", // 笔记本、书籍
-	"material-symbols:chat-bubble", // 说说
-	"material-symbols:photo-library", // 图库、图片集
+	"fluent-color:clipboard-text-edit-24", // 写文章、写作
+	"fluent-color:book-open-24", // 笔记本、书籍
+	"fluent-color:chat-24", // 说说
+	"fluent-color:image-24", // 图库、图片集
 	// 字段标签
-	"material-symbols:notes", // 内容
-	"material-symbols:image-outline", // 图片（带外框，用于字段标签）
-	"material-symbols:sell", // 标签
-	"material-symbols:location-on", // 位置
-	"material-symbols:my-location", // 获取当前位置
-	"material-symbols:schedule", // 发布时间
-	"material-symbols:push-pin", // 置顶
-	"material-symbols:article", // 已发布 / 已有条目
-	"material-symbols:history", // 草稿恢复
+	"fluent-color:document-text-24", // 内容
+	"fluent-color:image-24", // 图片（带外框，用于字段标签）
+	"fluent-color:bookmark-24", // 标签
+	"fluent-color:location-ripple-24", // 位置
+	"fluent-color:location-ripple-24", // 获取当前位置
+	"fluent-color:clock-24", // 发布时间
+	"fluent-color:pin-24", // 置顶
+	"fluent-color:document-text-24", // 已发布 / 已有条目
+	"fluent-color:history-24", // 草稿恢复
 	// 编辑器工具栏
-	"material-symbols:link", // 链接
-	"material-symbols:image", // 插入图片
+	"fluent-color:link-24", // 链接
+	"fluent-color:image-24", // 插入图片
 	"material-symbols:format-quote", // 引用
-	"material-symbols:format-list-bulleted", // 无序列表
-	"material-symbols:checklist", // 待办列表
-	"material-symbols:table", // 表格
-	"material-symbols:code-blocks", // 代码块
+	"fluent-color:text-bullet-list-square-24", // 无序列表
+	"fluent-color:clipboard-task-24", // 待办列表
+	"fluent-color:table-24", // 表格
+	"fluent-color:code-block-24", // 代码块
 	"material-symbols:playlist-add", // 批量添加
 	// 状态
-	"material-symbols:check-circle", // 已配置
-	"material-symbols:warning", // 待配置 / 读取失败
+	"fluent-color:checkmark-circle-24", // 已配置
+	"fluent-color:warning-24", // 待配置 / 读取失败
 	"material-symbols:progress-activity", // 进行中
-	"material-symbols:inbox", // 空列表
-	"material-symbols:note", // 空笔记 / 空文章
-	"material-symbols:search", // 找不到
-	"material-symbols:filter-list-off", // 无匹配结果
+	"fluent-color:mail-24", // 空列表
+	"fluent-color:document-text-24", // 空笔记 / 空文章
+	"fluent-color:search-visual-24", // 找不到
+	"fluent-color:options-24", // 无匹配结果
 	// 笔记模板
-	"material-symbols:calendar-today", // 每日总结
-	"material-symbols:lightbulb", // 灵感
-	"material-symbols:auto-stories", // 读书笔记
+	"fluent-color:calendar-24", // 每日总结
+	"fluent-color:lightbulb-24", // 灵感
+	"fluent-color:book-open-24", // 读书笔记
 	"material-symbols:explore", // 没指定笔记时的提示
 	// 后台首页
 	"material-symbols:waving-hand", // 欢迎回来
@@ -73,6 +77,9 @@ const EXPLICIT_ICONS = [
 // 支持的图标集及其包名
 const ICON_SETS = {
 	"material-symbols": "@iconify-json/material-symbols",
+	// 彩色 UI 图标（微软官方）。内容类图标改用它 —— 原 material-symbols 的
+	// 「无后缀 = Filled」是这套里最重最黑的一档，正是「图标显黑显笨」的根因
+	"fluent-color": "@iconify-json/fluent-color",
 	"fa7-solid": "@iconify-json/fa7-solid",
 	"fa7-brands": "@iconify-json/fa7-brands",
 	"fa7-regular": "@iconify-json/fa7-regular",
@@ -224,7 +231,7 @@ ${iconEntries}
 
 /**
  * 根据 iconify 格式的图标名获取内联 SVG HTML
- * @param iconName 图标名称，如 "material-symbols:search"
+ * @param iconName 图标名称，如 "fluent-color:search-visual-24"
  * @returns SVG HTML 字符串
  */
 export function getIconSvg(iconName: string): string {
@@ -275,7 +282,7 @@ ${iconEntries}
 
 /**
  * 按 iconify 图标名取内联 SVG
- * @param iconName 如 "material-symbols:edit-note"
+ * @param iconName 如 "fluent-color:clipboard-text-edit-24"
  * @returns SVG HTML 字符串；名字不存在时返回空串
  */
 export function uiIcon(iconName: string): string {

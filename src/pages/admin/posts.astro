@@ -125,7 +125,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
   <div class="container">
     {/* 上次没有保存就离开时，把本地留存的草稿提示出来 */}
     <div class="restore-bar hidden" id="restore-bar">
-      <span class="restore-icon" set:html={uiIcon("material-symbols:history")} />
+      <span class="restore-icon" set:html={uiIcon("fluent-color:history-24")} />
       <span class="restore-text" id="restore-text"></span>
       <div class="restore-actions">
         <button class="btn btn-sm" onclick="restoreDraft()">恢复</button>
@@ -137,7 +137,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       <!-- ===== 左：文章列表 ===== -->
       <aside class="card post-list-card">
         <div class="list-header">
-          <div class="field-label" style="margin:0"><span class="icon" set:html={uiIcon("material-symbols:article")} /> 已有文章</div>
+          <div class="field-label" style="margin:0"><span class="icon" set:html={uiIcon("fluent-color:document-text-24")} /> 已有文章</div>
           <span class="count" id="list-count"></span>
         </div>
         <button class="btn" onclick="startNewPost()" style="width:100%;margin-bottom:0.75rem;">＋ 新建文章</button>
@@ -159,7 +159,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       <main class="card editor-card" id="editor-card">
         <div class="editor-body">
           <div class="editor-head">
-            <div class="field-label"><span class="icon" set:html={uiIcon("material-symbols:edit-note")} /> <span id="editor-title">写文章</span></div>
+            <div class="field-label"><span class="icon" set:html={uiIcon("fluent-color:clipboard-text-edit-24")} /> <span id="editor-title">写文章</span></div>
           </div>
 
           <div class="form-grid">
@@ -229,14 +229,14 @@ const postsConfig = JSON.stringify(externalPostsConfig);
                     <button type="button" class="toolbar-btn" onclick="insertMd('**','**')" title="加粗（Ctrl+B）"><b>B</b></button>
                     <button type="button" class="toolbar-btn" onclick="insertMd('*','*')" title="斜体（Ctrl+I）"><i>I</i></button>
                     <button type="button" class="toolbar-btn" onclick="insertMd('`','`')" title="行内代码">&lt;&gt;</button>
-                    <button type="button" class="toolbar-btn" onclick="insertMd('```\n','\n```')" title="代码块" set:html={uiIcon("material-symbols:code-blocks")} />
-                    <button type="button" class="toolbar-btn" onclick="insertMd('[','](url)','链接文字')" title="链接（Ctrl+K）" set:html={uiIcon("material-symbols:link")} />
-                    <button type="button" class="toolbar-btn" id="body-upload-btn" onclick="pickBodyImage()" title="上传图片" set:html={uiIcon("material-symbols:image")} />
+                    <button type="button" class="toolbar-btn" onclick="insertMd('```\n','\n```')" title="代码块" set:html={uiIcon("fluent-color:code-block-24")} />
+                    <button type="button" class="toolbar-btn" onclick="insertMd('[','](url)','链接文字')" title="链接（Ctrl+K）" set:html={uiIcon("fluent-color:link-24")} />
+                    <button type="button" class="toolbar-btn" id="body-upload-btn" onclick="pickBodyImage()" title="上传图片" set:html={uiIcon("fluent-color:image-24")} />
                     <button type="button" class="toolbar-btn" onclick="insertBlock('> 引用')" title="引用" set:html={uiIcon("material-symbols:format-quote")} />
-                    <button type="button" class="toolbar-btn" onclick="insertBlock('- 列表项')" title="无序列表" set:html={uiIcon("material-symbols:format-list-bulleted")} />
+                    <button type="button" class="toolbar-btn" onclick="insertBlock('- 列表项')" title="无序列表" set:html={uiIcon("fluent-color:text-bullet-list-square-24")} />
                     <button type="button" class="toolbar-btn" onclick="insertBlock('1. 列表项')" title="有序列表">1.</button>
-                    <button type="button" class="toolbar-btn" onclick="insertBlock('- [ ] 待办')" title="待办列表" set:html={uiIcon("material-symbols:checklist")} />
-                    <button type="button" class="toolbar-btn" onclick="insertBlock('| 列 1 | 列 2 |\n| --- | --- |\n| 内容 | 内容 |')" title="表格" set:html={uiIcon("material-symbols:table")} />
+                    <button type="button" class="toolbar-btn" onclick="insertBlock('- [ ] 待办')" title="待办列表" set:html={uiIcon("fluent-color:clipboard-task-24")} />
+                    <button type="button" class="toolbar-btn" onclick="insertBlock('| 列 1 | 列 2 |\n| --- | --- |\n| 内容 | 内容 |')" title="表格" set:html={uiIcon("fluent-color:table-24")} />
                     <button type="button" class="toolbar-btn" onclick="insertBlock('---')" title="分割线">—</button>
                   </div>
                 </div>
@@ -286,8 +286,8 @@ const postsConfig = JSON.stringify(externalPostsConfig);
   <script is:inline src="/js/admin-github.js"></script>
   <script is:inline data-config={postsConfig}
     data-icons={JSON.stringify({
-      note: uiIcon("material-symbols:note"),
-      filterOff: uiIcon("material-symbols:filter-list-off"),
+      note: uiIcon("fluent-color:document-text-24"),
+      filterOff: uiIcon("fluent-color:options-24"),
     })}>
     var _script = document.currentScript;
     var CONFIG = JSON.parse(_script.getAttribute("data-config") || "{}");

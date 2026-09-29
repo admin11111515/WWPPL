@@ -72,17 +72,17 @@ const todayText = i18n(I18nKey.today);
 
 const stats = [
 	{
-		icon: "material-symbols:article-outline",
+		icon: "fluent-color:document-text-24",
 		label: i18n(I18nKey.siteStatsPostCount),
 		value: posts.length,
 	},
 	{
-		icon: "material-symbols:folder-outline",
+		icon: "fluent-color:document-folder-24",
 		label: i18n(I18nKey.siteStatsCategoryCount),
 		value: categories.length,
 	},
 	{
-		icon: "material-symbols:label-outline",
+		icon: "fluent-color:bookmark-24",
 		label: i18n(I18nKey.siteStatsTagCount),
 		value: tags.length,
 	},
@@ -93,7 +93,7 @@ const stats = [
 		formatted: true,
 	},
 	{
-		icon: "material-symbols:calendar-clock-outline",
+		icon: "fluent-color:calendar-clock-24",
 		label: i18n(I18nKey.siteStatsRunningDays),
 		value: 0, // 将由客户端更新
 		suffix: i18n(I18nKey.siteStatsDays).replace("{days}", ""),

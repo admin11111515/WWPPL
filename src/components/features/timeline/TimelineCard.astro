@@ -12,15 +12,15 @@ const isCurrent = !item.endDate;
 const getTypeIcon = (type: string) => {
 	switch (type) {
 		case "education":
-			return "material-symbols:school";
+			return "fluent-color:certificate-24";
 		case "work":
-			return "material-symbols:work";
+			return "fluent-color:briefcase-24";
 		case "project":
-			return "material-symbols:code";
+			return "fluent-color:code-24";
 		case "achievement":
-			return "material-symbols:emoji-events";
+			return "fluent-color:trophy-24";
 		default:
-			return "material-symbols:event";
+			return "fluent-color:calendar-24";
 	}
 };
 
@@ -42,13 +42,13 @@ const getTypeText = (type: string) => {
 const getLinkIcon = (type: string) => {
 	switch (type) {
 		case "certificate":
-			return "material-symbols:verified";
+			return "fluent-color:certificate-24";
 		case "project":
 			return "material-symbols:open-in-new";
 		case "website":
-			return "material-symbols:language";
+			return "fluent-color:globe-24";
 		default:
-			return "material-symbols:description";
+			return "fluent-color:document-text-24";
 	}
 };
 
@@ -90,7 +90,7 @@ const hasLinks = item.links && item.links.length > 0;
 	data-type={item.type}
 >
 	<div class="timeline-node" style={`background-color: ${nodeColor};`}>
-		<Icon name={icon} class="w-2.5 h-2.5" style="color: white;" />
+		<Icon is:inline name={icon} class="w-2.5 h-2.5" style="color: white;" />
 	</div>
 
 	<div
@@ -101,7 +101,7 @@ const hasLinks = item.links && item.links.length > 0;
 				<div
 					class="w-10 h-10 flex-shrink-0 rounded-lg flex items-center justify-center bg-[var(--btn-regular-bg)]"
 				>
-					<Icon
+					<Icon is:inline
 						name={icon}
 						class="text-lg"
 						style={`color: ${item.color || "var(--primary)"};`}
@@ -118,7 +118,7 @@ const hasLinks = item.links && item.links.length > 0;
 						{
 							item.featured && (
 								<Icon
-									name="material-symbols:star-rounded"
+									name="fluent-color:star-24"
 									class="text-base w-4 h-4 text-[var(--primary)] flex-shrink-0"
 								/>
 							)
@@ -178,7 +178,7 @@ const hasLinks = item.links && item.links.length > 0;
 							{item.achievements.map((achievement) => (
 								<li class="text-sm text-black/70 dark:text-white/70 flex items-start gap-2">
 									<Icon
-										name="material-symbols:check-circle"
+										name="fluent-color:checkmark-circle-24"
 										class="text-base w-4 h-4 text-green-500 flex-shrink-0 mt-0.5"
 									/>
 									<span>{achievement}</span>
@@ -193,15 +193,15 @@ const hasLinks = item.links && item.links.length > 0;
 				class="flex items-center gap-4 text-xs text-black/50 dark:text-white/50 mb-1 pt-3 border-t border-black/5 dark:border-white/5"
 			>
 				<span class="flex items-center gap-1">
-					<Icon
-						name="material-symbols:calendar-month-outline"
+					<Icon is:inline
+						name="fluent-color:calendar-24"
 						class="text-xs w-3.5 h-3.5"
 					/>
 					{dateRange}
 				</span>
 				<span class="flex items-center gap-1">
-					<Icon
-						name="material-symbols:schedule"
+					<Icon is:inline
+						name="fluent-color:clock-24"
 						class="text-xs w-3.5 h-3.5"
 					/>
 					{duration}
@@ -209,8 +209,8 @@ const hasLinks = item.links && item.links.length > 0;
 				{
 					item.location && (
 						<span class="flex items-center gap-1">
-							<Icon
-								name="material-symbols:location-on"
+							<Icon is:inline
+								name="fluent-color:location-ripple-24"
 								class="text-xs w-3.5 h-3.5"
 							/>
 							{item.location}
@@ -229,7 +229,7 @@ const hasLinks = item.links && item.links.length > 0;
 								rel="noopener noreferrer"
 								class="btn-regular flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
 							>
-								<Icon
+								<Icon is:inline
 									name={getLinkIcon(link.type)}
 									class="text-xs w-3.5 h-3.5"
 								/>
