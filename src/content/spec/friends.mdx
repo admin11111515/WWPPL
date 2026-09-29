@@ -7,9 +7,13 @@ description: "与优秀的朋友们一起成长"
 
 {/* ========== 站点信息 ========= */}
 
+{/* 站点名称与站点描述走 src/data/siteInfo.json（后台「站点信息」页可改），
+    免得改了站点标题却忘了这里。链接与头像仍是本页自己的配置。 */}
+import { siteInfo } from "@/config/siteInfo";
+
 export const site = {
-  name: "WWPPL Blog",
-  desc: "白天上课，晚上学专业软件、做项目。业余折腾最新的人工智能小玩意，水平也业余。",
+  name: siteInfo.siteTitle,
+  desc: siteInfo.friendsDesc,
   url: "https://wwppl.dpdns.org/",
   avatar: "/assets/images/avatar.jpg",
   email: "",

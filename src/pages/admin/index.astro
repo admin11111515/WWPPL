@@ -248,7 +248,7 @@ import { uiIcon } from "@/constants/ui-icons";
     /* 这一页内容窄，标题条与内容区一起收窄。
        .container-narrow 这个类保留，下面那条垂直居中还用得到 */
     #admin-main { --admin-content-max: 720px; }
-    /* 登录后这里只有三个入口，内容不多，让它落在视口中段而不是贴着顶，
+    /* 登录后这里只有几个入口，内容不多，让它落在视口中段而不是贴着顶，
        否则下面空一大片，看着像没加载完 */
     body.authed #admin-main .container-narrow {
       display: flex;
@@ -267,7 +267,7 @@ import { uiIcon } from "@/constants/ui-icons";
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 0.875rem;
     }
-    /* 三个入口卡片：底色、边框、圆角、阴影都由博客的 .card-base 负责
+    /* 入口卡片：底色、边框、圆角、阴影都由博客的 .card-base 负责
        （标签上已经写了），这里只补摆法与悬停抬升 */
     .admin-card {
       display: flex;
@@ -411,6 +411,11 @@ import { uiIcon } from "@/constants/ui-icons";
           <div class="admin-card-icon" set:html={uiIcon("fluent-color:clipboard-text-edit-24")} />
           <div class="admin-card-title">文章管理</div>
           <div class="admin-card-desc">编写、编辑、发布文章</div>
+        </a>
+        <a href="/admin/site/" class="card-base admin-card">
+          <div class="admin-card-icon" set:html={uiIcon("fluent-color:contact-card-24")} />
+          <div class="admin-card-title">站点信息</div>
+          <div class="admin-card-desc">改站点标题、个人签名、页脚等文案</div>
         </a>
         <button type="button" class="card-base admin-card" onclick="toggleAvatarPanel()">
           <div class="admin-card-icon" set:html={uiIcon("fluent-color:image-24")} />

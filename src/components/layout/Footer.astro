@@ -2,6 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { footerConfig, profileConfig } from "@/config";
+import { siteInfo } from "@/config/siteInfo";
 import {
 	getAnalyticsServicesHtml,
 	getServiceBadgesHtml,
@@ -9,6 +10,28 @@ import {
 import { url } from "@/utils/url-utils";
 
 const currentYear = new Date().getFullYear();
+
+/**
+ * FooterConfig.html 里可以写 {{xxx}} 占位符，这里负责顶掉。
+ * 目前只有一个：{{footerText}} —— 页脚那行文案，后台「站点信息」页可改。
+ *
+ * 值要做 HTML 转义：它是一句纯文案，里面的 < > & 应该原样显示，
+ * 而不是被当成标签塞进页脚。
+ */
+const FOOTER_PLACEHOLDERS: Record<string, string> = {
+	footerText: siteInfo.footerText,
+};
+
+function fillPlaceholders(html: string): string {
+	return html.replace(/\{\{(\w+)\}\}/g, (match, key: string) => {
+		const value = FOOTER_PLACEHOLDERS[key];
+		if (value === undefined) return match;
+		return value
+			.replace(/&/g, "&amp;")
+			.replace(/</g, "&lt;")
+			.replace(/>/g, "&gt;");
+	});
+}
 
 // 读取 package.json 获取版本号
 let themeVersion = "unknown";
@@ -42,6 +65,8 @@ if (footerConfig.enable) {
 		customFooterHtml = customFooterHtml
 			.replace(/__SERVICE_BADGES__/g, getServiceBadgesHtml())
 			.replace(/__ANALYTICS_SERVICES__/g, getAnalyticsServicesHtml());
+		// 最后顶掉 {{footerText}} 这类站点信息占位符
+		customFooterHtml = fillPlaceholders(customFooterHtml);
 	} catch (error) {
 		console.warn("FooterConfig.html文件读取失败:", error.message);
 	}

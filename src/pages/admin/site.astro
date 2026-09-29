@@ -1,0 +1,397 @@
+---
+import Footer from "@components/layout/Footer.astro";
+// 站点信息 - 改的是文案，不是代码。
+// 读写仓库里的 src/data/siteInfo.json，保存后由 Cloudflare 自动重新构建。
+import AdminTheme from "@/components/admin/AdminTheme.astro";
+import AdminTopBar from "@/components/admin/AdminTopBar.astro";
+import { adminBodyClass, adminHtmlClass } from "@/components/admin/adminShell";
+import { externalPostsConfig } from "@/config/externalPostsConfig";
+// 后台不走博客 Layout，也就没有 iconify 运行时，图标用构建期内联的 SVG
+import { uiIcon } from "@/constants/ui-icons";
+
+/**
+ * 这个页面读写仓库里的哪个文件。
+ * 仓库信息与文章后台共用一份（externalPostsConfig），别在这里另写一遍 owner/repo。
+ */
+const target = {
+	owner: externalPostsConfig.owner,
+	repo: externalPostsConfig.repo,
+	branch: externalPostsConfig.branch,
+	path: "src/data/siteInfo.json",
+};
+
+/**
+ * 表单字段表。
+ *
+ * ⚠️ key 必须与 src/data/siteInfo.json 的键、以及 src/config/siteInfo.ts 里读的键
+ *    三处完全一致。对不上不会报错，只是前台退回默认值 —— 表现为"保存了但没生效"，
+ *    极难排查。改这里时顺手看一眼那两个文件。
+ *
+ * kind：text 单行输入框，lines 多行（一行一句）
+ * hint 里写清"这段字最终显示在哪"，免得改了半天不知道改的是哪里。
+ */
+const fields = [
+	{
+		key: "siteTitle",
+		label: "站点标题",
+		kind: "text",
+		rows: 1,
+		maxlength: 40,
+		placeholder: "WWPPL Blog",
+		hint: "显示在：<b>浏览器标签页</b>、收藏本站时的名字、搜索结果标题、页脚版权行。不能为空。",
+	},
+	{
+		key: "siteSubtitle",
+		label: "站点副标题",
+		kind: "lines",
+		rows: 2,
+		maxlength: 120,
+		placeholder: "一句话说明这个站是干什么的",
+		hint: "给搜索引擎和 RSS 用的站点说明。<b>不会出现在浏览器标签页上</b>。",
+	},
+	{
+		key: "bio",
+		label: "个人签名",
+		kind: "lines",
+		rows: 2,
+		maxlength: 80,
+		placeholder: "一句话介绍自己",
+		hint: "显示在：侧边栏资料卡里，头像下面那一行。",
+	},
+	{
+		key: "bannerLines",
+		label: "首页横幅句子",
+		kind: "lines",
+		rows: 5,
+		maxlength: 120,
+		placeholder: "一行一句",
+		hint: "显示在：首页横幅。一行一句，会与文章摘句、站点实况一起轮播。全部清空则只轮播自动生成的内容。",
+	},
+	{
+		key: "footerText",
+		label: "页脚文案",
+		kind: "lines",
+		rows: 2,
+		maxlength: 120,
+		placeholder: "页脚那行字",
+		hint: "显示在：每个页面最底部那一行。留空则整行不显示。",
+	},
+	{
+		key: "friendsDesc",
+		label: "友链页站点描述",
+		kind: "lines",
+		rows: 2,
+		maxlength: 160,
+		placeholder: "友链页用的站点简介",
+		hint: "显示在：友链页「一键复制所有信息」复制出来的内容里。",
+	},
+];
+---
+
+<html lang="zh-CN" class={adminHtmlClass}>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>站点信息</title>
+  {/* 后台是站长自用界面，不该出现在搜索结果里（sitemap 中同样已剔除） */}
+  <meta name="robots" content="noindex, nofollow" />
+  {/* 样式、字体、主题色都来自这里，页面自己的样式放在它后面 */}
+  <AdminTheme />
+  <style is:inline>
+    /* ===== 只放这一页特有的排版，通用部分在 src/styles/admin.css ===== */
+
+    /* 这一页是表单，内容窄一些更好读 */
+    #admin-main { --admin-content-max: 720px; }
+
+    /* 开头的说明块：说清楚"改完怎么生效"，是这一页最该先被看到的东西 */
+    .page-lead {
+      display: flex;
+      /* 图标必须顶对齐：默认的 stretch 会把图标撑满两行高度，
+         SVG 作为行内元素就落到基线（看起来像掉到第二行去了） */
+      align-items: flex-start;
+      gap: 0.5rem;
+      margin-bottom: 0.25rem;
+      padding: 0.625rem 0.75rem;
+      background: var(--card-bg-soft);
+      border: 1px dashed var(--line);
+      border-radius: var(--radius-md);
+      font-size: 0.75rem;
+      line-height: 1.75;
+      color: var(--text-2);
+    }
+    .page-lead .lead-icon {
+      flex-shrink: 0;
+      margin-top: 0.2rem;
+      font-size: 1rem;
+      line-height: 1;
+    }
+
+    /* 底部一行：主按钮 + 还原 + 改动提示 */
+    .save-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+    .save-row .btn-primary { flex: 1; min-width: 10rem; }
+    .dirty-hint {
+      font-size: 0.6875rem;
+      color: var(--text-3);
+      white-space: nowrap;
+    }
+    .dirty-hint.dirty { color: var(--warning, var(--text-2)); }
+
+    /* 多行输入框比默认再高一点，句子长的时候不至于只看见一行 */
+    .card textarea { min-height: 4.5rem; }
+  </style>
+</head>
+<body class={adminBodyClass}>
+
+  <!-- ===== 后台主页 ===== -->
+  <div id="admin-main">
+    <AdminTopBar title="站点信息" withStatus={false} />
+
+    <div class="container">
+      <!-- 连接状态 -->
+      <div class="status-bar" id="status-bar">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="status-text">正在连接…</span>
+      </div>
+
+      <div class="card">
+        <div class="page-lead">
+          <span class="lead-icon" set:html={uiIcon("fluent-color:contact-card-24")} />
+          <span>
+            这里改的都是文案，不用动代码。点「保存并生效」会提交到仓库，
+            Cloudflare 随后自动重新构建，大约一两分钟全站生效 —— 刷新一下就能看到。
+          </span>
+        </div>
+
+        {
+          fields.map((f) => (
+            <div class="field">
+              <div class="field-label">{f.label}</div>
+              {f.kind === "lines" ? (
+                <textarea id={f.key} rows={f.rows} placeholder={f.placeholder} />
+              ) : (
+                <input
+                  type="text"
+                  class="input-single"
+                  id={f.key}
+                  maxlength={f.maxlength}
+                  placeholder={f.placeholder}
+                />
+              )}
+              <div class="field-hint" set:html={f.hint} />
+            </div>
+          ))
+        }
+      </div>
+
+      <div class="save-row">
+        <button class="btn btn-primary" id="save-btn" onclick="saveSiteInfo()">保存并生效</button>
+        <button class="btn btn-ghost" type="button" onclick="reloadFromRepo()">还原成仓库里的版本</button>
+        <span class="dirty-hint" id="dirty-hint"></span>
+      </div>
+    </div>
+
+    {/* 页脚与博客同一个组件 */}
+    <Footer />
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script is:inline src="/js/editor-commons.js"></script>
+  <script is:inline src="/js/admin-github.js"></script>
+  <script is:inline data-target={JSON.stringify(target)}>
+    var _script = document.currentScript;
+    var TARGET = JSON.parse(_script.getAttribute("data-target") || "{}");
+
+    // ===== 工具 =====
+    function $(id) { return document.getElementById(id); }
+    function toast(msg, type) {
+      var el = $("toast"); el.textContent = msg; el.className = "toast " + type + " show";
+      clearTimeout(el._t); el._t = setTimeout(function() { el.className = "toast"; }, 3200);
+    }
+    function setStatus(ok, text) {
+      $("status-dot").className = "status-dot " + (ok ? "ok" : "err");
+      $("status-text").textContent = text;
+    }
+
+    // toggleDark 与明暗初始化由 <AdminTheme /> 提供
+
+    // ===== 退出 =====
+    function doLogout() {
+      sessionStorage.removeItem("admin_auth");
+      fetch("/api/auth/logout", { method: "POST" }).catch(function() {});
+      window.location.href = "/admin/";
+    }
+
+    function checkAuth() {
+      return fetch("/api/auth/status")
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (!d.authed) { window.location.href = "/admin/"; return false; }
+          return true;
+        })
+        .catch(function() { window.location.href = "/admin/"; return false; });
+    }
+
+    // 中文要走 UTF-8 字节再转 base64，直接 btoa 会抛「Invalid character」
+    function b64EncodeUnicode(str) {
+      var bytes = new TextEncoder().encode(str);
+      var bin = "";
+      bytes.forEach(function(b) { bin += String.fromCharCode(b); });
+      return btoa(bin);
+    }
+    function b64DecodeUnicode(str) {
+      var bin = atob(str);
+      var bytes = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return new TextDecoder("utf-8").decode(bytes);
+    }
+
+    // ===== 字段与取值 =====
+    // 顺序与 siteInfo.json 的键顺序保持一致：写回去的文件 diff 才干净
+    var KEYS = ["siteTitle", "siteSubtitle", "bio", "bannerLines", "footerText", "friendsDesc"];
+    // 这几个在 JSON 里是数组（一行一句），其余是字符串
+    var ARRAY_KEYS = { bannerLines: true };
+
+    var cleanSnapshot = "";
+    var fileSha = "";
+
+    function toText(value) {
+      return typeof value === "string" ? value : "";
+    }
+
+    /** 把表单当前内容收成一个对象，顺便归一化（去首尾空白、丢掉空行） */
+    function snapshot() {
+      var out = {};
+      KEYS.forEach(function(key) {
+        var el = $(key);
+        if (!el) return;
+        if (ARRAY_KEYS[key]) {
+          out[key] = el.value.split(/\r?\n/).map(function(s) { return s.trim(); }).filter(Boolean);
+        } else {
+          out[key] = el.value.trim();
+        }
+      });
+      return out;
+    }
+
+    /** 把仓库里读到的对象填回表单 */
+    function applyData(data) {
+      KEYS.forEach(function(key) {
+        var el = $(key);
+        if (!el) return;
+        var value = data ? data[key] : undefined;
+        if (ARRAY_KEYS[key]) {
+          el.value = Array.isArray(value) ? value.join("\n") : toText(value);
+        } else {
+          el.value = toText(value);
+        }
+      });
+    }
+
+    function isDirty() {
+      return JSON.stringify(snapshot()) !== cleanSnapshot;
+    }
+    function markClean() {
+      cleanSnapshot = JSON.stringify(snapshot());
+      updateHint();
+    }
+    function updateHint() {
+      var el = $("dirty-hint");
+      var dirty = isDirty();
+      el.textContent = dirty ? "有改动还没保存" : "";
+      el.className = "dirty-hint" + (dirty ? " dirty" : "");
+    }
+
+    // ===== 读 =====
+    function loadFromRepo() {
+      setStatus(false, "正在读取仓库里的 siteInfo.json…");
+      return WBGitHub.getFile({
+        owner: TARGET.owner, repo: TARGET.repo, branch: TARGET.branch, path: TARGET.path
+      }).then(function(file) {
+        if (!file) {
+          // 正常情况不该发生：仓库里就有这个文件。真遇到说明路径写错了
+          setStatus(false, "仓库里没找到 " + TARGET.path);
+          toast("没读到 " + TARGET.path + "，检查一下路径", "err");
+          markClean();
+          return;
+        }
+        fileSha = file.sha || "";
+        var text = b64DecodeUnicode(String(file.content || "").replace(/\s/g, ""));
+        var data = null;
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          // 解析不了就绝不写回去：一写就把原文件覆盖成空的了
+          setStatus(false, "文件内容不是合法 JSON，没有改动任何东西");
+          toast("读出来的内容解析不了：" + e.message, "err");
+          return;
+        }
+        applyData(data);
+        markClean();
+        setStatus(true, "已连接");
+      }).catch(function(e) {
+        setStatus(false, e.message);
+        toast(e.message, "err");
+      });
+    }
+
+    function reloadFromRepo() {
+      if (isDirty() && !confirm("表单里还有没保存的改动，确定丢掉、重新读仓库里的版本？")) return;
+      loadFromRepo();
+    }
+
+    // ===== 写 =====
+    function saveSiteInfo() {
+      var data = snapshot();
+      if (!data.siteTitle) {
+        toast("站点标题不能空 —— 它要出现在浏览器标签页上", "err");
+        $("siteTitle").focus();
+        return;
+      }
+
+      var text = JSON.stringify(data, null, "\t") + "\n";
+      var btn = $("save-btn");
+      btn.disabled = true; btn.textContent = "保存中…";
+      setStatus(false, "正在提交到仓库…");
+
+      WBGitHub.putFile({
+        owner: TARGET.owner, repo: TARGET.repo, branch: TARGET.branch, path: TARGET.path,
+        content: b64EncodeUnicode(text),
+        message: "chore: 更新站点信息",
+        // 带上"我改的是哪一版"：文件在别处被改过时 GitHub 会用 409 挡下来，
+        // 不会把别人的改动覆盖掉
+        sha: fileSha || undefined
+      }).then(function(res) {
+        fileSha = (res && res.content && res.content.sha) || fileSha;
+        markClean();
+        setStatus(true, "已提交，等 Cloudflare 重新构建");
+        toast("已保存。Cloudflare 重新构建后全站生效（约一两分钟）", "ok");
+      }).catch(function(e) {
+        setStatus(false, e.message);
+        toast(e.message, "err");
+      }).then(function() {
+        btn.disabled = false; btn.textContent = "保存并生效";
+      });
+    }
+
+    // ===== 初始化 =====
+    KEYS.forEach(function(key) {
+      var el = $(key);
+      if (el) el.addEventListener("input", updateHint);
+    });
+    // 有改动没保存就关标签页时拦一下
+    WBEditor.guardUnsavedChanges(isDirty);
+
+    checkAuth().then(function(ok) {
+      if (!ok) return;
+      loadFromRepo();
+    });
+  </script>
+</body>
+</html>

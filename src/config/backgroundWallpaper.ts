@@ -1,4 +1,5 @@
 import type { BackgroundWallpaperConfig } from "@/types/backgroundWallpaper";
+import { siteInfo } from "./siteInfo";
 
 export const backgroundWallpaper: BackgroundWallpaperConfig = {
 	// 壁纸模式："banner" 横幅壁纸，"fullscreen" 全屏壁纸，"overlay" 全屏透明，"none" 纯色背景无壁纸
@@ -77,12 +78,9 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 			// 主页横幅主标题字体大小
 			titleSize: "3.8rem",
 			// 主页横幅句子（手写，会与下面 sources 里的内容一起轮播）
-			subtitle: [
-				"白天上课，晚上学专业软件、做项目。业余折腾最新的人工智能小玩意，水平也业余。",
-				"不追热点，只写做完的事",
-				"写下来，才算真正想过",
-				"软件出身，机械谋生，代码是业余里的正经事",
-			],
+			// 后台「站点信息」页（/admin/site/）可改，值存在 src/data/siteInfo.json，
+			// 那边一行一句。这里展开一份副本，避免别处不慎改到源数组。
+			subtitle: [...siteInfo.bannerLines],
 			// 主页横幅副标题字体大小
 			subtitleSize: "1.5rem",
 			// 轮播内容来源：除上面的手写句子外，混入本站自己的数据，全部自动生成、不用手动维护

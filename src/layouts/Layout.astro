@@ -77,13 +77,21 @@ const shouldShowTopHighlight =
 
 const enableBanner = backgroundWallpaper.mode === "banner";
 
+// 标签页标题只在两处取值：本页自己的标题，或站点标题。
+//
+// 站点副标题（「白天上课，晚上学专业软件……」那句自我介绍）**不参与拼标题**：
+// 它是一句完整的话，跟站点名拼起来会得到
+// 「WWPPL Blog - 白天上课，晚上学专业软件、做项目。业余折腾最新的人工智能小玩意，水平也业余。」
+// 这样一条 50 多字的标题 —— 浏览器标签只剩站点名可读，收藏夹、搜索结果、
+// 分享预览里也会整条塞进去。站长 2026-09-29 明确要求去掉。
+//
+// 副标题本身仍然保留在 siteConfig 里，继续供搜索引擎结构化数据
+// （下面的 alternateName）与 RSS 描述使用。
 let pageTitle: string;
 if (title) {
 	pageTitle = `${title} - ${siteConfig.title}`;
 } else {
-	pageTitle = siteConfig.subtitle
-		? `${siteConfig.title} - ${siteConfig.subtitle}`
-		: siteConfig.title;
+	pageTitle = siteConfig.title;
 }
 
 let ogImageUrl: string | undefined;

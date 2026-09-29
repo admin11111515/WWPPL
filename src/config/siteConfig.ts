@@ -1,4 +1,5 @@
 import type { SiteConfig } from "@/types/siteConfig";
+import { siteInfo } from "./siteInfo";
 
 // 定义站点语言
 // 语言代码，例如：'zh_CN', 'zh_TW', 'en', 'ja', 'ru'。
@@ -6,11 +7,14 @@ const SITE_LANG = "zh_CN";
 
 export const siteConfig: SiteConfig = {
 	// 站点标题
-	title: "WWPPL Blog",
+	// 后台「站点信息」页（/admin/site/）可改，值存在 src/data/siteInfo.json
+	title: siteInfo.siteTitle,
 
 	// 站点副标题
-	subtitle:
-		"白天上课，晚上学专业软件、做项目。业余折腾最新的人工智能小玩意，水平也业余。",
+	// 后台「站点信息」页可改。
+	// ⚠️ 它**不再进浏览器标签页标题**（站长 2026-09-29 要求去掉，见 Layout.astro），
+	//    现在只供搜索引擎结构化数据与 RSS 描述使用。
+	subtitle: siteInfo.siteSubtitle,
 
 	// 站点 URL
 	site_url: "https://wwppl.dpdns.org",

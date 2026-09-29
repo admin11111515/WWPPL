@@ -103,6 +103,25 @@ function collectPosts() {
 }
 const postFiles = collectPosts();
 
+/**
+ * 直接从仓库里读一个文件，只放行 src/ 下面的路径。
+ *
+ * 为什么需要它：后台不止写文章。比如「站点信息」页读写的是
+ * src/data/siteInfo.json —— 不在 posts 目录里，光靠 collectPosts() 是读不到的，
+ * 那页在预览里会一路报「仓库里没找到」。这里补一条通用回落，
+ * 以后再加这类页面也不用每次回来改预览服务。
+ */
+function readRepoFile(rel) {
+	if (!rel.startsWith("src/")) return undefined;
+	const full = path.join(WWPPL, rel);
+	try {
+		if (!fs.statSync(full).isFile()) return undefined;
+	} catch {
+		return undefined;
+	}
+	return fs.readFileSync(full, "utf8");
+}
+
 /** Gist 里那个文件名，从配置文件里抓，省得写死 */
 function fileNameFrom(configFile, dflt) {
 	try {
@@ -268,7 +287,7 @@ function handleApi(req, res, url) {
 	const contents = p.match(/^\/api\/github\/repos\/[^/]+\/[^/]+\/contents\/(.+)$/);
 	if (contents) {
 		const file = decodeURIComponent(contents[1]).split("/").map(decodeURIComponent).join("/");
-		const content = postFiles.get(file);
+		const content = postFiles.get(file) ?? readRepoFile(file);
 		if (content === undefined) return json(res, { error: "Not Found" }, 404);
 		return json(res, {
 			path: file,

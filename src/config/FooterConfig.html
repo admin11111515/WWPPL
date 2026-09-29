@@ -130,8 +130,11 @@
             </a>
 
         <div class="footer-info">
-            <!-- 文案 -->
-            <span>白天上课，晚上学专业软件、做项目。业余折腾最新的人工智能小玩意，水平也业余。</span>
+            <!-- 文案。{{footerText}} 是占位符，由 Footer.astro 用
+                 src/data/siteInfo.json 里的 footerText 顶掉 ——
+                 改文案去后台「站点信息」页（/admin/site/），不用动这个文件。
+                 注意别把 {{footerText}} 删了，删了这段文案就空了。 -->
+            <span>{{footerText}}</span>
         </div>
 
 

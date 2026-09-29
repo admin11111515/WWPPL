@@ -33,11 +33,12 @@ const UI_OUTPUT_FILE = join(SRC_DIR, "constants", "ui-icons.ts");
  *                    染色反而杂乱，保持中性
  */
 const EXPLICIT_ICONS = [
-	// 后台四个入口 / 内容种类
+	// 后台入口 / 内容种类
 	"fluent-color:clipboard-text-edit-24", // 写文章、写作
 	"fluent-color:book-open-24", // 笔记本、书籍
 	"fluent-color:chat-24", // 说说
 	"fluent-color:image-24", // 图库、图片集
+	"fluent-color:contact-card-24", // 站点信息（名片 = 资料）
 	// 字段标签
 	"fluent-color:document-text-24", // 内容
 	"fluent-color:image-24", // 图片（带外框，用于字段标签）
