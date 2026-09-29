@@ -39,6 +39,7 @@ const EXPLICIT_ICONS = [
 	"fluent-color:chat-24", // 说说
 	"fluent-color:image-24", // 图库、图片集
 	"fluent-color:contact-card-24", // 站点信息（名片 = 资料）
+	"fluent-color:document-edit-24", // 页面内容（改页面正文）
 	// 字段标签
 	"fluent-color:document-text-24", // 内容
 	"fluent-color:image-24", // 图片（带外框，用于字段标签）

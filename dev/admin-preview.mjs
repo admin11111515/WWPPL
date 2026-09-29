@@ -2,7 +2,7 @@
  * 后台本地预览
  *
  * 为什么需要它：
- *   后台四个页面打开时都会先问 /api/auth/status，没登录就跳回登录页；文章列表、
+ *   后台各页面打开时都会先问 /api/auth/status，没登录就跳回登录页；文章列表、
  *   正文、说说、笔记又全部走 /api/github/*。而这两个接口是 Cloudflare Pages
  *   Functions，本地只跑 astro dev / astro preview 时并不存在 —— 于是本地看到的
  *   永远只有登录页，没法确认样式改成了什么样。
@@ -15,7 +15,7 @@
  * 用法：
  *   node dev/admin-preview.mjs                起服务，默认 http://127.0.0.1:4322
  *   node dev/admin-preview.mjs --port 5000    换端口
- *   node dev/admin-preview.mjs --shot         起服务后自动截图四个后台页（亮/暗各一张）
+ *   node dev/admin-preview.mjs --shot         起服务后自动截图各后台页（亮/暗各一张）
  *   node dev/admin-preview.mjs --dir <path>   指定构建产物目录（默认自动找）
  *
  * 构建产物位置：优先 WWPPL/dist；本机若用 dev/sandbox.mjs 构建，产物在
@@ -414,6 +414,8 @@ async function shotPages() {
 	const pages = [
 		["login", "/admin/"],
 		["posts", "/admin/posts/"],
+		["pages-admin", "/admin/pages/"],
+		["site-admin", "/admin/site/"],
 		["moments", "/admin/moments/"],
 		["notebooks", "/admin/notebooks/"],
 		// 关于页不是后台，但新加的 GitHub 动态卡片在这里，要一起验收

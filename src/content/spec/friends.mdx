@@ -7,15 +7,22 @@ description: "与优秀的朋友们一起成长"
 
 {/* ========== 站点信息 ========= */}
 
-{/* 站点名称与站点描述走 src/data/siteInfo.json（后台「站点信息」页可改），
-    免得改了站点标题却忘了这里。链接与头像仍是本页自己的配置。 */}
+{/* 本站信息全部取共用配置，本页不再写死任何一项：
+    站点名称与描述 → src/data/siteInfo.json（后台「站点信息」页可改）
+    站点链接       → src/data/siteInfo.json 的 siteUrl（同上）
+    头像           → profileConfig.avatar，也就是后台「换头像」上传的那个文件。
+                     原先这里写死的是 7 月的旧图 /assets/images/avatar.jpg，
+                     跟全站头像不是一张 —— 改成一并跟着 profileConfig 走，不会再跑偏。 */}
 import { siteInfo } from "@/config/siteInfo";
+import { profileConfig } from "@/config/profileConfig";
 
 export const site = {
   name: siteInfo.siteTitle,
   desc: siteInfo.friendsDesc,
-  url: "https://wwppl.dpdns.org/",
-  avatar: "/assets/images/avatar.jpg",
+  url: siteInfo.siteUrl,
+  avatar: profileConfig.avatar,
+  // 申请友链用的联系邮箱。留空时下面「发送申请邮件至」那个位置是空的，
+  // 想显示就去这里填（本页是代码，得改文件；界面上改不了）
   email: "",
 };
 

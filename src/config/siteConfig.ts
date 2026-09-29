@@ -17,10 +17,14 @@ export const siteConfig: SiteConfig = {
 	subtitle: siteInfo.siteSubtitle,
 
 	// 站点 URL
-	site_url: "https://wwppl.dpdns.org",
+	// 后台「站点信息」页可改。⚠️ 它进的是 astro.config.mjs 的 site，
+	// sitemap / canonical / RSS 的绝对链接全靠它拼 —— 填错整站链接全错，
+	// 所以 siteInfo.ts 里对它做了严格校验（不合法就退回默认值，不跟着错）
+	site_url: siteInfo.siteUrl,
 
 	// 站点描述
-	description: "WWPPL 的个人博客，记录生活与思考，偶尔分享一些技术心得。",
+	// 后台「站点信息」页可改。没单独写描述的页面用它当搜索引擎摘要
+	description: siteInfo.siteDescription,
 
 	// 站点关键词
 	keywords: ["WWPPL", "个人博客", "生活记录", "随笔", "感悟", "技术心得"],

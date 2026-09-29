@@ -50,6 +50,33 @@ const fields = [
 		hint: "给搜索引擎和 RSS 用的站点说明。<b>不会出现在浏览器标签页上</b>。",
 	},
 	{
+		key: "siteUrl",
+		label: "站点地址",
+		kind: "text",
+		rows: 1,
+		maxlength: 120,
+		placeholder: "https://example.com",
+		hint: "站点的完整网址，<b>不要带末尾斜杠</b>。搜索引擎收录、分享卡片的绝对链接、sitemap 都按它拼 —— 填错整站链接会跟着错，所以地址不合法时不会保存，会退回上一次的值。",
+	},
+	{
+		key: "siteDescription",
+		label: "站点描述",
+		kind: "lines",
+		rows: 2,
+		maxlength: 160,
+		placeholder: "一句话说明这个站写什么",
+		hint: "没单独写描述的页面，用这段当搜索引擎摘要。留空则退回用页面标题顶。",
+	},
+	{
+		key: "authorName",
+		label: "作者名",
+		kind: "text",
+		rows: 1,
+		maxlength: 40,
+		placeholder: "WWPPL",
+		hint: "显示在：页脚的版权行「© 年份 ___ All Rights Reserved.」、侧边栏资料卡。不能为空。",
+	},
+	{
 		key: "bio",
 		label: "个人签名",
 		kind: "lines",
@@ -254,7 +281,7 @@ const fields = [
 
     // ===== 字段与取值 =====
     // 顺序与 siteInfo.json 的键顺序保持一致：写回去的文件 diff 才干净
-    var KEYS = ["siteTitle", "siteSubtitle", "bio", "bannerLines", "footerText", "friendsDesc"];
+    var KEYS = ["siteTitle", "siteSubtitle", "siteUrl", "siteDescription", "authorName", "bio", "bannerLines", "footerText", "friendsDesc"];
     // 这几个在 JSON 里是数组（一行一句），其余是字符串
     var ARRAY_KEYS = { bannerLines: true };
 
@@ -352,6 +379,27 @@ const fields = [
       if (!data.siteTitle) {
         toast("站点标题不能空 —— 它要出现在浏览器标签页上", "err");
         $("siteTitle").focus();
+        return;
+      }
+      if (!data.authorName) {
+        toast("作者名不能空 —— 页脚的版权行要用它", "err");
+        $("authorName").focus();
+        return;
+      }
+      // 站点地址在前台那边也会校验（不合法就退回默认值），但那样你会"保存成功却看着没变"，
+      // 不如在这里当面拦住。判据与 src/config/siteInfo.ts 的 pickUrl 一致。
+      var urlProblem = "";
+      try {
+        var parsed = new URL(data.siteUrl);
+        if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+          urlProblem = "站点地址要是 http:// 或 https:// 开头的完整网址";
+        }
+      } catch (e) {
+        urlProblem = "站点地址不是个合法网址，检查一下有没有写全（https:// 那部分也要）";
+      }
+      if (urlProblem) {
+        toast(urlProblem, "err");
+        $("siteUrl").focus();
         return;
       }
 

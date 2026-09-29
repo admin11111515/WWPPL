@@ -10,7 +10,10 @@ export const profileConfig: ProfileConfig = {
 	avatar: "/assets/avatar.png",
 
 	// 名字
-	name: "WWPPL",
+	// 后台「站点信息」页可改，值存在 src/data/siteInfo.json。
+	// 显示在：页脚版权行「© 2026 ___ All Rights Reserved.」、侧边栏资料卡。
+	// **不能为空** —— 空了页脚版权行会缺一块
+	name: siteInfo.authorName,
 
 	// 个人签名
 	// 后台「站点信息」页（/admin/site/）可改，值存在 src/data/siteInfo.json。

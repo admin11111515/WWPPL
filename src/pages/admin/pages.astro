@@ -1,0 +1,588 @@
+---
+import Footer from "@components/layout/Footer.astro";
+// 页面内容 - 改的是「关于我 / 友情链接 / 留言板」三个页面的正文。
+// 读写仓库里的 src/content/spec/*.md(x)，保存后由 Cloudflare 自动重新构建。
+import AdminTheme from "@/components/admin/AdminTheme.astro";
+import AdminTopBar from "@/components/admin/AdminTopBar.astro";
+import { adminBodyClass, adminHtmlClass } from "@/components/admin/adminShell";
+import { externalPostsConfig } from "@/config/externalPostsConfig";
+// 后台不走博客 Layout，也就没有 iconify 运行时，图标用构建期内联的 SVG
+import { uiIcon } from "@/constants/ui-icons";
+
+/**
+ * 这个页面读写仓库里的哪个目录。
+ * 仓库信息与文章后台共用一份（externalPostsConfig），别在这里另写一遍 owner/repo。
+ */
+const target = {
+	owner: externalPostsConfig.owner,
+	repo: externalPostsConfig.repo,
+	branch: externalPostsConfig.branch,
+	dir: "src/content/spec",
+};
+
+/**
+ * 三个页面。file 必须与实际文件名逐字一致（大小写也算），
+ * 对不上不会报错，只会在打开时提示"仓库里没找到"。
+ *
+ * 每份都带一组「保存前的结构检查」—— 见下面 checks 的四个开关。
+ * 这些不是洁癖：后台存的是页面的源码，缺一行 `</div>` 就是整页排版塌掉，
+ * 而构建失败时线上仍是上一个版本，你会以为"保存了但没生效"。
+ *
+ * 所以宁可save不下去、当面说清哪里不对，也不要写一版坏的进去。
+ */
+const pages = [
+	{
+		file: "about.md",
+		label: "关于我",
+		live: "/about/",
+		summary: "整份都是正文，随便改。",
+		note: "「# 关于我」下面全是你自己的话。<code>##</code> 开头的那几行是小标题，<code>&gt; </code> 开头是引用块，空一行才是新段落。这份没有代码结构，改起来没有禁区。",
+		// 这一份没有骨架可断，唯一的底线是不为空（所有页面都有这条）
+		mustContain: [],
+	},
+	{
+		file: "guestbook.md",
+		label: "留言板",
+		live: "/guestbook/",
+		summary: "顶部是页面说明，下面几条是留言须知。",
+		note: "最上面两条 <code>---</code> 之间是页面标题和描述，改引号里的字就行；下面 <code>-</code> 开头的是须知条目，一条一行。",
+		requiresFrontmatter: true,
+	},
+	{
+		file: "friends.mdx",
+		label: "友情链接",
+		live: "/friends/",
+		summary: "这份里带着排版代码，改字就好。",
+		note: "页面上看到的文字直接改，但有两处别动：顶部 <code>import</code> 那几行、以及成对出现的花括号 <code>{ }</code> 和 <code>&lt;div&gt;</code>&nbsp;<code>&lt;/div&gt;</code>。它们管的是排版，删掉页面就乱了。保存前会替你核对一遍，对不上不会写进去。",
+		code: true,
+		mustContain: ["export const site", "export const notes"],
+		checkBraces: true,
+		checkTags: true,
+		requiresFrontmatter: true,
+	},
+];
+---
+
+<html lang="zh-CN" class={adminHtmlClass}>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>页面内容</title>
+  {/* 后台是站长自用界面，不该出现在搜索结果里（sitemap 中同样已剔除） */}
+  <meta name="robots" content="noindex, nofollow" />
+  {/* 样式、字体、主题色都来自这里，页面自己的样式放在它后面 */}
+  <AdminTheme />
+  <style is:inline>
+    /* ===== 只放这一页特有的排版，通用部分在 src/styles/admin.css ===== */
+
+    .layout-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      align-items: start;
+    }
+    @media (min-width: 980px) {
+      .layout-grid { grid-template-columns: 300px minmax(0, 1fr); }
+    }
+
+    /* 列表跟随页面滚动。三个页面而已，不长，跟 article 页是一个做法 */
+    .page-list-card { position: sticky; top: 5.25rem; }
+    @media (max-width: 979px) {
+      .page-list-card { position: static; }
+    }
+
+    /* 列表行就是一整块可点的区域，用按钮而不是 div：
+       键盘 Tab 能到、回车能开，也不用自己补 role */
+    .page-row {
+      display: block;
+      text-align: left;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--line-soft);
+      padding: 0.625rem 0.5rem;
+      margin: 0 -0.5rem;
+      width: calc(100% + 1rem);
+      border-radius: var(--radius-lg);
+      cursor: pointer;
+      transition: background-color 0.15s;
+      font-family: inherit;
+      color: inherit;
+    }
+    .page-row:last-child { border-bottom: none; }
+    .page-row:hover { background: var(--btn-plain-bg-hover); }
+    .page-row.active { background: var(--btn-plain-bg-hover); }
+    .page-row .row-title {
+      font-size: 0.8125rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 0.125rem;
+    }
+    .page-row.active .row-title { color: var(--primary); }
+    .page-row .row-desc {
+      font-size: 0.6875rem;
+      color: var(--text-3);
+      line-height: 1.6;
+    }
+
+    .list-foot {
+      margin: 0.75rem 0 0;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--line-soft);
+      font-size: 0.6875rem;
+      line-height: 1.7;
+      color: var(--text-3);
+    }
+
+    /* 开头的说明块：说清楚"改完怎么生效"，是这一页最该先被看到的东西 */
+    .page-lead {
+      display: flex;
+      /* 图标必须顶对齐：默认的 stretch 会把图标撑满两行高度，
+         SVG 作为行内元素就落到基线（看起来像掉到第二行去了） */
+      align-items: flex-start;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      padding: 0.625rem 0.75rem;
+      background: var(--card-bg-soft);
+      border: 1px dashed var(--line);
+      border-radius: var(--radius-md);
+      font-size: 0.75rem;
+      line-height: 1.75;
+      color: var(--text-2);
+    }
+    .page-lead .lead-icon {
+      flex-shrink: 0;
+      margin-top: 0.2rem;
+      font-size: 1rem;
+      line-height: 1;
+    }
+    .page-lead code {
+      padding: 0.05rem 0.3rem;
+      border-radius: var(--radius-sm);
+      background: var(--btn-regular-bg);
+      font-family: var(--admin-font-mono);
+      font-size: 0.9em;
+    }
+    /* 带代码的页面单独给一条实线警示，跟上面那条虚线说明区分开 */
+    .page-lead.warn {
+      border: 1px solid var(--danger);
+      background: var(--danger-soft);
+      color: var(--text);
+    }
+
+    .editor-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.75rem;
+    }
+    .file-path {
+      font-family: var(--admin-font-mono);
+      font-size: 0.6875rem;
+      color: var(--text-3);
+      word-break: break-all;
+    }
+    .open-live {
+      flex: none;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--primary);
+      text-decoration: none;
+    }
+    .open-live:hover { text-decoration: underline; }
+    /* 后台没有 iconify 运行时，跳转箭头只能写字面字符 */
+
+    /* 这一页只有一个编辑窗格，铺满整行 —— 覆盖通用样式里"宽屏分两栏"的设定 */
+    #admin-main .editor-container { grid-template-columns: 1fr; }
+
+    .save-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+    .save-row .btn-primary { flex: 1; min-width: 10rem; }
+    .dirty-hint {
+      font-size: 0.6875rem;
+      color: var(--text-3);
+      white-space: nowrap;
+    }
+    .dirty-hint.dirty { color: var(--danger); }
+  </style>
+</head>
+<body class={adminBodyClass}>
+
+  <div id="admin-main">
+    <AdminTopBar title="页面内容" withStatus={false} />
+
+    <div class="container">
+      <!-- 连接状态 -->
+      <div class="status-bar" id="status-bar">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="status-text">正在连接…</span>
+      </div>
+
+      <div class="layout-grid">
+        <!-- ===== 左：页面列表 ===== -->
+        <aside class="card page-list-card">
+          <div class="list-header">
+            <div class="field-label" style="margin:0">
+              <span class="icon" set:html={uiIcon("fluent-color:document-text-24")} /> 站点页面
+            </div>
+            <span class="count">{pages.length} 个</span>
+          </div>
+          <div id="page-list">
+            {
+              pages.map((p, i) => (
+                <button type="button" class="page-row" data-index={i} onclick={`openPage(${i})`}>
+                  <div class="row-title">{p.label}</div>
+                  <div class="row-desc">{p.summary}</div>
+                </button>
+              ))
+            }
+          </div>
+          <p class="list-foot">
+            这里只管下面这几个页面的正文。文章在「文章管理」，
+            站点标题、页脚那些文案在「站点信息」。
+          </p>
+        </aside>
+
+        <!-- ===== 右：编辑器 ===== -->
+        <main>
+          <div class="card">
+            <div class="page-lead">
+              <span class="lead-icon" set:html={uiIcon("fluent-color:contact-card-24")} />
+              <span>
+                改的是仓库里的页面正文，不用动代码。点「保存并生效」会提交到仓库，
+                Cloudflare 随后自动重新构建，大约一两分钟全站生效 —— 刷新页面就能看到。
+              </span>
+            </div>
+
+            {/* 当前页的注意事项，切换页面时由脚本改写内容 */}
+            <div class="page-lead" id="page-note">
+              <span class="lead-icon" set:html={uiIcon("fluent-color:warning-24")} />
+              <span id="page-note-text"></span>
+            </div>
+
+            <div class="editor-head">
+              <span class="file-path" id="file-path">—</span>
+              <a class="open-live" id="open-live" href="#" target="_blank" rel="noopener">打开页面看看效果 →</a>
+            </div>
+
+            <div class="editor-container" id="editor-container">
+              <div class="editor-pane" data-pane="edit">
+                <textarea
+                  class="editor-textarea"
+                  id="page-text"
+                  spellcheck="false"
+                  autocapitalize="off"
+                  autocorrect="off"
+                  placeholder="正在读取…"
+                  disabled
+                ></textarea>
+                <div class="editor-footer">
+                  <span class="editor-hint" id="count-hint"></span>
+                  <span class="editor-hint" id="position-hint"></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="save-row">
+              <button class="btn btn-primary" id="save-btn" onclick="savePage()" disabled>保存并生效</button>
+              <button class="btn btn-ghost" type="button" onclick="reloadPage()">还原成仓库里的版本</button>
+              <span class="dirty-hint" id="dirty-hint"></span>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    {/* 页脚与博客同一个组件 */}
+    <Footer />
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script is:inline src="/js/editor-commons.js"></script>
+  <script is:inline src="/js/admin-github.js"></script>
+  <script
+    is:inline
+    data-target={JSON.stringify(target)}
+    data-pages={JSON.stringify(pages)}
+  >
+    var _script = document.currentScript;
+    var TARGET = JSON.parse(_script.getAttribute("data-target") || "{}");
+    var PAGES = JSON.parse(_script.getAttribute("data-pages") || "[]");
+
+    // ===== 状态 =====
+    // 一次只开一个文件：current 是它的路径、sha 与"读进来时那份内容"。
+    // cleanText 用来判断有没有改动 —— 跟读进来的一模一样就是没改。
+    var currentIndex = -1;
+    var current = null;
+    var fileSha = "";
+    var cleanText = "";
+    var loading = false;
+
+    // ===== 工具 =====
+    function $(id) { return document.getElementById(id); }
+    function toast(msg, type) {
+      var el = $("toast"); el.textContent = msg; el.className = "toast " + type + " show";
+      clearTimeout(el._t); el._t = setTimeout(function() { el.className = "toast"; }, 3200);
+    }
+    function setStatus(ok, text) {
+      $("status-dot").className = "status-dot " + (ok ? "ok" : "err");
+      $("status-text").textContent = text;
+    }
+    function setBusy(on) {
+      loading = on;
+      $("save-btn").disabled = on || !current;
+      $("page-text").disabled = on;
+    }
+
+    // ===== 退出 =====
+    function doLogout() {
+      sessionStorage.removeItem("admin_auth");
+      fetch("/api/auth/logout", { method: "POST" }).catch(function() {});
+      window.location.href = "/admin/";
+    }
+
+    function checkAuth() {
+      return fetch("/api/auth/status")
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (!d.authed) { window.location.href = "/admin/"; return false; }
+          return true;
+        })
+        .catch(function() { window.location.href = "/admin/"; return false; });
+    }
+
+    // 中文要走 UTF-8 字节再转 base64，直接 btoa 会抛「Invalid character」
+    function b64EncodeUnicode(str) {
+      var bytes = new TextEncoder().encode(str);
+      var bin = "";
+      bytes.forEach(function(b) { bin += String.fromCharCode(b); });
+      return btoa(bin);
+    }
+    function b64DecodeUnicode(str) {
+      var bin = atob(str);
+      var bytes = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return new TextDecoder("utf-8").decode(bytes);
+    }
+
+    // ===== 改动判断 =====
+    function isDirty() {
+      return !!current && $("page-text").value !== cleanText;
+    }
+    function updateHint() {
+      var el = $("dirty-hint");
+      var dirty = isDirty();
+      el.textContent = dirty ? "有改动还没保存" : "";
+      el.className = "dirty-hint" + (dirty ? " dirty" : "");
+      updateCount();
+    }
+    function markClean() {
+      cleanText = $("page-text").value;
+      updateHint();
+    }
+
+    // 只报"多少行、多少字符"。文章页那套"字数/阅读分钟"是把代码块剔掉再数的，
+    // 用在这里会把一大段排版代码当成正文（页面上根本不显示那些字），数字反而骗人。
+    function updateCount() {
+      var text = $("page-text").value;
+      var lines = text ? text.split("\n").length : 0;
+      $("count-hint").textContent = current
+        ? "共 " + lines + " 行 · " + text.length + " 字符 · " + (isDirty() ? "未同步" : "与仓库一致")
+        : "";
+    }
+    function updatePosition() {
+      var ta = $("page-text");
+      if (!current) { $("position-hint").textContent = ""; return; }
+      var upto = ta.value.slice(0, ta.selectionStart);
+      var line = upto.split("\n").length;
+      var col = upto.length - upto.lastIndexOf("\n");
+      $("position-hint").textContent = "第 " + line + " 行，第 " + col + " 列";
+    }
+
+    // ===== 保存前的结构检查 =====
+    // 返回空串表示可以存；否则返回一句"哪里不对"，由调用方弹出来。
+    // 这几条只挡"一眼是坏的"那种改动，不做格式洁癖。
+
+    /**
+     * 成对标签清单。只列**成对出现**的：img / path 那种自闭合的不能进来，
+     * 它们天生"开 n 个、闭 0 个"，一列就天天误报。
+     *
+     * 为什么不干脆查"文件里还有没有 </div>"：文件里几十个 </div>，
+     * 删掉一个照样能匹配上 —— 第一版就是这么漏的，核验脚本当场抓住了。
+     * 能发现"少了一个"的只有配对数量。
+     */
+    var PAIRED_TAGS = ["div", "span", "button", "p", "strong", "code", "svg", "h2", "h3", "a", "ul", "li"];
+
+    function unbalancedTag(text) {
+      for (var i = 0; i < PAIRED_TAGS.length; i++) {
+        var tag = PAIRED_TAGS[i];
+        // 标签名后面必须跟空白、> 或 /，否则 <a 会把 <article 也算进来
+        var open = (text.match(new RegExp("<" + tag + "[\\s>/]", "g")) || []).length;
+        var close = (text.match(new RegExp("</" + tag + ">", "g")) || []).length;
+        if (open !== close) return { tag: tag, open: open, close: close };
+      }
+      return null;
+    }
+
+    function inspect(page, text) {
+      if (!text.trim()) {
+        return "内容变成空的了，没有保存 —— 整页清空会把页面变成空白";
+      }
+
+      var missing = (page.mustContain || []).filter(function(s) { return text.indexOf(s) === -1; });
+      if (missing.length) {
+        return "少了「" + missing.join("」「") + "」，没有保存。这几段是页面骨架，删了排版会塌";
+      }
+
+      if (page.requiresFrontmatter) {
+        // 顶部那对 --- 之间是页面标题与描述，掉了页面就没有标题
+        var m = text.match(/^---\s*\n[\s\S]*?\n---\s*\n/);
+        if (!m) return "顶部那两条 --- 之间是页面标题和描述，现在这一对不完整，没有保存";
+      }
+
+      if (page.checkBraces) {
+        var open = (text.match(/\{/g) || []).length;
+        var close = (text.match(/\}/g) || []).length;
+        if (open !== close) {
+          return "花括号数量对不上（{ 有 " + open + " 个，} 有 " + close + " 个），没有保存。" +
+            "多半是改动时碰到了一对 {} —— 撤销一次试试（Ctrl+Z）";
+        }
+      }
+
+      if (page.checkTags) {
+        var bad = unbalancedTag(text);
+        if (bad) {
+          return "<" + bad.tag + "> 标签数量对不上（开始标签 " + bad.open + " 个，结束标签 " +
+            bad.close + " 个），没有保存。多半是改动时碰掉了一个标签 —— 撤销一次试试（Ctrl+Z）";
+        }
+      }
+
+      return "";
+    }
+
+    // ===== 打开某一页 =====
+    function openPage(index) {
+      var page = PAGES[index];
+      if (!page) return;
+      if (loading) return;
+      if (index === currentIndex) return;
+      if (isDirty() && !confirm("「" + current.label + "」还有没保存的改动，确定丢掉、换成「" +
+        page.label + "」？")) return;
+      loadPage(index);
+    }
+
+    function loadPage(index) {
+      var page = PAGES[index];
+      currentIndex = index;
+      current = page;
+
+      // 列表高亮
+      var rows = document.querySelectorAll("#page-list .page-row");
+      for (var i = 0; i < rows.length; i++) {
+        rows[i].classList.toggle("active", i === index);
+      }
+
+      // 头部与提示
+      $("file-path").textContent = TARGET.dir + "/" + page.file;
+      $("open-live").href = page.live;
+      $("page-note-text").innerHTML = page.note;
+      $("page-note").className = "page-lead" + (page.code ? " warn" : "");
+
+      setBusy(true);
+      $("page-text").value = "";
+      $("page-text").placeholder = "正在读取 " + page.file + "…";
+      setStatus(false, "正在读取仓库里的 " + page.file + "…");
+
+      return WBGitHub.getFile({
+        owner: TARGET.owner, repo: TARGET.repo, branch: TARGET.branch,
+        path: TARGET.dir + "/" + page.file
+      }).then(function(file) {
+        if (!file) {
+          // 正常情况不该发生：仓库里就有这个文件。真遇到说明目录或文件名写错了
+          setStatus(false, "仓库里没找到 " + TARGET.dir + "/" + page.file);
+          toast("没读到 " + page.file + "，检查一下文件名对不对", "err");
+          $("page-text").disabled = true;
+          return;
+        }
+        fileSha = file.sha || "";
+        $("page-text").value = b64DecodeUnicode(String(file.content || "").replace(/\s/g, ""));
+        $("page-text").disabled = false;
+        markClean();
+        setStatus(true, "已连接");
+      }).catch(function(e) {
+        setStatus(false, e.message);
+        toast(e.message, "err");
+        $("page-text").placeholder = "读取出错：" + e.message;
+        $("page-text").disabled = true;
+      }).then(function() {
+        loading = false;
+        $("save-btn").disabled = !current || $("page-text").disabled;
+      });
+    }
+
+    function reloadPage() {
+      if (currentIndex < 0) return;
+      if (isDirty() && !confirm("编辑框里还有没保存的改动，确定丢掉、重新读仓库里的版本？")) return;
+      loadPage(currentIndex);
+    }
+
+    // ===== 写 =====
+    function savePage() {
+      if (!current) return;
+      var text = $("page-text").value;
+
+      var problem = inspect(current, text);
+      if (problem) {
+        toast(problem, "err");
+        setStatus(false, problem);
+        return;
+      }
+
+      var btn = $("save-btn");
+      btn.disabled = true; btn.textContent = "保存中…";
+      setStatus(false, "正在提交到仓库…");
+
+      WBGitHub.putFile({
+        owner: TARGET.owner, repo: TARGET.repo, branch: TARGET.branch,
+        path: TARGET.dir + "/" + current.file,
+        content: b64EncodeUnicode(text),
+        message: "chore: 更新页面正文（" + current.label + "）",
+        // 带上"我改的是哪一版"：文件在别处被改过时 GitHub 会用 409 挡下来，
+        // 不会把别人的改动覆盖掉
+        sha: fileSha || undefined
+      }).then(function(res) {
+        fileSha = (res && res.content && res.content.sha) || fileSha;
+        markClean();
+        setStatus(true, "已提交，等 Cloudflare 重新构建");
+        toast("已保存。Cloudflare 重新构建后全站生效（约一两分钟）", "ok");
+      }).catch(function(e) {
+        setStatus(false, e.message);
+        toast(e.message, "err");
+      }).then(function() {
+        btn.disabled = false; btn.textContent = "保存并生效";
+      });
+    }
+
+    // ===== 初始化 =====
+    $("page-text").addEventListener("input", updateHint);
+    // 光标位置：等号右边那行在动，编辑长文件时好歹知道自己在第几行
+    ["click", "keyup", "select"].forEach(function(ev) {
+      $("page-text").addEventListener(ev, updatePosition);
+    });
+    // 有改动没保存就关标签页时拦一下
+    WBEditor.guardUnsavedChanges(isDirty);
+
+    checkAuth().then(function(ok) {
+      if (!ok) return;
+      loadPage(0);
+    });
+  </script>
+</body>
+</html>

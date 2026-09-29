@@ -21,7 +21,8 @@ import raw from "../data/siteInfo.json";
  *    · 值是**空字符串 / 空数组** → 尊重操作，就是"不要这段"，不拿默认值盖回去
  *      否则你在后台清空页脚文案，前台却照旧显示，只会让人以为没保存上。
  *
- * 不含站点 URL、主题色、导航这些 —— 那些改错了会让站直接坏，留在配置文件里改代码。
+ * 含站点地址、站点描述、作者名，这三个也接进了后台，见下面 pickUrl 的说明。
+ * **不含**主题色、导航菜单这些 —— 它们不是「文案」，改错了会让站直接坏，仍留在配置文件里改代码。
  */
 
 /** 兜底值：与仓库里最后一次确认过的文案一致，JSON 字段缺失或类型不对时顶上 */
@@ -29,6 +30,9 @@ const FALLBACK = {
 	siteTitle: "WWPPL Blog",
 	siteSubtitle:
 		"白天上课，晚上学专业软件、做项目。业余折腾最新的人工智能小玩意，水平也业余。",
+	siteUrl: "https://wwppl.dpdns.org",
+	siteDescription: "WWPPL 的个人博客，记录生活与思考，偶尔分享一些技术心得。",
+	authorName: "WWPPL",
 	bio: "白天上课，晚上学专业软件、做项目。业余折腾最新的人工智能小玩意，水平也业余。",
 	bannerLines: [
 		"白天上课，晚上学专业软件、做项目。业余折腾最新的人工智能小玩意，水平也业余。",
@@ -54,6 +58,27 @@ function pickRequired(value: unknown, fallback: string): string {
 	return trimmed ? trimmed : fallback;
 }
 
+/**
+ * 站点地址：唯一一个「留空也退默认值」的字段。
+ *
+ * 它进的是 `astro.config.mjs` 的 `site`，sitemap、canonical、RSS 里的绝对链接
+ * 全靠它拼。写坏的后果不是"某处文案不对"，而是整站链接全错、搜索引擎收录到
+ * 一堆错地址 —— 所以这里不放行任何不合法的输入：
+ * 必须能解析成 URL、协议必须是 http/https、末尾斜杠去掉（其余地方按无斜杠用）。
+ */
+function pickUrl(value: unknown, fallback: string): string {
+	if (typeof value !== "string") return fallback;
+	const trimmed = value.trim().replace(/\/+$/, "");
+	if (!trimmed) return fallback;
+	try {
+		const { protocol } = new URL(trimmed);
+		if (protocol !== "http:" && protocol !== "https:") return fallback;
+		return trimmed;
+	} catch {
+		return fallback;
+	}
+}
+
 /** 一组句子。非数组 → 兜底；数组（哪怕空数组）→ 原样采用 */
 function pickLines(value: unknown, fallback: readonly string[]): string[] {
 	if (!Array.isArray(value)) return [...fallback];
@@ -70,6 +95,17 @@ export const siteInfo = {
 	/** 站点副标题：搜索引擎结构化数据、RSS 描述。
 	 *  ⚠️ 不进浏览器标签页标题（见 Layout.astro 里的说明） */
 	siteSubtitle: pickText(raw.siteSubtitle, FALLBACK.siteSubtitle),
+
+	/** 站点地址：sitemap / canonical / RSS 的绝对链接靠它拼。
+	 *  不留尾巴斜杠。不合法或留空都退回默认值（见 pickUrl 的说明） */
+	siteUrl: pickUrl(raw.siteUrl, FALLBACK.siteUrl),
+
+	/** 站点描述：没单独写描述的页面用它当搜索引擎摘要（Layout.astro）。
+	 *  留空 = 真的不要，那时退回用页面标题顶 */
+	siteDescription: pickText(raw.siteDescription, FALLBACK.siteDescription),
+
+	/** 作者名：页脚版权行「© 2026 ___」与侧边栏资料卡。**不能为空** */
+	authorName: pickRequired(raw.authorName, FALLBACK.authorName),
 
 	/** 个人签名：侧边栏资料卡头像下面那行 */
 	bio: pickText(raw.bio, FALLBACK.bio),
