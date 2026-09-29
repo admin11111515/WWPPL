@@ -48,6 +48,28 @@ function ensureDir(dir) {
 	fs.mkdirSync(dir, { recursive: true });
 }
 
+/** 覆盖写入偶尔会撞上瞬时占用：Windows 上杀软/索引服务会在刚写入的文件上
+ *  短暂持锁，报出来的是 EPERM，看着像权限或配置坏了，其实等一下就好。
+ *  下面 prune 的删除早就带了 maxRetries，复制这一侧却漏了 ——
+ *  2026-09-29 一次 sync 就因此整个中断（源文件明明好好的）。
+ *  挨的这一下不值得让人去查权限，重试几次即可。 */
+function copyWithRetry(from, to) {
+	const retryable = new Set(["EPERM", "EBUSY", "EACCES", "EEXIST"]);
+	let lastErr;
+	for (let i = 0; i < 8; i++) {
+		try {
+			fs.copyFileSync(from, to);
+			return;
+		} catch (e) {
+			if (!retryable.has(e.code)) throw e;
+			lastErr = e;
+			// 同步睡：这里本来就是 IO 循环，没必要为它改成异步
+			Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 60 + 90 * i);
+		}
+	}
+	throw lastErr;
+}
+
 /** 递归镜像 source -> dest（只覆盖文件，不删除 dest 里被排除的目录） */
 function mirror(src, dest) {
 	ensureDir(dest);
@@ -67,7 +89,7 @@ function mirror(src, dest) {
 			} catch {
 				/* 目标不存在，继续复制 */
 			}
-			fs.copyFileSync(from, to);
+			copyWithRetry(from, to);
 		}
 	}
 }

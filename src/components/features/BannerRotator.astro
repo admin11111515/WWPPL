@@ -59,7 +59,15 @@ const liveJson = JSON.stringify(live);
 
 <script>
 	type Item = { kind: string; text: string; from?: string };
-	type RotatorEl = HTMLElement & { __rotator?: BannerRotator };
+	/**
+	 * `__seqKey` / `__seq` 是洗好顺序的缓存：同一份 DOM 会被初始化两次
+	 * （见 run()），缓存住才不至于第二遍从另一句重新打起。
+	 */
+	type RotatorEl = HTMLElement & {
+		__rotator?: BannerRotator;
+		__seqKey?: string;
+		__seq?: Item[];
+	};
 
 	/** 字号下限：再小就没人看得清了，宁可让药丸稍微宽过文字栏 */
 	const MIN_FONT_PX = 9;
@@ -111,23 +119,51 @@ const liveJson = JSON.stringify(live);
 			.trim();
 	}
 
-	/** 静态条目 + 按访客本地时间现算的实时条目，实时条目均匀插进去 */
-	function buildSequence(el: HTMLElement): Item[] {
+	/** 洗牌：只换顺序、不增不减 —— 一轮走完既不重复，也不会漏掉哪条 */
+	function shuffleArr<T>(arr: T[]): T[] {
+		const a = arr.slice();
+		for (let i = a.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			[a[i], a[j]] = [a[j], a[i]];
+		}
+		return a;
+	}
+
+	/**
+	 * 静态条目 + 按访客本地时间现算的实时条目，实时条目均匀插进去。
+	 *
+	 * 静态那批**每次进首页都重新洗一遍**：构建期虽然也洗过一次，但那个顺序是
+	 * 写死在 HTML 里的，谁来看、看几次都是同一套，久了就显得机械。
+	 * （想回到固定顺序，把下面那步 shuffleArr 去掉即可。）
+	 */
+	function buildSequence(el: RotatorEl): Item[] {
 		let items: Item[] = [];
 		let live: { template: string; dayNo?: number }[] = [];
+		const rawItems = el.dataset.items || "[]";
+		const rawLive = el.dataset.live || "[]";
 		try {
-			items = JSON.parse(el.dataset.items || "[]");
+			items = JSON.parse(rawItems);
 		} catch {
 			items = [];
 		}
 		try {
-			live = JSON.parse(el.dataset.live || "[]");
+			live = JSON.parse(rawLive);
 		} catch {
 			live = [];
 		}
 		if (!Array.isArray(items)) items = [];
 
-		const seq = items.slice();
+		/*
+		 * run() 会连着初始化两次（立刻一次、240ms 后再补一次，防止横幅显隐
+		 * 晚于内容替换）。同一份 DOM 上如果两次各洗各的，第二遍就会从另一个
+		 * 句子重新打起 —— 看着像打到一半突然改口。所以把洗好的顺序连同
+		 * 「源数据指纹」一起挂在元素上，源没变就沿用。
+		 * 站内跳转回来时 swup 换的是新元素，指纹对不上，自然会重洗。
+		 */
+		const key = `${rawItems}\u0000${rawLive}`;
+		if (el.__seqKey === key && el.__seq) return el.__seq;
+
+		const seq = shuffleArr(items);
 		if (Array.isArray(live) && live.length > 0) {
 			const filled = live
 				.map((t) => ({ kind: "live", text: fillTemplate(t.template, t) }))
@@ -141,6 +177,9 @@ const liveJson = JSON.stringify(live);
 				}
 			}
 		}
+
+		el.__seqKey = key;
+		el.__seq = seq;
 		return seq;
 	}
 
@@ -179,7 +218,7 @@ const liveJson = JSON.stringify(live);
 		/** 用户要求减少动态效果时不做逐字打字，直接整句淡入淡出 */
 		private calm = false;
 
-		constructor(el: HTMLElement) {
+		constructor(el: RotatorEl) {
 			this.el = el;
 			this.lineEl = el.querySelector(".banner-line") as HTMLElement;
 			this.textEl = el.querySelector(".banner-text") as HTMLElement;
