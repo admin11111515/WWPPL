@@ -20,11 +20,24 @@
  *    每次构建都会产生新的哈希文件名，旧条目不会自动失效，因此按条目数
  *    淘汰最旧的，防止缓存无限膨胀。
  *
+ * 5. 「整页导航」与「站内无刷新跳转」必须分开对待（2026-10-01 修）。
+ *    站内跳转（swup）与它的预取请求同样带 Accept: text/html，
+ *    但它们不是导航 —— 响应会被 swup 当成「那个页面」收下并渲染。
+ *    以前两者共用一套逻辑，于是网络一抖，这个 200 + 离线页的响应就被
+ *    当成 /music/ 这类页面渲染出来（连 URL 都会变成 /offline/）；
+ *    线路明明是好的，看到的却是「当前离线」。
+ *    现在只有真正的导航（request.mode === "navigate"）才给离线兜底页，
+ *    站内跳转拿不到缓存时把失败原样抛回去，交给 swup 自己回退成整页导航。
+ *
+ * 6. 写缓存失败绝不影响这次请求（2026-10-01 修）。
+ *    以前 cache.put 和 fetch 在同一个 try 里，配额满之类的写入失败会被
+ *    catch 成「网络失败」，把一次成功的响应变成离线页 / Response.error()。
+ *
  * 维护提示：改动本文件的缓存策略后，务必把 VERSION 加一，
  * 否则老访客的浏览器会继续沿用旧的缓存结构（activate 只清理版本号不同的缓存）。
  */
 
-const VERSION = "v1";
+const VERSION = "v2";
 const STATIC_CACHE = `wwppl-static-${VERSION}`;
 const PAGE_CACHE = `wwppl-page-${VERSION}`;
 // 显式解析成绝对地址：Cache.match() 虽然也接受相对路径，但那依赖浏览器按
@@ -88,6 +101,19 @@ function isCacheable(response) {
 	return !!response && response.ok && response.type === "basic";
 }
 
+/**
+ * 写缓存：失败只记一笔日志，绝不改变这次请求的结果。
+ * 配额满、磁盘异常等都会让 put 抛错，若让它冒泡到 fetch 的 catch，
+ * 一次成功的响应就会变成「离线页」或 Response.error()。
+ */
+async function safePut(cache, request, response) {
+	try {
+		await cache.put(request, response.clone());
+	} catch (error) {
+		console.warn("[sw] 写缓存失败，跳过本次缓存", error);
+	}
+}
+
 /** 按插入顺序裁剪缓存条目数 */
 async function trimCache(cache, limit) {
 	const keys = await cache.keys();
@@ -106,8 +132,12 @@ async function staleWhileRevalidate(request, cacheName) {
 	const network = fetch(request)
 		.then(async (response) => {
 			if (isCacheable(response)) {
-				await cache.put(request, response.clone());
-				await trimCache(cache, STATIC_CACHE_LIMIT);
+				await safePut(cache, request, response);
+				try {
+					await trimCache(cache, STATIC_CACHE_LIMIT);
+				} catch (error) {
+					console.warn("[sw] 裁剪缓存失败", error);
+				}
 			}
 			return response;
 		})
@@ -116,27 +146,71 @@ async function staleWhileRevalidate(request, cacheName) {
 	return cached || (await network) || Response.error();
 }
 
-/** 网络优先：拿得到就用最新的，拿不到回落到缓存，再不行给离线页 */
+/** 发一次请求；连不上 / DNS 失败 / 连接被重置都算失败，返回 null 而不是抛 */
+async function tryFetch(request) {
+	try {
+		return await fetch(request);
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * 整页导航：网络优先 → 缓存 → 离线兜底页。
+ * 只有真正的导航（request.mode === "navigate"）才走这里 ——
+ * 离线兜底页是一整份 HTML，只有「换页」的语义接得住它。
+ */
 async function networkFirstPage(request) {
 	const cache = await caches.open(PAGE_CACHE);
+
+	// 线路不好时「抖一下」很常见：先原地重试一次再认输，
+	// 少一次「明明网络马上就好、却被判成离线」。
+	let response = await tryFetch(request);
+	if (!response) {
+		await new Promise((resolve) => setTimeout(resolve, 400));
+		response = await tryFetch(request);
+	}
+
+	if (response) {
+		if (isCacheable(response)) {
+			await safePut(cache, request, response);
+		}
+		return response;
+	}
+
+	const cached =
+		(await cache.match(request)) || (await cache.match(OFFLINE_URL));
+	if (cached) return cached;
+
+	return new Response("offline", {
+		status: 503,
+		headers: { "Content-Type": "text/plain; charset=utf-8" },
+	});
+}
+
+/**
+ * 站内无刷新跳转（swup）与它的预取请求：同样带 Accept: text/html，但**不是**导航。
+ *
+ * 这类响应会被 swup 当成「那个页面」直接渲染，因此：
+ * 有缓存就用缓存；没有缓存就把失败原样抛回去 —— 绝不塞离线页。
+ * 塞了就会出现：线路只是抖了一下，点进音乐/番剧却整页变成「当前离线」，
+ * 而且 swup 可能把它记住，直到整页刷新才恢复。
+ * 抛回去之后 swup 会自己回退成整页导航，那时才是真正的导航，
+ * 该给离线页就给离线页，该成功就成功。
+ */
+async function htmlFragment(request) {
+	const cache = await caches.open(PAGE_CACHE);
+	const cached = await cache.match(request);
 
 	try {
 		const response = await fetch(request);
 		if (isCacheable(response)) {
-			await cache.put(request, response.clone());
+			await safePut(cache, request, response);
 		}
 		return response;
-	} catch {
-		const cached = await cache.match(request);
+	} catch (error) {
 		if (cached) return cached;
-
-		const offline = await cache.match(OFFLINE_URL);
-		if (offline) return offline;
-
-		return new Response("offline", {
-			status: 503,
-			headers: { "Content-Type": "text/plain; charset=utf-8" },
-		});
+		throw error;
 	}
 }
 
@@ -164,10 +238,16 @@ self.addEventListener("fetch", (event) => {
 		return;
 	}
 
-	// 页面导航，以及站内无刷新跳转（Swup）发起的 HTML 片段请求
-	const accept = request.headers.get("accept") || "";
-	if (request.mode === "navigate" || accept.includes("text/html")) {
+	// 整页导航：可以给离线兜底页
+	if (request.mode === "navigate") {
 		event.respondWith(networkFirstPage(request));
+		return;
+	}
+
+	// 站内无刷新跳转（Swup）与预取：同源、要 HTML，但不是导航
+	const accept = request.headers.get("accept") || "";
+	if (accept.includes("text/html")) {
+		event.respondWith(htmlFragment(request));
 	}
 
 	// 其余请求（RSS、JSON 等）不接管，交给浏览器默认行为
