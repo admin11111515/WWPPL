@@ -1685,7 +1685,10 @@ const showMini = musicPlayerConfig.showMiniPlayer ?? false;
         }
         
         syncLyrics(currentTime) {
-             if (!this.lyrics.length || !this.lyricsContainer) return;
+             // 只要歌词在内存里就算索引 —— 不能因为「本页没有歌词区」就整个放弃。
+             // `#lyrics-container` 只在 /music 页存在，而顶栏那个播放器面板每个页面都有，
+             // 它完全靠下面的 fm:lrc-index 事件跟随。在这里早退，等于让非 /music 页的歌词原地不动。
+             if (!this.lyrics.length) return;
             
             // Find current active line
             let activeIndex = -1;
@@ -1697,11 +1700,26 @@ const showMini = musicPlayerConfig.showMiniPlayer ?? false;
                 }
             }
             
-            const lines = this.lyricsContainer.querySelectorAll('.lyric-line');
-
-            if (activeIndex !== -1 && activeIndex !== this.lastActiveIndex) {
+            const changed = activeIndex !== -1 && activeIndex !== this.lastActiveIndex;
+            if (changed) {
                  this.lastActiveIndex = activeIndex;
 
+                // Broadcast lyrics highlight event for sidebar sync
+                // （与「本页有没有歌词容器」无关：顶栏面板在任意页面都监听它）
+                window.dispatchEvent(new CustomEvent('fm:lrc-index', {
+                    detail: {
+                        index: activeIndex
+                    }
+                }));
+            }
+
+            // 以下都是「本页歌词区」的活儿；非 /music 页没有容器，广播完就到此为止
+            const container = this.lyricsContainer;
+            if (!container) return;
+
+            const lines = container.querySelectorAll('.lyric-line');
+
+            if (changed) {
                 lines.forEach((line, idx) => {
                     if (idx !== activeIndex) {
                          // Reset classes
@@ -1717,24 +1735,17 @@ const showMini = musicPlayerConfig.showMiniPlayer ?? false;
                     activeLine.className = 'lyric-line transition-all duration-150 py-2 leading-6 cursor-pointer text-sm font-medium tracking-wide text-gray-700 dark:text-gray-300 lyric-active text-center';
                     
                     // Manual scroll calculation
-                    const containerHeight = this.lyricsContainer.clientHeight;
+                    const containerHeight = container.clientHeight;
                     const lineTop = activeLine.offsetTop;
                     const lineHeight = activeLine.clientHeight;
                     
                     const scrollTarget = lineTop - (containerHeight / 2) + (lineHeight / 2);
 
-                    this.lyricsContainer.scrollTo({
+                    container.scrollTo({
                         top: scrollTarget,
                         behavior: 'smooth'
                     });
                 }
-                
-                // Broadcast lyrics highlight event for sidebar sync
-                window.dispatchEvent(new CustomEvent('fm:lrc-index', {
-                    detail: {
-                        index: activeIndex
-                    }
-                }));
             }
 
             // Sync words within the active line
