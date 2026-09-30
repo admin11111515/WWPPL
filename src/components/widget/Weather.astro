@@ -583,26 +583,64 @@ const COLLAPSED_HEIGHT = "9rem";
 	(function () {
 		// 外部依赖：天气数据来自第三方 uapis.cn，浏览器直连。
 		// 它挂了或超时时，下面的 catch 会让卡片停在「加载失败」的样子，
-		// 页面其余部分照常，不会卡住渲染；下面的 CACHE_DURATION 还有一层本地缓存，
-		// 短时故障对回访的访客基本无感。换本地数据源的话，改这一个常量即可。
+		// 页面其余部分照常，不会卡住渲染。换本地数据源的话，改这一个常量即可。
 		const API_URL = "https://uapis.cn/api/v1/misc/weather?";
 
-		// 缓存管理
-		const cacheManager = {
-			set: function (key, data) {
-				try {
-					localStorage.setItem(key, JSON.stringify({
-						data,
-						timestamp: Date.now()
-					}));
-				} catch {
-					// 忽略存储错误
-				}
-			}
-		};
+		// 请求超时上限：上游不回，别让卡片一直转圈
+		const TIMEOUT_MS = 8000;
 
-		// 获取天气数据 - 支持 IP 自动定位
-		async function fetchWeather() {
+		// ⚠️ 这个组件一页会渲染两份（桌面右栏 + 移动底栏），且每一份都自带一份本脚本。
+		// 上游 uapis.cn 的访客额度按「网络出口 IP」记：1500 积分/月，天气接口 2 积分/次
+		// （≈ 750 次调用/月），另外还有 4 次/秒 的速率限制。
+		// 而「每份脚本都 querySelectorAll 去初始化全部实例」＝ 脚本份数 × 实例数 次请求：
+		// 实测首页 3 次、每次站内跳转再 +4 次，且并发发出去正好打满 4 次/秒 ——
+		// 于是「月额度还剩着也会偶发 429」。所以这里必须做三件事：
+		//   ① 每份脚本只认领「紧挨着自己的那一个」实例，实例另有 initialized 标记兜底；
+		//   ② 同参数只发一次请求（in-flight 去重），结果缓存 30 分钟（内存 + localStorage）；
+		//   ③ 请求加超时。
+		// 跨脚本共享的状态挂 window：swup 换页不换 window，所以站内跳转后同样命中缓存。
+		const shared = (window.__wwWeatherShared = window.__wwWeatherShared || {
+			cache: {}, // 缓存键 -> { data, at }
+			inflight: {}, // 缓存键 -> Promise
+		});
+
+		// 缓存键：指定了 adcode / city 就分开存；都没传（按 IP 自动定位）归到 ip_location。
+		// 注：IP 定位的结果现在也缓存了 —— 同一网络下换设备可能看到上一条结果，
+		// 但比起每次访问都真打接口、把月额度打光，这个代价可以接受。
+		function cacheKey() {
+			if (adcode) return CACHE_KEY + "adcode_" + adcode;
+			if (city) return CACHE_KEY + "city_" + city;
+			return CACHE_KEY + "ip_location";
+		}
+
+		function readStore(key) {
+			try {
+				const raw = localStorage.getItem(key);
+				if (!raw) return null;
+				const obj = JSON.parse(raw);
+				if (!obj || !obj.data || !obj.timestamp) return null;
+				if (Date.now() - obj.timestamp > CACHE_DURATION) return null; // 过期
+				return obj.data;
+			} catch {
+				return null;
+			}
+		}
+
+		function writeStore(key, data) {
+			try {
+				localStorage.setItem(
+					key,
+					JSON.stringify({
+						data,
+						timestamp: Date.now(),
+					}),
+				);
+			} catch {
+				// 存不下就算了（无痕模式 / 配额满）
+			}
+		}
+
+		function buildUrl() {
 			const params = new URLSearchParams();
 			if (adcode) {
 				params.set("adcode", adcode);
@@ -613,26 +651,50 @@ const COLLAPSED_HEIGHT = "9rem";
 			if (extended) {
 				params.set("extended", "true");
 			}
-			// 添加 forecast=true 获取最高/最低温度
+			// forecast=true 才会有最高/最低温、日出日落、降水概率
 			params.set("forecast", "true");
+			return API_URL + params.toString();
+		}
 
-			const url = API_URL + params.toString();
-			const response = await fetch(url);
+		// 取天气：内存 → localStorage → 网络；同一参数的并发调用只发一次请求
+		function getWeather() {
+			const key = cacheKey();
 
-			if (!response.ok) {
-				throw new Error(`请求失败: ${response.status}`);
+			const mem = shared.cache[key];
+			if (mem && Date.now() - mem.at < CACHE_DURATION) {
+				return Promise.resolve(mem.data);
 			}
 
-			const data = await response.json();
-			
-			// 只有指定了城市或adcode时才缓存，IP自动定位不缓存
-			// 因为IP可能会变化（切换网络、VPN等）
-			if (adcode || city) {
-				const cacheKey = adcode ? `adcode_${adcode}` : `city_${city}`;
-				cacheManager.set(CACHE_KEY + cacheKey, data);
+			const stored = readStore(key);
+			if (stored) {
+				shared.cache[key] = { data: stored, at: Date.now() };
+				return Promise.resolve(stored);
 			}
-			
-			return data;
+
+			if (shared.inflight[key]) {
+				return shared.inflight[key];
+			}
+
+			const pending = (async () => {
+				const controller = new AbortController();
+				const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+				try {
+					const response = await fetch(buildUrl(), { signal: controller.signal });
+					if (!response.ok) {
+						throw new Error(`请求失败: ${response.status}`);
+					}
+					const data = await response.json();
+					shared.cache[key] = { data, at: Date.now() };
+					writeStore(key, data);
+					return data;
+				} finally {
+					clearTimeout(timer);
+					delete shared.inflight[key];
+				}
+			})();
+
+			shared.inflight[key] = pending;
+			return pending;
 		}
 
 		// 天气图标映射
@@ -714,7 +776,7 @@ const COLLAPSED_HEIGHT = "9rem";
 			if (extendedSection) {
 				// 从 forecast 数组中获取日出日落时间
 				const todayForecast = data.forecast && data.forecast.length > 0 ? data.forecast[0] : null;
-				
+
 				setData("[data-feels-like]", data.feels_like != null ? `${data.feels_like}°C` : "--°C");
 				setData("[data-visibility]", data.visibility != null ? `${data.visibility}km` : "--km");
 				setData("[data-pressure]", data.pressure != null ? `${data.pressure}hPa` : "--hPa");
@@ -725,7 +787,7 @@ const COLLAPSED_HEIGHT = "9rem";
 				setData("[data-sunset]", todayForecast?.sunset || "--:--");
 				// 降水概率（从 forecast 获取）
 				setData("[data-pop]", todayForecast?.pop != null ? `${todayForecast.pop}%` : "--%");
-				
+
 				// 空气质量
 				const aqiEl = container.querySelector("[data-aqi]");
 				const aqiCategoryEl = container.querySelector("[data-aqi-category]");
@@ -758,8 +820,13 @@ const COLLAPSED_HEIGHT = "9rem";
 			content.classList.remove("weather-hidden");
 		}
 
-		// 初始化组件
+		// 初始化单个实例
 		function initWidget(container) {
+			// 同一个实例只初始化一次：本组件一页渲染两份、每份自带一份脚本，
+			// 不做标记的话同一实例会被初始化多次 —— 既重复请求，也重复写一遍 DOM。
+			if (container.dataset.weatherReady === "1") return;
+			container.dataset.weatherReady = "1";
+
 			const retryBtn = container.querySelector("[data-retry-btn]");
 			const content = container.querySelector("[data-weather-content]");
 			const loading = container.querySelector("[data-weather-loading]");
@@ -772,28 +839,45 @@ const COLLAPSED_HEIGHT = "9rem";
 				content.classList.add("weather-hidden");
 
 				try {
-					const data = await fetchWeather();
+					const data = await getWeather();
 					updateUI(container, data);
 				} catch (e) {
-					updateUI(container, null, e.message || "获取天气信息失败");
+					const msg = e && e.name === "AbortError" ? "请求超时" : (e && e.message) || "获取天气信息失败";
+					updateUI(container, null, msg);
 				}
 			}
 
-			// 重试按钮 - 清除缓存后重新加载
+			// 重试按钮 - 清掉两层缓存后强制重新请求
 			if (retryBtn) {
 				retryBtn.addEventListener("click", () => {
-					// 清除缓存，强制重新请求
-					const cacheKey = adcode ? `adcode_${adcode}` : (city ? `city_${city}` : 'ip_location');
-					localStorage.removeItem(CACHE_KEY + cacheKey);
+					const key = cacheKey();
+					try {
+						localStorage.removeItem(key);
+					} catch {
+						// 清不掉就算了
+					}
+					delete shared.cache[key];
 					loadWeather();
 				});
 			}
 
-			// 自动加载天气数据（基于用户浏览器IP定位）
+			// 自动加载天气数据
 			loadWeather();
 		}
 
+		// 每份脚本只认领「紧挨在自己前面」的那个实例（本组件的脚本紧跟在 widget 之后渲染）；
+		// 万一 DOM 结构变了认不出来，再退回全局扫描 —— 上面的 weatherReady 标记会挡住重复初始化。
+		function pickOwnTargets() {
+			const self = document.currentScript;
+			const host = self && self.previousElementSibling;
+			if (host && host.querySelector) {
+				const own = host.querySelector("[data-weather-init]");
+				if (own) return [own];
+			}
+			return Array.prototype.slice.call(document.querySelectorAll("[data-weather-init]"));
+		}
+
 		// 启动
-		document.querySelectorAll("[data-weather-init]").forEach(initWidget);
+		pickOwnTargets().forEach(initWidget);
 	})();
 </script>
