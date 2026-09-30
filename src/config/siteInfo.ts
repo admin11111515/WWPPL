@@ -28,8 +28,8 @@ import raw from "../data/siteInfo.json";
 /** 兜底值：与仓库里最后一次确认过的文案一致，JSON 字段缺失或类型不对时顶上 */
 const FALLBACK = {
 	siteTitle: "WWPPL Blog",
-	siteSubtitle:
-		"白天上课，晚上学专业软件、做项目。业余折腾最新的人工智能小玩意，水平也业余。",
+	// 站长 2026-09-30 要求删掉这段自我介绍，留空即「不要这段」（不再兜底回旧文案）
+	siteSubtitle: "",
 	siteUrl: "https://wwppl.dpdns.org",
 	siteDescription: "WWPPL 的个人博客，记录生活与思考，偶尔分享一些技术心得。",
 	authorName: "WWPPL",
@@ -40,8 +40,8 @@ const FALLBACK = {
 		"写下来，才算真正想过",
 		"软件出身，机械谋生，代码是业余里的正经事",
 	],
-	footerText:
-		"白天上课，晚上学专业软件、做项目。业余折腾最新的人工智能小玩意，水平也业余。",
+	// 站长 2026-09-30 要求删掉页脚那行自我介绍，留空即「不要这段」
+	footerText: "",
 	friendsDesc:
 		"白天上课，晚上学专业软件、做项目。业余折腾最新的人工智能小玩意，水平也业余。",
 } as const;

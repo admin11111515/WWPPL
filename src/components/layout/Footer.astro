@@ -67,6 +67,15 @@ if (footerConfig.enable) {
 			.replace(/__ANALYTICS_SERVICES__/g, getAnalyticsServicesHtml());
 		// 最后顶掉 {{footerText}} 这类站点信息占位符
 		customFooterHtml = fillPlaceholders(customFooterHtml);
+		// 页脚文案留空时（后台清空了），把只剩空 <span> 的那个容器一起去掉，
+		// 否则 .footer-info 的 margin-top 会在页脚底部留一段空行。
+		// 占位符本身保留 —— 以后在后台填回文案就照常显示。
+		if (!siteInfo.footerText) {
+			customFooterHtml = customFooterHtml.replace(
+				/\s*<div class="footer-info">\s*<span><\/span>\s*<\/div>/g,
+				"",
+			);
+		}
 	} catch (error) {
 		console.warn("FooterConfig.html文件读取失败:", error.message);
 	}

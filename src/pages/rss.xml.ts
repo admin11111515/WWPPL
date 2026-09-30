@@ -52,7 +52,10 @@ export async function GET(context: APIContext) {
 	}
 	return rss({
 		title: siteConfig.title,
-		description: siteConfig.subtitle || "No description",
+		// 副标题留空时回落到站点描述，描述也为空再退回站点标题
+		// （别再落成英文占位符 "No description"）
+		description:
+			siteConfig.subtitle || siteConfig.description || siteConfig.title,
 		site: context.site ?? "https://wwppl.dpdns.org",
 		customData: `<templateTheme>Firefly</templateTheme>
 		<templateThemeVersion>${pkg.version}</templateThemeVersion>

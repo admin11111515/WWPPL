@@ -211,7 +211,8 @@ const siteLang = lang.replace("_", "-");
         "@type": "WebSite",
         "@id": `${siteConfig.site_url}/#website`,
         name: siteConfig.title,
-        alternateName: siteConfig.subtitle,
+        // 副标题留空时整个字段不输出（否则会是 "alternateName":""）
+        ...(siteConfig.subtitle ? { alternateName: siteConfig.subtitle } : {}),
         url: new URL("/", Astro.site).toString(),
         description: siteConfig.description,
         inLanguage: siteConfig.lang.replace("_", "-"),
