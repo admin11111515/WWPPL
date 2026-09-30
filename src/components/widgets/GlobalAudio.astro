@@ -111,6 +111,12 @@ const showMini = musicPlayerConfig.showMiniPlayer ?? false;
             document.addEventListener('click', (e) => {
                 const btn = e.target.closest('#play-btn, #prev-btn, #next-btn, #shuffle-btn, #repeat-btn');
                 if (!btn) return;
+                // ⚠️ bindUIEvents() 已经给这些按钮绑了同样的处理器（dataset.bound = "true"）——
+                // 已绑过就必须让开，否则一次点击会走两遍：
+                // 播放 → 紧接着又 toggle 成暂停，表现就是「点播放没反应」；
+                // 上一首/下一首也会一次跳两首。（站长 2026-10-01 报的就是这个）
+                // 这里的委托只为「极早期还没绑定好」兜底，绑好之后不再参与。
+                if (btn.dataset.bound === "true") return;
                 if (btn.id === 'play-btn') this.togglePlay();
                 else if (btn.id === 'prev-btn') this.prevSong();
                 else if (btn.id === 'next-btn') this.nextSong(false);
