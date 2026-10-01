@@ -287,6 +287,31 @@ function handleApi(req, res, url) {
 	const contents = p.match(/^\/api\/github\/repos\/[^/]+\/[^/]+\/contents\/(.+)$/);
 	if (contents) {
 		const file = decodeURIComponent(contents[1]).split("/").map(decodeURIComponent).join("/");
+
+		// ⚠️ 目录要回**数组**，跟 GitHub 一样。以前这里一律按单文件回，
+		// 列目录的请求全落到 404 → 后台概览的「篇文章」在本地永远是 0（线上是 58）。
+		// 2026-10-01 补上：真目录就读真实目录，顺带让任何"列目录"的请求都跟线上一致。
+		const full = path.join(WWPPL, file);
+		try {
+			if (fs.statSync(full).isDirectory()) {
+				const entries = fs
+					.readdirSync(full, { withFileTypes: true })
+					.filter(function (d) { return !d.name.startsWith("."); })
+					.map(function (d) {
+						const rel = file + "/" + d.name;
+						return {
+							name: d.name,
+							path: rel,
+							type: d.isDirectory() ? "dir" : "file",
+							sha: d.isDirectory() ? gitBlobSha(rel) : gitBlobSha(readRepoFile(rel) ?? ""),
+						};
+					});
+				return json(res, entries);
+			}
+		} catch {
+			/* 不是目录或不存在，按文件处理 */
+		}
+
 		const content = postFiles.get(file) ?? readRepoFile(file);
 		if (content === undefined) return json(res, { error: "Not Found" }, 404);
 		return json(res, {
