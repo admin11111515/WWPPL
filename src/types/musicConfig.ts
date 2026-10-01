@@ -1,7 +1,9 @@
 // 音乐播放器配置
 export type MusicPlayerConfig = {
-	// 使用方式：'meting' 或 'local'
-	mode?: "meting" | "local"; // "meting" 使用 Meting API，"local" 使用本地音乐列表
+	// 使用方式：'local' = 用 local.playlist 里的本地列表
+	// ⚠️ 主题原有的 'meting'（运行时拉第三方 Meting API）已于 2026-10-01 删除：
+	// 站长要求「音乐只要 music.json 那一套」，全站音源统一为 src/data/music.json。
+	mode?: "local";
 
 	// 默认音量 (0-1)
 	volume?: number;
@@ -20,29 +22,8 @@ export type MusicPlayerConfig = {
 
 	// 是否同步全局播放器（当进入 /music 页面时）
 	// 设置为 true：侧边栏播放器完全同步 /music 页面的播放列表
-	// 设置为 false：侧边栏使用独立的本地/Meting 配置（默认）
+	// 设置为 false：侧边栏使用独立的本地配置（默认）
 	syncWithGlobalPlayer?: boolean;
-
-	// Meting API 配置
-	meting?: {
-		// Meting API 地址
-		api?: string;
-
-		// 音乐平台：netease=网易云音乐, tencent=QQ音乐, kugou=酷狗音乐, xiami=虾米音乐, baidu=百度音乐
-		server?: "netease" | "tencent" | "kugou" | "xiami" | "baidu";
-
-		// 类型：song=单曲, playlist=歌单, album=专辑, search=搜索, artist=艺术家
-		type?: "song" | "playlist" | "album" | "search" | "artist";
-
-		// 歌单/专辑/单曲 ID 或搜索关键词
-		id?: string;
-
-		// 认证 token（可选）
-		auth?: string;
-
-		// 备用 API 配置（当主 API 失败时使用）
-		fallbackApis?: string[];
-	};
 
 	// 本地音乐配置（当 mode 为 'local' 时使用）
 	local?: {

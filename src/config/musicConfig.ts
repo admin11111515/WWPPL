@@ -13,8 +13,12 @@ export const musicPlayerConfig: MusicPlayerConfig = {
 	// 是否显示迷你播放器
 	showMiniPlayer: true,
 
-	// 使用方式："meting" 使用 Meting API，"local" 使用本地音乐列表
-	mode: "meting",
+	// 使用方式：只用 'local'（读下面的 local.playlist）
+	// ⚠️ 2026-10-01 站长要求「音乐只要 music.json 那一套」：主题原有的
+	// `mode: "meting"` 与 `meting` 配置块（三个第三方主机 + 备用源）**已删除**。
+	// 全站音源统一为 `src/data/music.json`（`/music` 页、全站播放、侧边栏卡片都读它）——
+	// 侧边栏本来就是「优先同步 GlobalAudio 的歌单」，那段拉第三方的兜底实际是死代码。
+	mode: "local",
 
 	// 默认音量 (0-1)
 	volume: 0.7,
@@ -27,28 +31,13 @@ export const musicPlayerConfig: MusicPlayerConfig = {
 
 	// 是否同步全局播放器（当进入 /music 页面时）
 	// 设置为 true：侧边栏播放器完全同步 /music 页面的播放列表
-	// 设置为 false：侧边栏使用独立的本地/Meting 配置（默认）
+	// 设置为 false：侧边栏使用独立的本地配置（默认）
 	syncWithGlobalPlayer: true,
 
-	// Meting API 配置
-	meting: {
-		// Meting API 地址
-		// 默认使用官方 API，也可以使用自定义 API
-		api: "https://api.i-meto.com/meting/api?server=:server&type=:type&id=:id&r=:r",
-		// 音乐平台：netease=网易云音乐, tencent=QQ音乐, kugou=酷狗音乐, xiami=虾米音乐, baidu=百度音乐
-		server: "netease",
-		// 类型：song=单曲, playlist=歌单, album=专辑, search=搜索, artist=艺术家
-		type: "playlist",
-		// 歌单/专辑/单曲 ID 或搜索关键词
-		id: "18126719128",
-		// 认证 token（可选）
-		auth: "",
-		// 备用 API 配置（当主 API 失败时使用）
-		fallbackApis: [
-			"https://api.injahow.cn/meting/?server=:server&type=:type&id=:id",
-			"https://api.moeyao.cn/meting/?server=:server&type=:type&id=:id",
-		],
-	},
+	// ⚠️ 这里原来放着 `meting: { api / fallbackApis }`（i-meto → injahow → moeyao
+	// 三个第三方主机，用来在运行时拉歌单）。2026-10-01 已整块删除：站点只有
+	// music.json 一套音源，不再依赖任何运行时第三方接口。
+	// 需要更新歌单仍走 `pnpm prefetch:music`（那个脚本自带源列表，与本配置无关）。
 
 	// 本地音乐配置（当 mode 为 'local' 时使用）
 	// 1. 支持传入歌词文件的路径
@@ -57,11 +46,10 @@ export const musicPlayerConfig: MusicPlayerConfig = {
 	// lrc: "[00:00.00]歌词内容...",
 	//
 	// ⚠️ 2026-09-26 清空过：这里原来放着一首《迷途羔羊》（mp3 4.46 MB + lrc），
-	// 但本站 mode 是 "meting"、侧边栏又开了 syncWithGlobalPlayer，
-	// 这段 local 列表在运行时根本不会被加载，等于白占 4.46 MB 的部署体积
-	// （线上实测这个 mp3 是 200，但没有任何页面引用它）。
+	// 但本站音源已统一走 music.json，这段 local 列表在运行时不会被加载，
+	// 等于白占 4.46 MB 的部署体积（线上实测这个 mp3 是 200，但没有任何页面引用它）。
 	// 音频与歌词已删，原文件备份在仓库外的 .backup/2026-09-26-0802/。
-	// 哪天真要切到 mode: "local"，把音频放回 public/assets/music/ 再在这里补条目即可。
+	// 哪天真要切到本地音源，把音频放回 public/assets/music/ 再在这里补条目即可。
 	local: {
 		playlist: [],
 	},

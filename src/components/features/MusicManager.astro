@@ -29,8 +29,6 @@ const localPlaylist =
 		: [];
 
 const managerConfigStr = JSON.stringify({
-	mode: config.mode,
-	meting: config.meting,
 	localPlaylist: localPlaylist,
 	volume: config.volume ?? 0.7,
 	playMode: config.playMode ?? "list",
@@ -157,45 +155,12 @@ const managerConfigStr = JSON.stringify({
         window.dispatchEvent(new CustomEvent(name, { detail: detail || {} }));
     }
 
-    // ── Meting fetch ─────────────────────────────────────────
-    async function fetchMetingData() {
-        if (!config.meting) return;
-        var m = config.meting;
-        var apis = [m.api].concat(m.fallbackApis || []);
-
-        for (var i = 0; i < apis.length; i++) {
-            var baseApi = apis[i];
-            if (!baseApi) continue;
-            try {
-                var fetchUrl = baseApi
-                    .replace(':server', m.server)
-                    .replace(':type', m.type)
-                    .replace(':id', m.id)
-                    .replace(':r', Math.random());
-                if (m.auth) fetchUrl += '&auth=' + m.auth;
-
-                var res = await fetch(fetchUrl);
-                if (!res.ok) throw new Error('HTTP ' + res.status);
-                var data = await res.json();
-
-                if (Array.isArray(data) && data.length > 0) {
-                    state.playlist = data.map(function (item) {
-                        return {
-                            name: item.title || item.name || 'Unknown',
-                            artist: item.author || item.artist || 'Unknown',
-                            url: item.url,
-                            pic: item.pic || item.cover || '',
-                            lrc: item.lrc
-                        };
-                    });
-                    return;
-                }
-            } catch (e) {
-                console.warn('Meting API failed for ' + baseApi, e);
-            }
-        }
-        throw new Error('All Meting APIs failed');
-    }
+    // ── 歌单来源 ─────────────────────────────────────────────
+    // ⚠️ 2026-10-01：**这里原来有一段 fetchMetingData()** —— 在「GlobalAudio 没就绪」时
+    // 去运行时拉第三方 Meting 接口（i-meto → injahow → moeyao 三个主机）。
+    // 站长要求「音乐只要 music.json 那一套」，那段已整块删除（连同 musicConfig.meting）。
+    // 现在全站唯一音源是 `src/data/music.json`：GlobalAudio 读它并广播，
+    // 侧边栏/顶栏优先同步 GlobalAudio 的歌单；只有它真没就绪时才回退到本地列表（默认空）。
 
     // ── Lyrics ───────────────────────────────────────────────
     function loadLyrics(track) {
@@ -409,17 +374,12 @@ const managerConfigStr = JSON.stringify({
                         };
                     });
                 } else {
-                    // Fallback to local/meting config if GlobalAudio not available
-                    console.warn('GlobalAudio not available, using fallback config');
-                    if (config.mode === 'meting' && config.meting) {
-                        await fetchMetingData();
-                    } else if (config.mode === 'local') {
-                        state.playlist = config.localPlaylist || [];
-                    }
+                    // GlobalAudio 没就绪时的兜底：只用本地列表（默认空）。
+                    // 以前这里会去拉第三方 meting 接口，2026-10-01 已删除那条路。
+                    console.warn('GlobalAudio 未就绪，回退到本地列表（站点已无第三方音源）');
+                    state.playlist = config.localPlaylist || [];
                 }
-            } else if (config.mode === 'meting' && config.meting) {
-                await fetchMetingData();
-            } else if (config.mode === 'local') {
+            } else {
                 state.playlist = config.localPlaylist || [];
             }
 
