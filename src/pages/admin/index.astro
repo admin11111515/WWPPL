@@ -303,6 +303,42 @@ import { uiIcon } from "@/constants/ui-icons";
       min-height: 1rem;
     }
 
+    /* ===== 传图片面板（2026-10-01 加）===== */
+    .upload-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin: 0.75rem 0;
+    }
+    .upload-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.625rem;
+      border: 1px solid var(--line-divider);
+      border-radius: var(--radius-large, 1rem);
+      background: var(--card-bg);
+      margin-bottom: 0.5rem;
+    }
+    .upload-item img {
+      width: 72px;
+      height: 72px;
+      object-fit: cover;
+      border-radius: 0.5rem;
+      flex-shrink: 0;
+      background: var(--btn-regular-bg, #eee);
+    }
+    .upload-item-body { min-width: 0; flex: 1; }
+    .upload-item-body code {
+      display: block;
+      font-size: 0.75rem;
+      word-break: break-all;
+      color: var(--text-3, var(--muted, #6b7280));
+      margin-bottom: 0.375rem;
+    }
+    .upload-item-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
     .admin-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -495,6 +531,28 @@ import { uiIcon } from "@/constants/ui-icons";
           <div class="admin-card-title">换头像</div>
           <div class="admin-card-desc">上传新头像，保存后全站生效</div>
         </button>
+        <button type="button" class="card-base admin-card" onclick="toggleUploadPanel()">
+          <div class="admin-card-icon" set:html={uiIcon("fluent-color:document-folder-24")} />
+          <div class="admin-card-title">传图片</div>
+          <div class="admin-card-desc">传到仓库并给出地址，文章/说说里直接用</div>
+        </button>
+      </div>
+
+      {/* 传图片面板：选图（可多选）→ 浏览器里压成 WebP → 传进仓库 public/images/uploads/
+          → 给出可直接粘贴的 Markdown / 地址。2026-10-01 加 */}
+      <div id="upload-panel" class="card hidden">
+        <div class="field-label"><span class="icon" set:html={uiIcon("fluent-color:document-folder-24")} /> 传图片</div>
+        <div class="field-hint">
+          选一张或多张图，会先在你本机压成 WebP（最长边 1600），再传到仓库
+          <code>public/images/uploads/</code>。传完点「复制 Markdown」直接贴进正文。
+          Cloudflare 要重新构建，约一两分钟后站上才看得到。
+        </div>
+        <div class="upload-row">
+          <button class="btn btn-primary" type="button" onclick="pickUpload()">选择图片</button>
+          <input type="file" id="upload-file" accept="image/*" multiple class="hidden" />
+          <span class="field-hint" id="upload-status"></span>
+        </div>
+        <div id="upload-results"></div>
       </div>
 
       {/* 换头像面板：默认收起，点入口卡片展开 */}
@@ -616,6 +674,133 @@ import { uiIcon } from "@/constants/ui-icons";
         if (foot2) foot2.textContent = "读不到提交记录（不影响使用）";
       }
     }
+
+    // ===== 传图片：本机压缩 → 传进仓库 → 给出可直接粘贴的地址 =====
+    function toggleUploadPanel() {
+      var p = $("upload-panel");
+      if (!p) return;
+      p.classList.toggle("hidden");
+      if (!p.classList.contains("hidden")) p.scrollIntoView({ block: "center" });
+    }
+    function pickUpload() { $("upload-file").click(); }
+
+    function compressImage(file) {
+      return new Promise(function (resolve, reject) {
+        var url = URL.createObjectURL(file);
+        var img = new Image();
+        img.onload = function () {
+          URL.revokeObjectURL(url);
+          var maxW = 1600;
+          var scale = img.width > maxW ? maxW / img.width : 1;
+          var c = document.createElement("canvas");
+          c.width = Math.round(img.width * scale);
+          c.height = Math.round(img.height * scale);
+          c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+          // 编不出 webp 时回退 png —— 下面的扩展名要按**实际编码结果**取，
+          // 否则会出现「内容是 PNG、扩展名写 .webp」
+          c.toBlob(function (b) {
+            if (b) return resolve(b);
+            c.toBlob(function (p) { p ? resolve(p) : reject(new Error("图片压缩失败")); }, "image/png");
+          }, "image/webp", 0.85);
+        };
+        img.onerror = function () { URL.revokeObjectURL(url); reject(new Error("图片读取失败")); };
+        img.src = url;
+      });
+    }
+    function extFromBlob(blob, fallbackName) {
+      var t = (blob && blob.type) || "";
+      if (/webp/.test(t)) return "webp";
+      if (/png/.test(t)) return "png";
+      if (/jpe?g/.test(t)) return "jpg";
+      if (/gif/.test(t)) return "gif";
+      var m = String(fallbackName || "").match(/\.([a-z0-9]+)$/i);
+      return m ? m[1].toLowerCase() : "png";
+    }
+    function stampName(ext) {
+      var d = new Date();
+      function p(n) { return (n < 10 ? "0" : "") + n; }
+      return "" + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + "-" +
+        p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()) + "-" +
+        Math.random().toString(36).slice(2, 6) + "." + ext;
+    }
+    function b64FromBytes(bytes) {
+      var s = "";
+      for (var i = 0; i < bytes.length; i += 0x8000) {
+        s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+      }
+      return btoa(s);
+    }
+    function copyText(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () {
+          var st = $("upload-status"); if (st) st.textContent = "已复制：" + text.slice(0, 40);
+        }, function () { window.prompt("复制这段：", text); });
+      } else {
+        window.prompt("复制这段：", text);
+      }
+    }
+    function addUploadResult(original, url, previewUrl) {
+      var list = $("upload-results");
+      if (!list) return;
+      var md = "![" + (original || "图片") + "](" + url + ")";
+      var row = document.createElement("div");
+      row.className = "upload-item";
+      var img = document.createElement("img");
+      img.alt = original || "";
+      img.src = previewUrl || url;   // 用本机预览，站上那张要等重新构建
+      var body = document.createElement("div");
+      body.className = "upload-item-body";
+      var code = document.createElement("code");
+      code.textContent = url;
+      var acts = document.createElement("div");
+      acts.className = "upload-item-actions";
+      var b1 = document.createElement("button");
+      b1.type = "button"; b1.className = "btn btn-sm"; b1.textContent = "复制 Markdown";
+      b1.onclick = function () { copyText(md); };
+      var b2 = document.createElement("button");
+      b2.type = "button"; b2.className = "btn btn-sm"; b2.textContent = "复制地址";
+      b2.onclick = function () { copyText(url); };
+      acts.appendChild(b1); acts.appendChild(b2);
+      body.appendChild(code); body.appendChild(acts);
+      row.appendChild(img); row.appendChild(body);
+      list.appendChild(row);
+    }
+    async function uploadOne(file) {
+      var status = $("upload-status");
+      var preview = URL.createObjectURL(file);
+      try {
+        if (status) status.textContent = "正在压缩 " + file.name + " …";
+        var blob = await compressImage(file);
+        var name = stampName(extFromBlob(blob, file.name));
+        if (status) status.textContent = "正在上传 " + name + " …";
+        var buf = await blob.arrayBuffer();
+        await WBGitHub.putFile({
+          owner: AVATAR.owner,
+          repo: AVATAR.repo,
+          branch: AVATAR.branch,
+          path: "public/images/uploads/" + name,
+          content: b64FromBytes(new Uint8Array(buf)),
+          message: "上传图片：" + name,
+        });
+        addUploadResult(file.name, "/images/uploads/" + name, preview);
+        if (status) status.textContent = "传好了（重新构建后站上生效）";
+      } catch (e) {
+        if (status) status.textContent = "失败：" + (e && e.message ? e.message : e);
+      }
+    }
+    (function () {
+      var input = $("upload-file");
+      if (!input) return;
+      input.addEventListener("change", function () {
+        // ⚠️ 必须**先把文件取成真正的数组**再清空 input：
+        // 清空 value 会把 FileList 一并清掉，之后再遍历就是空的
+        //（2026-10-01 就这么错过一次：点了选图什么都没发生）
+        var files = Array.prototype.slice.call(this.files || []);
+        this.value = "";
+        if (!files.length) return;
+        files.forEach(function (f) { uploadOne(f); });
+      });
+    })();
     function showLogin() {
       document.body.classList.remove("authed");
       $("admin-main").classList.add("hidden");

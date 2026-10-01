@@ -38,6 +38,7 @@ const EXPLICIT_ICONS = [
 	"fluent-color:book-open-24", // 笔记本、书籍
 	"fluent-color:chat-24", // 说说
 	"fluent-color:image-24", // 图库、图片集
+	"fluent-color:document-folder-24", // 传图片（上传到仓库的图片库，2026-10-01 加）
 	"fluent-color:contact-card-24", // 站点信息（名片 = 资料）
 	"fluent-color:document-edit-24", // 页面内容（改页面正文）
 	// 字段标签

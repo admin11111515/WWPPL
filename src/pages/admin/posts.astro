@@ -488,11 +488,17 @@ const postsConfig = JSON.stringify(externalPostsConfig);
           (post.draft ? '<span class="post-badge draft">草稿</span>' : '') +
           '</div></div>' +
           '<div class="post-actions">' +
+          // 「查看」直接开站上那一页（新标签），省得自己去拼地址
+          '<a class="btn btn-sm" target="_blank" rel="noopener" href="' + postUrl(post.path) + '" title="在新标签打开站上的这一篇">查看</a>' +
           '<button class="btn btn-sm" onclick="editPost(\'' + escapeAttr(post.path) + '\')">编辑</button>' +
           '<button class="btn-danger-sm" onclick="deletePost(\'' + escapeAttr(post.path) + '\')">删除</button>' +
           '</div>';
         $("post-list").appendChild(row);
       });
+    }
+    // 文章在站上的地址：src/content/posts/life/xxx.md → /posts/life/xxx/
+    function postUrl(p) {
+      return "/posts/" + String(p).replace(/^src\/content\/posts\//, "").replace(/\.md$/, "") + "/";
     }
     function escapeAttr(s) {
       return s.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
