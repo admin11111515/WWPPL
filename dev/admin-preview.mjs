@@ -177,10 +177,77 @@ function sendFile(res, full) {
 	fs.createReadStream(full).pipe(res);
 }
 
+/**
+ * 读产物里的 `dist/_redirects`（Cloudflare 静态资源的重定向规则格式）。
+ *
+ * 为什么要做：线上 `/blog/*` → `/posts/:splat` 这条 301 是托管平台在边缘执行的，
+ * 本地预览以前完全不认这个文件 —— 于是同一条旧链接**线上 301、本地 404**，
+ * 在本机点一下就以为"路由没做好"。现在预览按同样的规则跳，两边一致。
+ *
+ * 只支持这一份文件里用到的语法：`from to [状态码]`，from 可以带 `*`，
+ * to 里用 `:splat` 接住通配部分。够用，不追求实现完整规范。
+ */
+function loadRedirects() {
+	const file = path.join(DIST.dir, "_redirects");
+	if (!fs.existsSync(file)) return [];
+	const out = [];
+	for (const line of fs.readFileSync(file, "utf8").split(/\r?\n/)) {
+		const s = line.trim();
+		if (!s || s.startsWith("#")) continue;
+		const parts = s.split(/\s+/);
+		if (parts.length < 2) continue;
+		out.push({ from: parts[0], to: parts[1], status: Number(parts[2]) || 301 });
+	}
+	return out;
+}
+const REDIRECTS = loadRedirects();
+
+/** 按 _redirects 的规则算跳转目标；没有命中返回 null */
+function matchRedirect(p) {
+	for (const r of REDIRECTS) {
+		if (r.from.endsWith("*")) {
+			const prefix = r.from.slice(0, -1);
+			if (p.startsWith(prefix)) {
+				const splat = p.slice(prefix.length);
+				return { to: r.to.replace(/:splat/g, splat), status: r.status };
+			}
+		} else if (r.from === p) {
+			return { to: r.to, status: r.status };
+		}
+	}
+	return null;
+}
+
 function serveStatic(req, res, urlPath) {
-	const p = urlPath ?? new URL(req.url, "http://x").pathname;
+	let p = urlPath ?? new URL(req.url, "http://x").pathname;
+
+	// ① 重定向规则（与线上 _redirects 同名同义，优先级高于静态文件）
+	const redir = matchRedirect(p);
+	if (redir) {
+		res.writeHead(redir.status, { location: redir.to, "cache-control": "no-store" });
+		res.end(`Redirect ${redir.status} → ${redir.to}`);
+		return;
+	}
+
+	// ② 末尾斜杠：本站 trailingSlash: "always"。`/admin` 这种不带斜杠的要 301 到 `/admin/`，
+	//    否则两处都能开、搜索引擎当两份内容，浏览器里也会一会儿有一会儿没有。
+	if (!p.endsWith("/") && !path.extname(p) && fs.existsSync(path.join(DIST.dir, p, "index.html"))) {
+		res.writeHead(301, { location: p + "/", "cache-control": "no-store" });
+		res.end(`Redirect 301 → ${p}/`);
+		return;
+	}
+
 	const full = resolveStatic(p);
 	if (!full) {
+		// ③ 404 也给站点自己的 404 页（带 404 状态），跟线上一个样子：
+		//    线上是 Worker 的静态资源层直接把 404.html 以 404 状态发出去。
+		//    以前这里回一行纯文本，看着像"服务挂了"。
+		const notFound = path.join(DIST.dir, "404.html");
+		if (fs.existsSync(notFound)) {
+			res.writeHead(404, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
+			fs.createReadStream(notFound).pipe(res);
+			return;
+		}
 		res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
 		res.end("404 " + p);
 		return;

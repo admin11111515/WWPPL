@@ -900,6 +900,21 @@ textarea:focus {
 	border-bottom: 1px solid var(--line-soft);
 }
 
+/* 后台顶部用的是**博客那条导航栏**（站长 2026-10-02 要求，见 AdminTopBar）。
+   它里头的中文标签不许被挤成竖排 —— 两字的标签竖过来最像"没做完"。
+   ⚠️ 不要加 `body.authed` 前缀：那个类是**后台首页登录后**才加的，别的后台页没有，
+   加了等于只给首页修。admin.css 只在 /admin/* 里加载，不写前缀也影响不到博客。 */
+#navbar-wrapper,
+#navbar-wrapper a,
+#navbar-wrapper button,
+#navbar-wrapper span {
+	white-space: nowrap;
+}
+#navbar-wrapper a,
+#navbar-wrapper button {
+	flex-shrink: 0;
+}
+
 /* 入口页原来收在 720px，卡片排成 3+3+1 很难看；放宽到 960px */
 #admin-main { --admin-content-max: 960px; }
 .admin-grid { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }

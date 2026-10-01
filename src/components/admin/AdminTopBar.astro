@@ -1,17 +1,29 @@
 ---
+import Navbar from "@components/layout/Navbar.astro";
 /**
- * 后台页面顶部：一条干净的后台顶栏（页面名 + 连接状态 + 明暗 + 返回 + 退出）。
+ * 后台页面顶部：博客的导航栏 + 本页的页头。
  *
- * ⚠️ 2026-10-01 改：这里原来会渲染博客的 `<Navbar />`（主页/文章/动态/兴趣/作品/关于 + 大搜索框）。
- *    后台是**站长自用**界面，顶上挂一排公开菜单既不专业也占地方（还常被挤成竖排）。
- *    现在后台页顶部只留本页该有的东西，返回入口默认回后台首页；首页那页由调用方传 `backHref="/"`。
- *    明暗切换按钮调用 `window.toggleDark()` —— 由 `<AdminTheme />` 提供（各后台页都会渲染它）。
+ * ⚠️ 2026-10-02 站长明确：**后台要的是博客那条导航栏，不是另画一条后台专用的**。
+ *    原话「要博客导航栏不要后台管理导航栏」。
+ *
+ *    所以这里用的就是博客的 <Navbar /> —— 同一根条、同一套按钮（主页/文章/动态/
+ *    兴趣/作品/关于、搜索、主题色、明暗、后台入口）。好处是后台和前台长得一样、
+ *    图标也是同一套，不用维护第二份菜单和第二套图标。
+ *
+ *    ⚠️ 中间走过两次弯路（都按站长的话回滚了）：
+ *      1. 第一版是「博客导航栏 + 一条后台标题条」—— 站长说只要导航栏；
+ *      2. 第二版把博客导航栏整个拆了，换成一条后台专用的细顶栏（页面名+明暗+返回+退出）
+ *         —— 那是站长最不想要的形态：后台凭空多一条别处没有的条，
+ *         图标还是手写的描边 SVG，和全站那套图标不是一个样子。
+ *    现在只保留导航栏 + 一行页头。页头**不是**导航栏：没有底色、不吸顶、
+ *    只在内容区里标一下"这是哪一页"，外加返回与退出。
  */
+import { Icon } from "astro-icon/components";
 
 interface Props {
-	/** 页面名，显示在顶栏上 */
+	/** 页面名，显示在页头上 */
 	title: string;
-	/** 是否显示连接状态（有接口调用的页面才需要） */
+	/** 是否显示连接状态（有接口调用的页面才需要；页面自己有状态条就传 false） */
 	withStatus?: boolean;
 	/** 返回链接指向哪里，默认回后台首页 */
 	backHref?: string;
@@ -19,14 +31,29 @@ interface Props {
 	backLabel?: string;
 }
 
-const { title, withStatus = true, backHref = "/admin/", backLabel = "后台" } = Astro.props;
+const {
+	title,
+	withStatus = true,
+	backHref = "/admin/",
+	backLabel = "后台",
+} = Astro.props;
 ---
 
-<div class="admin-topbar">
-  <div class="admin-topbar-inner">
-    {/* 页面名是这一条上最该看清的东西，不许被挤；状态文字长了就自己省略 */}
-    <div class="admin-topbar-left">
-      <h1 class="admin-topbar-title">{title}</h1>
+{/* 博客的导航栏。宽度容器与博客 Layout 里的内容区一致：max-w-(--page-width) + xl:w-[92vw] */}
+<div
+  class="relative z-50 mx-auto w-full max-w-(--page-width) px-0 md:px-4 xl:w-[92vw]"
+>
+  <div id="navbar-wrapper" class="sticky top-0 z-50">
+    <Navbar />
+  </div>
+</div>
+
+{/* 页头：页面名 + 状态 + 返回 + 退出。
+    刻意不做成一条"栏"—— 没有底色、没有下边框、不吸顶，就是内容区里的一行 */}
+<div class="container">
+  <div class="admin-page-head">
+    <div class="admin-page-head-left">
+      <h1 class="admin-page-title">{title}</h1>
       {
         withStatus && (
           <span class="status-bar min-w-0">
@@ -36,65 +63,51 @@ const { title, withStatus = true, backHref = "/admin/", backLabel = "后台" } =
         )
       }
     </div>
-
-    <div class="admin-topbar-right">
-      <button
-        type="button"
-        class="btn-plain rounded-lg h-9 gap-1 px-2.5 text-xs font-bold"
-        aria-label="切换明暗"
-        title="切换明暗"
-        onclick="toggleDark()"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="4"></circle>
-          <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>
-        </svg>
-        明暗
-      </button>
-
-      <a href={backHref} class="btn-plain rounded-lg h-9 gap-1 px-2.5 text-xs font-bold">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19 12H5M12 19l-7-7 7-7"></path>
-        </svg>
+    <div class="admin-page-head-actions">
+      <a href={backHref} class="btn btn-sm">
+        <Icon is:inline name="material-symbols:arrow-back-rounded" class="text-[1rem]" />
         {backLabel}
       </a>
-
-      <button type="button" class="btn-plain rounded-lg h-9 px-2.5 text-xs font-bold" onclick="doLogout()">
-        退出
-      </button>
+      <button type="button" class="btn btn-sm" onclick="doLogout()">退出</button>
     </div>
   </div>
 </div>
 
 <style is:inline>
-  /* 顶栏内部：一行，左右两端对齐；窄屏自动换行而不是挤成一团 */
-  .admin-topbar-inner {
+  /* 页头：一行，两端对齐；窄屏换行而不是挤成一团 */
+  .admin-page-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
     flex-wrap: wrap;
-    padding: 0.625rem 0.875rem;
-    border: 1px solid var(--line-soft);
-    border-radius: var(--radius-large);
-    background: var(--card-bg);
+    padding-block: 1rem 0.25rem;
   }
-  .admin-topbar-left {
+  .admin-page-head-left {
     display: flex;
     align-items: center;
     gap: 0.625rem;
     min-width: 0;
   }
-  .admin-topbar-title {
+  .admin-page-title {
     margin: 0;
-    font-size: 0.9375rem;
+    font-size: 1rem;
     font-weight: 700;
     letter-spacing: 0.01em;
+    white-space: nowrap;
   }
-  .admin-topbar-right {
+  .admin-page-head-actions {
     display: flex;
     align-items: center;
     gap: 0.375rem;
     flex-shrink: 0;
+  }
+  @media (max-width: 560px) {
+    .admin-page-head {
+      padding-block: 0.75rem 0;
+    }
+    .admin-page-title {
+      font-size: 0.9375rem;
+    }
   }
 </style>
