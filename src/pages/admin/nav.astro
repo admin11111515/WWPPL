@@ -1,0 +1,715 @@
+---
+import Footer from "@components/layout/Footer.astro";
+// 导航菜单 —— 读写仓库里的 src/data/navLinks.json
+// 保存后提交进仓库，Cloudflare 重新构建，全站导航栏跟着变。
+import AdminTheme from "@/components/admin/AdminTheme.astro";
+import AdminTopBar from "@/components/admin/AdminTopBar.astro";
+import { adminBodyClass, adminHtmlClass } from "@/components/admin/adminShell";
+import { externalPostsConfig } from "@/config/externalPostsConfig";
+// 后台不走博客 Layout，也就没有 iconify 运行时，图标用构建期内联的 SVG
+import { uiIcon } from "@/constants/ui-icons";
+
+/** 这个页面读写仓库里的哪个文件 */
+const target = {
+	owner: externalPostsConfig.owner,
+	repo: externalPostsConfig.repo,
+	branch: externalPostsConfig.branch,
+	path: "src/data/navLinks.json",
+};
+
+/**
+ * 图标下拉的候选。
+ *
+ * ⚠️ 为什么只给清单、不给自由填写：导航栏图标一律走**单色** material-symbols
+ *    （彩色图标在"一排横向扫过"的导航栏上显杂，见 main.css 里 #navbar 那条规则）。
+ *    清单里的每一个名字都核对过确实存在于图标集里 —— 写一个不存在的名字，
+ *    构建时取不到图形，前台就是一个空白占位，而这种错在后台界面上看不出来。
+ *
+ *    要加图标：确认 `material-symbols:<名字>` 在图标集里存在，再加进这里。
+ */
+const iconOptions = [
+	["mdi:wechat", "微信"],
+	["material-symbols:home", "主页"],
+	["material-symbols:article", "文章"],
+	["material-symbols:archive", "归档"],
+	["material-symbols:folder-open-rounded", "分类"],
+	["material-symbols:label", "标签"],
+	["material-symbols:bolt", "动态"],
+	["material-symbols:bolt-outline", "动态·描边"],
+	["material-symbols:chat", "留言"],
+	["material-symbols:movie", "追番"],
+	["material-symbols:music-note-rounded", "音乐"],
+	["material-symbols:photo-album", "相册"],
+	["material-symbols:book", "日记"],
+	["material-symbols:menu-book", "书"],
+	["material-symbols:work", "项目"],
+	["material-symbols:psychology", "技能"],
+	["material-symbols:person", "关于我"],
+	["material-symbols:group", "友链"],
+	["material-symbols:favorite", "打赏"],
+	["material-symbols:info", "关于"],
+	["material-symbols:more-horiz", "更多"],
+	["material-symbols:star", "星标"],
+	["material-symbols:bookmark", "书签"],
+	["material-symbols:code", "代码"],
+	["material-symbols:terminal", "终端"],
+	["material-symbols:bug-report", "反馈"],
+	["material-symbols:rocket", "作品"],
+	["material-symbols:palette", "外观"],
+	["material-symbols:brush", "画笔"],
+	["material-symbols:image", "图片"],
+	["material-symbols:photo-camera", "相机"],
+	["material-symbols:video-library", "视频"],
+	["material-symbols:live-tv", "直播"],
+	["material-symbols:theaters", "影视"],
+	["material-symbols:headphones", "耳机"],
+	["material-symbols:album", "专辑"],
+	["material-symbols:podcasts", "播客"],
+	["material-symbols:newspaper", "资讯"],
+	["material-symbols:description", "文档"],
+	["material-symbols:edit-note", "笔记"],
+	["material-symbols:sticky-note-2", "便签"],
+	["material-symbols:task", "任务"],
+	["material-symbols:checklist", "清单"],
+	["material-symbols:lightbulb", "想法"],
+	["material-symbols:school", "学校"],
+	["material-symbols:build", "工具"],
+	["material-symbols:settings", "设置"],
+	["material-symbols:dashboard", "面板"],
+	["material-symbols:widgets", "组件"],
+	["material-symbols:grid-view", "网格"],
+	["material-symbols:apps", "应用"],
+	["material-symbols:explore", "探索"],
+	["material-symbols:travel-explore", "旅行"],
+	["material-symbols:public", "网站"],
+	["material-symbols:language", "语言"],
+	["material-symbols:link", "链接"],
+	["material-symbols:mail", "邮件"],
+	["material-symbols:share", "分享"],
+	["material-symbols:thumb-up", "点赞"],
+	["material-symbols:flag", "标记"],
+	["material-symbols:history", "历史"],
+	["material-symbols:schedule", "时间"],
+	["material-symbols:search", "搜索"],
+	["material-symbols:local-library", "图书馆"],
+	["material-symbols:auto-stories", "故事"],
+	["material-symbols:smart-toy", "机器人"],
+	["material-symbols:sports-esports", "游戏"],
+	["material-symbols:toys", "玩具"],
+	["material-symbols:pets", "宠物"],
+	["material-symbols:cake", "生日"],
+	["material-symbols:restaurant", "餐饮"],
+	["material-symbols:coffee", "咖啡"],
+	["material-symbols:shopping-bag", "购物"],
+	["material-symbols:wallet", "钱包"],
+	["material-symbols:fitness-center", "健身"],
+	["material-symbols:directions-bike", "骑行"],
+	["material-symbols:flight", "飞行"],
+	["material-symbols:cloud", "云"],
+	["material-symbols:memory", "硬件"],
+	["material-symbols:devices", "设备"],
+	["material-symbols:science", "实验"],
+	["material-symbols:calculate", "计算"],
+	["material-symbols:emoji-people", "人群"],
+	["material-symbols:diversity-3", "团队"],
+	["material-symbols:handshake", "合作"],
+	["material-symbols:rss-feed", "订阅"],
+	["material-symbols:map", "地图"],
+	["material-symbols:trophy", "奖杯"],
+	["material-symbols:verified", "认证"],
+	["material-symbols:workspace-premium", "会员"],
+];
+
+/**
+ * 快速添加：站内现成页面。
+ * pageKey 是"这个页面在站点开关里叫什么"，带上它才能让 /admin/site 那类
+ * 页面开关继续生效 —— 站点开关关掉的页面，导航栏会自动不显示这一项。
+ */
+const quickAdd = [
+	["主页", "/", "material-symbols:home", ""],
+	["归档", "/archive/", "material-symbols:archive", ""],
+	["分类", "/categories/", "material-symbols:folder-open-rounded", ""],
+	["标签", "/tags/", "material-symbols:label", ""],
+	["朋友圈", "/moments/", "mdi:wechat", ""],
+	["相册", "/gallery/", "material-symbols:photo-album", "gallery"],
+	["留言", "/guestbook/", "material-symbols:chat", "guestbook"],
+	["日记", "/diary/", "material-symbols:book", ""],
+	["追番", "/anime/", "material-symbols:movie", "anime"],
+	["音乐", "/music/", "material-symbols:music-note-rounded", ""],
+	["友链", "/friends/", "material-symbols:group", "friends"],
+	["项目", "/projects/", "material-symbols:work", ""],
+	["技能", "/skills/", "material-symbols:psychology", ""],
+	["关于我", "/about/", "material-symbols:person", ""],
+	["打赏", "/sponsor/", "material-symbols:favorite", "sponsor"],
+];
+---
+
+<html lang="zh-CN" class={adminHtmlClass}>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>导航菜单</title>
+  {/* 后台是站长自用界面，不该出现在搜索结果里（sitemap 中同样已剔除） */}
+  <meta name="robots" content="noindex, nofollow" />
+  <AdminTheme />
+  <style is:inline>
+    /* ===== 只放这一页特有的排版，通用部分在 src/styles/admin.css ===== */
+    #admin-main { --admin-content-max: 860px; }
+
+    .page-lead {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      margin-bottom: 0.875rem;
+      padding: 0.625rem 0.75rem;
+      background: var(--card-bg-soft);
+      border: 1px dashed var(--line);
+      border-radius: var(--radius-md);
+      font-size: 0.75rem;
+      line-height: 1.75;
+      color: var(--text-2);
+    }
+    .page-lead .lead-icon { flex-shrink: 0; margin-top: 0.2rem; font-size: 1rem; line-height: 1; }
+
+    /* ===== 预览：把当前菜单按前台的样子排一行 ===== */
+    .nav-preview {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.375rem;
+      margin-bottom: 0.875rem;
+      padding: 0.625rem 0.75rem;
+      border: 1px solid var(--line-soft);
+      border-radius: var(--radius-md);
+      background: var(--btn-regular-bg);
+      font-size: 0.75rem;
+      color: var(--text-2);
+    }
+    .nav-preview .pv-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      height: 1.5rem;
+      padding: 0 0.5rem;
+      border-radius: 999px;
+      background: var(--card-bg);
+      border: 1px solid var(--line-soft);
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+    }
+    .nav-preview .pv-sub { font-size: 0.6875rem; color: var(--text-3); }
+    .nav-preview .pv-label { color: var(--text-3); margin-right: 0.125rem; }
+
+    /* ===== 一个菜单（父级）===== */
+    .nav-item {
+      border: 1px solid var(--line-soft);
+      border-radius: var(--radius-large, 0.75rem);
+      padding: 0.625rem;
+      margin-bottom: 0.625rem;
+      background: var(--card-bg-soft, transparent);
+    }
+    .nav-row {
+      display: grid;
+      /* 图标下拉里的名字比较长（"主页 · home"），给宽一点别一进来就截断 */
+      grid-template-columns: minmax(0, 10.5rem) minmax(0, 8rem) minmax(0, 1fr) auto;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .nav-row select,
+    .nav-row input { width: 100%; min-width: 0; }
+    .nav-ops { display: flex; align-items: center; gap: 0.25rem; flex-shrink: 0; }
+
+    /* 子菜单：缩进一条竖线，视觉上"挂在"父级下面 */
+    .nav-children {
+      margin: 0.5rem 0 0 0.5rem;
+      padding-left: 0.75rem;
+      border-left: 2px solid var(--line-soft);
+    }
+    .nav-child-row {
+      display: grid;
+      grid-template-columns: minmax(0, 10.5rem) minmax(0, 8rem) minmax(0, 1fr) auto;
+      gap: 0.5rem;
+      align-items: center;
+      margin-bottom: 0.375rem;
+    }
+    .nav-child-row select,
+    .nav-child-row input { width: 100%; min-width: 0; }
+
+    .nav-empty-kids {
+      font-size: 0.6875rem;
+      color: var(--text-3);
+      margin: 0.5rem 0 0.375rem 0.5rem;
+      padding-left: 0.75rem;
+    }
+    .nav-hint { font-size: 0.6875rem; color: var(--text-3); line-height: 1.7; }
+
+    /* 底部操作区 */
+    .nav-foot {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 0.875rem;
+    }
+    .save-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+    .save-row .btn-primary { flex: 1; min-width: 10rem; }
+    .dirty-hint { font-size: 0.6875rem; color: var(--text-3); white-space: nowrap; }
+    .dirty-hint.dirty { color: var(--warning, var(--text-2)); }
+
+    /* 窄屏：网格排不下，一律改成上下叠 */
+    @media (max-width: 700px) {
+      .nav-row,
+      .nav-child-row {
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas: "icon ops" "name name" "url url";
+        gap: 0.375rem 0.5rem;
+      }
+      .nav-row .nav-icon,
+      .nav-child-row .nav-icon { grid-area: icon; }
+      .nav-row .nav-name,
+      .nav-child-row .nav-name { grid-area: name; }
+      .nav-row .nav-url,
+      .nav-child-row .nav-url { grid-area: url; }
+      .nav-ops { grid-area: ops; }
+    }
+  </style>
+</head>
+<body class={adminBodyClass}>
+
+  <div id="admin-main">
+    <AdminTopBar title="导航菜单" />
+
+    <div class="container">
+      <div class="card">
+        <div class="page-lead">
+          <span class="lead-icon" set:html={uiIcon("fluent-color:apps-list-detail-24")} />
+          <span>
+            这里改的是导航栏上的菜单：改名、换图标、调顺序、加删菜单和子菜单。
+            点「保存并生效」提交到仓库，Cloudflare 重新构建后全站生效（约一两分钟）。
+            <b>地址要指向真实存在的页面</b>，否则点进去就是 404。
+          </span>
+        </div>
+
+        <div class="nav-preview" id="nav-preview"></div>
+
+        <div id="nav-list"></div>
+
+        <div class="nav-foot">
+          <button class="btn btn-sm" type="button" onclick="addTop()">＋ 添加菜单</button>
+          <select id="quick-add" class="input-single" style="width:auto;max-width:12rem;">
+            <option value="">快速添加站内页面…</option>
+          </select>
+        </div>
+
+        <div class="nav-hint" style="margin-top:0.625rem;">
+          有子菜单的项，地址固定是 <code>#</code>（它渲染成下拉按钮，点了不跳转）；
+          子菜单只支持一层，再深前台不显示。
+        </div>
+      </div>
+
+      <div class="save-row">
+        <button class="btn btn-primary" id="save-btn" onclick="saveNav()">保存并生效</button>
+        <button class="btn btn-ghost" type="button" onclick="reloadFromRepo()">还原成仓库里的版本</button>
+        <span class="dirty-hint" id="dirty-hint"></span>
+      </div>
+    </div>
+
+    <Footer />
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script is:inline src="/js/editor-commons.js"></script>
+  <script is:inline src="/js/admin-github.js"></script>
+  <script is:inline data-target={JSON.stringify(target)} data-icons={JSON.stringify(iconOptions)} data-quick={JSON.stringify(quickAdd)}>
+    var _script = document.currentScript;
+    var TARGET = JSON.parse(_script.getAttribute("data-target") || "{}");
+    var ICONS = JSON.parse(_script.getAttribute("data-icons") || "[]");
+    var QUICK = JSON.parse(_script.getAttribute("data-quick") || "[]");
+
+    // ===== 工具 =====
+    function $(id) { return document.getElementById(id); }
+    function toast(msg, type) {
+      var el = $("toast"); el.textContent = msg; el.className = "toast " + type + " show";
+      clearTimeout(el._t); el._t = setTimeout(function() { el.className = "toast"; }, 3200);
+    }
+    function setStatus(ok, text) { $("status-dot").className = "status-dot " + (ok ? "ok" : "err"); $("status-text").textContent = text; }
+    function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+
+    // ===== 数据 =====
+    var data = [];
+    var fileSha = "";
+    var cleanSnapshot = "";
+
+    function normalize(list) {
+      if (!Array.isArray(list)) return [];
+      return list.map(function (it) {
+        if (!it || typeof it !== "object") return null;
+        var name = String(it.name == null ? "" : it.name).trim();
+        var url = String(it.url == null ? "" : it.url).trim();
+        if (!name || !url) return null;
+        var out = { name: name, url: url };
+        if (it.icon) out.icon = String(it.icon).trim();
+        if (it.pageKey) out.pageKey = String(it.pageKey).trim();
+        var kids = Array.isArray(it.children) ? normalize(it.children) : [];
+        if (kids.length) { out.children = kids; out.url = "#"; }
+        return out;
+      }).filter(Boolean);
+    }
+
+    function iconOptionsHtml(current) {
+      var html = "";
+      var seen = {};
+      // 值不在清单里（比如手改过 JSON）也要能显示出来，不然一渲染就被悄悄改成第一项
+      if (current && !ICONS.some(function (p) { return p[0] === current; })) {
+        html += '<option value="' + esc(current) + '" selected>' + esc(current) + '（当前值）</option>';
+        seen[current] = true;
+      }
+      ICONS.forEach(function (p) {
+        var sel = (!seen[current] && p[0] === current) ? " selected" : "";
+        html += '<option value="' + esc(p[0]) + '"' + sel + ">" + esc(p[1] + " · " + p[0].split(":")[1]) + "</option>";
+      });
+      return html;
+    }
+
+    // ===== 渲染 =====
+    function renderPreview() {
+      var box = $("nav-preview");
+      if (!box) return;
+      var html = '<span class="pv-label">预览：</span>';
+      data.forEach(function (it) {
+        if (it.children && it.children.length) {
+          html += '<span class="pv-pill">' + esc(it.name) + " ▾</span>";
+          html += '<span class="pv-sub">' + it.children.map(function (c) { return esc(c.name); }).join(" · ") + "</span>";
+        } else {
+          html += '<span class="pv-pill">' + esc(it.name) + "</span>";
+        }
+      });
+      if (!data.length) html += '<span class="pv-sub">（空）</span>';
+      box.innerHTML = html;
+    }
+
+    function rowHtml(item, path, isChild) {
+      var kids = item.children || [];
+      var hasKids = kids.length > 0;
+      var nameId = "name-" + path;
+      var urlId = "url-" + path;
+      var iconId = "icon-" + path;
+      var urlCell = hasKids
+        ? '<input type="text" class="input-single nav-url" data-kind="url" data-path="' + path + '" id="' + urlId + '" value="#" disabled title="有子菜单的项渲染成下拉按钮，地址不参与跳转" />'
+        : '<input type="text" class="input-single nav-url" data-kind="url" data-path="' + path + '" id="' + urlId + '" value="' + esc(item.url) + '" placeholder="/about/ 或 https://…" />';
+      var ops =
+        '<div class="nav-ops">' +
+        '<button class="btn-icon" type="button" title="上移" data-move="-1" data-path="' + path + '">↑</button>' +
+        '<button class="btn-icon" type="button" title="下移" data-move="1" data-path="' + path + '">↓</button>' +
+        '<button class="btn-icon" type="button" title="删除" data-del="1" data-path="' + path + '">✕</button>' +
+        "</div>";
+
+      var html =
+        '<div class="' + (isChild ? "nav-child-row" : "nav-row") + '">' +
+        '<select class="input-single nav-icon" id="' + iconId + '" data-kind="icon" data-path="' + path + '">' + iconOptionsHtml(item.icon || "") + "</select>" +
+        '<input type="text" class="input-single nav-name" id="' + nameId + '" data-kind="name" data-path="' + path + '" value="' + esc(item.name) + '" placeholder="菜单名" maxlength="20" />' +
+        urlCell +
+        ops +
+        "</div>";
+
+      return html;
+    }
+
+    function render() {
+      var list = $("nav-list");
+      var html = "";
+      data.forEach(function (item, i) {
+        var path = String(i);
+        html += '<div class="nav-item">';
+        html += rowHtml(item, path, false);
+        var kids = item.children || [];
+        if (kids.length) {
+          html += '<div class="nav-children">';
+          kids.forEach(function (child, j) {
+            html += rowHtml(child, path + "." + j, true);
+          });
+          html += "</div>";
+        } else {
+          html += '<div class="nav-empty-kids">还没有子菜单</div>';
+        }
+        html += '<div class="nav-foot"><button class="btn btn-sm" type="button" data-addchild="' + path + '">＋ 加子菜单</button></div>';
+        html += "</div>";
+      });
+      list.innerHTML = html;
+      renderPreview();
+      bind();
+      updateHint();
+    }
+
+    /** 按 "0" / "0.2" 这样的路径把数据取出来 */
+    function at(path) {
+      var parts = String(path).split(".");
+      var list = data;
+      var item = null;
+      for (var i = 0; i < parts.length; i++) {
+        item = list[Number(parts[i])];
+        if (!item) return null;
+        list = item.children || [];
+      }
+      return item;
+    }
+    /** 取"这一项所在的数组"，用于上移/下移/删除 */
+    function parentList(path) {
+      var parts = String(path).split(".");
+      if (parts.length === 1) return data;
+      var p = at(parts.slice(0, -1).join("."));
+      return p && p.children ? p.children : null;
+    }
+
+    function bind() {
+      // 输入：直接写回数据，不重渲染（重渲染会让输入框失焦）
+      Array.prototype.forEach.call(document.querySelectorAll("[data-kind]"), function (el) {
+        function write() {
+          // 禁用掉的格子（有子菜单时父级的地址格）一律不写回：
+          // 它显示的是固定值 #，改它只会把一条不该存在的地址带进仓库
+          if (el.disabled) return;
+          var item = at(el.getAttribute("data-path"));
+          if (!item) return;
+          item[el.getAttribute("data-kind")] = el.value.trim();
+          renderPreview();
+          updateHint();
+        }
+        el.addEventListener("input", write);
+        el.addEventListener("change", write);
+      });
+
+      Array.prototype.forEach.call(document.querySelectorAll("[data-move]"), function (btn) {
+        btn.addEventListener("click", function () {
+          var path = btn.getAttribute("data-path");
+          var dir = Number(btn.getAttribute("data-move"));
+          var list = parentList(path);
+          var idx = Number(String(path).split(".").pop());
+          var to = idx + dir;
+          if (!list || to < 0 || to >= list.length) return;
+          var tmp = list[idx]; list[idx] = list[to]; list[to] = tmp;
+          render();
+        });
+      });
+
+      Array.prototype.forEach.call(document.querySelectorAll("[data-del]"), function (btn) {
+        btn.addEventListener("click", function () {
+          var path = btn.getAttribute("data-path");
+          var item = at(path);
+          if (!item) return;
+          var what = item.children && item.children.length
+            ? '「' + item.name + '」和它下面的 ' + item.children.length + " 个子菜单"
+            : "「" + item.name + "」";
+          if (!confirm("确定删除 " + what + "？")) return;
+          var list = parentList(path);
+          if (!list) return;
+          list.splice(Number(String(path).split(".").pop()), 1);
+          render();
+        });
+      });
+
+      Array.prototype.forEach.call(document.querySelectorAll("[data-addchild]"), function (btn) {
+        btn.addEventListener("click", function () {
+          var parent = at(btn.getAttribute("data-addchild"));
+          if (!parent) return;
+          parent.children = parent.children || [];
+          parent.children.push({ name: "新子菜单", url: "/", icon: "material-symbols:label" });
+          // 有子菜单之后，父级地址固定为 "#"，渲染时那格会变成禁用
+          parent.url = "#";
+          render();
+        });
+      });
+    }
+
+    // ===== 顶部/快速添加 =====
+    function addTop() {
+      data.push({ name: "新菜单", url: "/", icon: "material-symbols:label" });
+      render();
+    }
+    (function () {
+      var sel = $("quick-add");
+      QUICK.forEach(function (q, i) {
+        var opt = document.createElement("option");
+        opt.value = String(i);
+        opt.textContent = q[0];
+        sel.appendChild(opt);
+      });
+      sel.addEventListener("change", function () {
+        var i = Number(sel.value);
+        sel.value = "";
+        if (isNaN(i) || !QUICK[i]) return;
+        var q = QUICK[i];
+        var item = { name: q[0], url: q[1], icon: q[2] };
+        if (q[3]) item.pageKey = q[3];
+        data.push(item);
+        render();
+        toast("已添加「" + q[0] + "」，记得保存", "ok");
+      });
+    })();
+
+    // ===== 脏检查 =====
+    function snapshot() { return JSON.stringify(data); }
+    function isDirty() { return snapshot() !== cleanSnapshot; }
+    function markClean() { cleanSnapshot = snapshot(); updateHint(); }
+    function updateHint() {
+      var el = $("dirty-hint");
+      if (!el) return;
+      var dirty = isDirty();
+      el.textContent = dirty ? "有改动还没保存" : "";
+      el.className = "dirty-hint" + (dirty ? " dirty" : "");
+    }
+
+    // ===== 保存前的结构检查 =====
+    // 判据写最小不变量：少一项、地址不合法、父级空壳 —— 这些是"保存上去就坏"的，
+    // 不是"看起来还在"的检查。
+    /**
+     * 写盘前的不变量：有子菜单的项，地址一律是 #。
+     *
+     * 为什么放在这里而不是只靠界面上"禁用输入框"：禁用只是不让人手打，
+     * 数据在内存里仍可能被别处改成别的值；而前台是**按有没有 children 渲染**的
+     * （有 children 就渲染成下拉按钮，地址根本不参与跳转），所以一条非 # 的地址
+     * 存进去既无效又误导 —— 在这里收口，写出去的一定是干净的。
+     */
+    function settle() {
+      data.forEach(function (it) {
+        if (it.children && it.children.length) it.url = "#";
+      });
+    }
+
+    function check() {
+      if (!data.length) return "至少留一个菜单 —— 导航空了访客就哪也去不了";
+      for (var i = 0; i < data.length; i++) {
+        var it = data[i];
+        if (!it.name) return "第 " + (i + 1) + " 个菜单没填名字";
+        var kids = it.children || [];
+        if (kids.length) {
+          for (var j = 0; j < kids.length; j++) {
+            var c = kids[j];
+            if (!c.name) return "「" + it.name + "」下面第 " + (j + 1) + " 个子菜单没填名字";
+            var bad = urlProblem(c.url);
+            if (bad) return "「" + it.name + " / " + (c.name || "?") + "」的地址：" + bad;
+          }
+        } else {
+          if (it.url === "#") return "「" + it.name + "」没有子菜单，地址不能是 #（点了没反应）";
+          var bad2 = urlProblem(it.url);
+          if (bad2) return "「" + it.name + "」的地址：" + bad2;
+        }
+      }
+      return "";
+    }
+    function urlProblem(url) {
+      var u = String(url || "").trim();
+      if (!u) return "还没填";
+      if (u === "#") return "要填真实地址";
+      if (/^https?:\/\//i.test(u)) return "";
+      if (u.charAt(0) === "/") return "";
+      return "要以 / 开头（站内）或 https:// 开头（站外）";
+    }
+
+    // ===== 读 =====
+    function b64DecodeUnicode(str) {
+      var bin = atob(str);
+      var bytes = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return new TextDecoder("utf-8").decode(bytes);
+    }
+    function b64EncodeUnicode(str) {
+      var bytes = new TextEncoder().encode(str);
+      var bin = "";
+      bytes.forEach(function (b) { bin += String.fromCharCode(b); });
+      return btoa(bin);
+    }
+
+    function loadFromRepo() {
+      setStatus(false, "正在读取仓库里的 navLinks.json…");
+      return WBGitHub.getFile({
+        owner: TARGET.owner, repo: TARGET.repo, branch: TARGET.branch, path: TARGET.path
+      }).then(function (file) {
+        if (!file) {
+          setStatus(false, "仓库里没找到 " + TARGET.path);
+          toast("没读到 " + TARGET.path + "，检查一下路径", "err");
+          return;
+        }
+        fileSha = file.sha || "";
+        var text = b64DecodeUnicode(String(file.content || "").replace(/\s/g, ""));
+        var parsed = null;
+        try {
+          parsed = JSON.parse(text);
+        } catch (e) {
+          // 解析不了绝不写回去：一写就把原文件覆盖成空的了
+          setStatus(false, "文件内容不是合法 JSON，没有改动任何东西");
+          toast("读出来的内容解析不了：" + e.message, "err");
+          return;
+        }
+        data = normalize(parsed);
+        render();
+        markClean();
+        setStatus(true, "已连接");
+      }).catch(function (e) {
+        setStatus(false, e.message);
+        toast(e.message, "err");
+      });
+    }
+
+    function reloadFromRepo() {
+      if (isDirty() && !confirm("还有没保存的改动，确定丢掉、重新读仓库里的版本？")) return;
+      loadFromRepo();
+    }
+
+    // ===== 写 =====
+    function saveNav() {
+      settle();
+      var problem = check();
+      if (problem) { toast(problem, "err"); return; }
+
+      var text = JSON.stringify(data, null, "\t") + "\n";
+      var btn = $("save-btn");
+      btn.disabled = true; btn.textContent = "保存中…";
+      setStatus(false, "正在提交到仓库…");
+
+      WBGitHub.putFile({
+        owner: TARGET.owner, repo: TARGET.repo, branch: TARGET.branch, path: TARGET.path,
+        content: b64EncodeUnicode(text),
+        message: "chore: 更新导航菜单",
+        sha: fileSha || undefined
+      }).then(function (res) {
+        fileSha = (res && res.content && res.content.sha) || fileSha;
+        markClean();
+        setStatus(true, "已提交，等 Cloudflare 重新构建");
+        toast("已保存。Cloudflare 重新构建后全站生效（约一两分钟）", "ok");
+      }).catch(function (e) {
+        setStatus(false, e.message);
+        toast(e.message, "err");
+      }).then(function () {
+        btn.disabled = false; btn.textContent = "保存并生效";
+      });
+    }
+
+    // ===== 初始化 =====
+    function checkAuth() {
+      return fetch("/api/auth/status")
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (!d.authed) { window.location.href = "/admin/"; return false; }
+          return true;
+        })
+        .catch(function () { window.location.href = "/admin/"; return false; });
+    }
+    function doLogout() {
+      sessionStorage.removeItem("admin_auth");
+      fetch("/api/auth/logout", { method: "POST" }).catch(function () {});
+      window.location.href = "/admin/";
+    }
+
+    WBEditor.guardUnsavedChanges(isDirty);
+    checkAuth().then(function (ok) { if (ok) loadFromRepo(); });
+  </script>
+</body>
+</html>

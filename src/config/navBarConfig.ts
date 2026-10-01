@@ -4,112 +4,25 @@ import {
 	type NavBarSearchConfig,
 	NavBarSearchMethod,
 } from "../types/navBarConfig";
+import { navLinks } from "./navLinks";
 
 // ============================================================================
-// 导航栏配置 - 根据顺序动态生成导航栏链接
-// NavBar Configuration - Dynamically generate navigation bar links based on order
+// 导航栏配置
+// NavBar Configuration
 // ============================================================================
-const getDynamicNavBarConfig = (): NavBarConfig => {
-	// 基础导航栏链接
-	const links: NavBarLink[] = [
-		// 主页
-		LinkPresets.Home,
-	];
+//
+// ⚠️ 2026-10-02 起，**菜单内容不再写在这个文件里**。
+//    真正生效的是 `src/data/navLinks.json`（读取器在 `./navLinks.ts`），
+//    后台「导航菜单」页（/admin/nav/）直接读写它：改名、换图标、调顺序、
+//    增删菜单与子菜单都在后台做，改完提交进仓库由 Cloudflare 重新构建。
+//
+//    这个文件的职责只剩两件：把菜单取出来交给组件，以及保留下面的链接预设池。
+//    要改菜单请去后台，别在这里改 —— 在这里改会被 JSON 里的值覆盖掉。
+//
+//    兜底逻辑（JSON 写坏了怎么办）在 `navLinks.ts` 里，这里不重复处理。
+// ============================================================================
 
-	// 文章及其子菜单
-	links.push({
-		name: "文章",
-		url: "#",
-		icon: "material-symbols:article",
-		children: [
-			// 归档
-			LinkPresets.Archive,
-
-			// 分类
-			LinkPresets.Categories,
-
-			// 标签
-			LinkPresets.Tags,
-		],
-	});
-
-	// 动态及其子菜单
-	links.push({
-		name: "动态",
-		url: "#",
-		icon: "material-symbols:bolt-outline",
-		children: [
-			// 朋友圈
-			LinkPresets.Moments,
-
-			// 相册
-			LinkPresets.Gallery,
-
-			// 留言板
-			LinkPresets.Guestbook,
-
-			// 日记
-			LinkPresets.Diary,
-		],
-	});
-
-	// 兴趣及其子菜单
-	// 2026-09-26 改名：原来叫「我的」，配上「友链 / 追番 / 音乐」这三项，
-	// 看不出里面装的是什么（本站审计 U6）；改成「兴趣」并让追番、音乐排前面。
-	// 父级菜单在模板里是按「有没有 children」渲染成按钮的，url 不参与跳转，
-	// 所以这里统一写 "#"，与「文章」「动态」保持一致。
-	links.push({
-		name: "兴趣",
-		url: "#",
-		icon: "material-symbols:person",
-		children: [
-			// 追番
-			LinkPresets.Anime,
-
-			// 音乐
-			LinkPresets.Music,
-
-			// 友链
-			LinkPresets.Friends,
-		],
-	});
-
-	// 作品及其子菜单
-	// 2026-09-26 改名：原来叫「其他」（url 是 /other/，那个路径并不存在），
-	// 项目与技能归到「作品」更好认。
-	links.push({
-		name: "作品",
-		url: "#",
-		icon: "material-symbols:more-horiz",
-		children: [
-			// 项目
-			LinkPresets.Projects,
-
-			// 技能
-			LinkPresets.Skills,
-		],
-	});
-
-	// 关于及其子菜单
-	// 2026-09-26 改名：原来叫「更多」（url 是 /content/，那个路径并不存在），
-	// 同时把「关于页面」排到「打赏」前面——先讲我是谁，再谈要不要打赏。
-	links.push({
-		name: "关于",
-		url: "#",
-		icon: "material-symbols:info",
-		children: [
-			// 关于页面
-			LinkPresets.About,
-
-			// 打赏
-			LinkPresets.Sponsor,
-		],
-	});
-
-	// 仅返回链接，其它导航搜索相关配置在模块顶层常量中独立导出
-
-	return { links } as NavBarConfig;
-};
+export const navBarConfig: NavBarConfig = { links: navLinks };
 
 // 导航搜索配置
 export const navBarSearchConfig: NavBarSearchConfig = {
@@ -117,16 +30,21 @@ export const navBarSearchConfig: NavBarSearchConfig = {
 };
 
 // ============================================================================
-// 链接预设 - 可自由自定义导航栏链接的名称、图标和URL
-// Link Presets - Allows free customization of the name, icon, and URL of navigation bar links
+// 链接预设 —— 备选池，默认不出现在导航栏里
+// Link Presets
 //
-// 这里是备选池：预设留着不占用导航，只有被上面的 links 引用了才会显示。
-// 但 url 指向的页面必须真实存在，否则谁启用谁就多一条 404 链接。
+// ⚠️ 池子里的项**只有被写进 src/data/navLinks.json 才会显示**（后台的
+//    「添加菜单」下拉就是从这份池子取的）。改这里不会让导航产生任何变化。
 //
-// 2026-09-24 移除了三个「指向不存在页面」的预设：设备 /devices/、时间线 /timeline/、
-// 番组计划 /bangumi/ —— 本站没有这三块内容（站点开关也一直是关的），启用就是 404；
-// 番剧相关的需求已由 /anime/（追番）覆盖。要恢复：先在 src/pages/ 下补出页面，
-// 再把预设和 links 里的引用加回来。
+//    url 指向的页面必须真实存在，否则谁启用谁就多一条 404 链接。
+//
+//    2026-09-24 移除了三个「指向不存在页面」的预设：设备 /devices/、时间线
+//    /timeline/、番组计划 /bangumi/ —— 本站没有这三块内容（站点开关也一直是
+//    关的），启用就是 404；番剧相关的需求已由 /anime/（追番）覆盖。
+//    要恢复：先在 src/pages/ 下补出页面，再把预设加回来。
+//
+//    2026-10-02 修了一个坏图标：相册原本写 `material-symbols:photo-library`，
+//    这个名字在图标集里并不存在（图标渲染成空白）→ 改成 `photo-album`。
 // ============================================================================
 export const LinkPresets: Record<string, NavBarLink> = {
 	Home: {
@@ -181,7 +99,7 @@ export const LinkPresets: Record<string, NavBarLink> = {
 	Gallery: {
 		name: "相册",
 		url: "/gallery/",
-		icon: "material-symbols:photo-library",
+		icon: "material-symbols:photo-album",
 		pageKey: "gallery",
 	},
 	Diary: {
@@ -215,5 +133,3 @@ export const LinkPresets: Record<string, NavBarLink> = {
 		icon: "material-symbols:lock",
 	},
 };
-
-export const navBarConfig: NavBarConfig = getDynamicNavBarConfig();

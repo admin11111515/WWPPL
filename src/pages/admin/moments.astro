@@ -287,7 +287,17 @@ import { uiIcon } from "@/constants/ui-icons";
       <div class="card">
         <div class="list-header">
           <div class="field-label" style="margin:0"><span class="icon" set:html={uiIcon("fluent-color:document-text-24")} /> 已发布</div>
-          <span class="count" id="list-count"></span>
+          <div class="list-tools">
+            <input
+              type="search"
+              id="moments-search"
+              class="input-single"
+              placeholder="搜内容、标签、地点"
+              aria-label="搜索说说"
+              oninput="filterMoments()"
+            />
+            <span class="count" id="list-count"></span>
+          </div>
         </div>
         <div id="moments-list">
           <div class="empty-state"><span class="spinner"></span></div>
@@ -311,6 +321,7 @@ import { uiIcon } from "@/constants/ui-icons";
       loading: uiIcon("material-symbols:progress-activity"),
       pin: uiIcon("fluent-color:location-ripple-24"),
       comment: uiIcon("fluent-color:chat-24"),
+      search: uiIcon("fluent-color:search-visual-24"),
     })}>
     var _script = document.currentScript;
     var GIST_ID = _script.getAttribute("data-gist") || "";
@@ -476,6 +487,10 @@ import { uiIcon } from "@/constants/ui-icons";
     }
 
     // ===== 加载列表 =====
+    // 搜索框只影响"显示哪些"，不重新取数：取回来的全量留在 allMoments 里，
+    // 过滤在内存里做（说说全在 Gist 里，一次就读完了，没必要每敲一个字请求一次）
+    var allMoments = [];
+
     function loadMoments() {
       var list = $("moments-list");
       list.innerHTML = '<div class="empty-state"><span class="spinner"></span></div>';
@@ -483,13 +498,43 @@ import { uiIcon } from "@/constants/ui-icons";
       WBGitHub.readGist(GIST_ID).then(function(gist) {
         var text = WBGitHub.gistText(gist, FILE_NAME);
         var moments = []; try { moments = JSON.parse(text || "[]"); } catch(e) {}
-        if (!moments.length) { showEmpty(); return; }
-
         moments.sort(function(a, b) { return new Date(b.published) - new Date(a.published); });
-        $("list-count").textContent = moments.length + " 条";
-        list.innerHTML = "";
+        allMoments = moments;
+        renderMoments();
+      }).catch(function(e) { list.innerHTML = '<div class="empty-state" style="color:var(--danger)">加载失败：' + esc(e.message) + '</div>'; });
+    }
 
-        moments.forEach(function(m) {
+    /** 一句说说里能被搜到的东西：正文、标签、地点、日期 */
+    function momentHaystack(m) {
+      return [
+        m.content || "",
+        (m.tags || []).join(" "),
+        m.location || "",
+        m.published || "",
+      ].join(" ").toLowerCase();
+    }
+
+    function renderMoments() {
+      var list = $("moments-list");
+      var kw = String(($("moments-search") || {}).value || "").trim().toLowerCase();
+
+      if (!allMoments.length) { showEmpty(); return; }
+
+      var shown = kw
+        ? allMoments.filter(function(m) { return momentHaystack(m).indexOf(kw) >= 0; })
+        : allMoments;
+
+      $("list-count").textContent = kw && shown.length !== allMoments.length
+        ? shown.length + " / " + allMoments.length + " 条"
+        : allMoments.length + " 条";
+
+      if (!shown.length) {
+        list.innerHTML = '<div class="empty-state"><div class="icon">' + ICONS.search + '</div><p>没有匹配「' + esc(kw) + '」的说说</p></div>';
+        return;
+      }
+
+      list.innerHTML = "";
+      shown.forEach(function(m) {
           var d = document.createElement("div"); d.className = "moment-row";
           var date = new Date(m.published);
           var ds = date.toLocaleDateString("zh-CN") + " " + date.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" });
@@ -502,11 +547,12 @@ import { uiIcon } from "@/constants/ui-icons";
           var tagStr = tags.length ? '<span class="sep">·</span><span>#' + tags.join(" #") + '</span>' : "";
           var loc = m.location ? '<span class="sep">·</span><span>' + ICONS.pin + ' ' + esc(m.location) + '</span>' : "";
 
-          d.innerHTML = '<div class="moment-body"><div class="moment-text">' + esc(text) + '</div>' + imgHtml + '<div class="moment-meta"><span>' + ds + '</span>' + tagStr + loc + '</div></div><div style="display:flex;gap:0.375rem;flex-shrink:0;"><button class="btn btn-sm" onclick="editMoment(\'' + m.id + '\')">编辑</button><button class="btn btn-danger-sm" onclick="deleteMoment(\'' + m.id + '\')">删除</button></div>';
-          list.appendChild(d);
-        });
-      }).catch(function(e) { list.innerHTML = '<div class="empty-state" style="color:var(--danger)">加载失败：' + esc(e.message) + '</div>'; });
+        d.innerHTML = '<div class="moment-body"><div class="moment-text">' + esc(text) + '</div>' + imgHtml + '<div class="moment-meta"><span>' + ds + '</span>' + tagStr + loc + '</div></div><div style="display:flex;gap:0.375rem;flex-shrink:0;"><button class="btn btn-sm" onclick="editMoment(\'' + m.id + '\')">编辑</button><button class="btn btn-danger-sm" onclick="deleteMoment(\'' + m.id + '\')">删除</button></div>';
+        list.appendChild(d);
+      });
     }
+
+    function filterMoments() { renderMoments(); }
 
     function showEmpty() {
       $("moments-list").innerHTML = '<div class="empty-state"><div class="icon">' + ICONS.comment + '</div><p>还没有说说</p></div>';

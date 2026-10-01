@@ -1,4 +1,5 @@
 import type { SiteConfig } from "@/types/siteConfig";
+import { appearance } from "./appearance";
 import { siteInfo } from "./siteInfo";
 
 // 定义站点语言
@@ -30,13 +31,16 @@ export const siteConfig: SiteConfig = {
 	keywords: ["WWPPL", "个人博客", "生活记录", "随笔", "感悟", "技术心得"],
 
 	// 主题色
+	// 后台「站点外观」页（/admin/appearance/）可改，值存在 src/data/appearance.json。
+	// 写坏（色相越界、枚举不是允许值）会退回默认值，细节见 appearance.ts。
 	themeColor: {
 		// 主题色的默认色相，范围从 0 到 360。例如：红色：0，青色：200，蓝绿色：250，粉色：345
-		hue: 270,
+		hue: appearance.themeHue,
 		// 是否对访问者隐藏主题色选择器
-		fixed: false,
+		// ⚠️ 后台那一项是「让访客自己换主题色」，与这里的 fixed 正好相反
+		fixed: !appearance.visitorCanChangeHue,
 		// 默认模式："light" 亮色，"dark" 暗色，"system" 跟随系统
-		defaultMode: "system",
+		defaultMode: appearance.defaultMode,
 	},
 
 	// 页面整体宽度（单位：rem）
@@ -44,12 +48,12 @@ export const siteConfig: SiteConfig = {
 	// 在使用单侧栏边栏时，建议调低一些宽度以获得更好的视觉效果。
 	pageWidth: 105,
 
-	// 网站Card样式配置
+	// 网站Card样式配置（后台「站点外观」页可改）
 	card: {
 		// 是否开启卡片边框和阴影，开启后让网站更有立体感
-		border: true,
+		border: appearance.cardBorder,
 		// 是否让卡片风格跟随主题色相
-		followTheme: true,
+		followTheme: appearance.cardFollowTheme,
 	},
 
 	// Favicon 配置
@@ -99,33 +103,36 @@ export const siteConfig: SiteConfig = {
 	timezone: "Asia/Shanghai",
 
 	// 页面开关配置 - 控制特定页面的访问权限，设为false会返回404并自动隐藏对应的导航栏菜单项
+	//
+	// 其中 8 个后台「站点外观」页可改，值存在 src/data/appearance.json。
+	// ⚠️ 下面三个**不进后台**：/bangumi/ /devices/ /timeline/ 这三个页面根本没做出来
+	// （src/pages 下没有），谁打开谁得到 404 —— 恒为 false，别改成 true。
 	pages: {
 		// 友链页面开关
-		friends: true,
+		friends: appearance.pages.friends,
 		// 打赏页面开关
-		sponsor: true,
+		sponsor: appearance.pages.sponsor,
 		// 留言板页面开关，需要配置评论系统
-		guestbook: true,
+		guestbook: appearance.pages.guestbook,
 		// 番组计划页面开关，含追番、游戏、书籍和音乐
-		// ⚠️ /bangumi/ 页面尚未实现（src/pages 下没有该页面），开关只能保持 false；
-		// 打开它得到的是 404，对应的导航预设也已移除
+		// ⚠️ /bangumi/ 页面尚未实现，开关只能保持 false，打开会 404
 		bangumi: false,
 		// 追番页面开关
-		anime: true,
+		anime: appearance.pages.anime,
 		// 相册页面开关
-		gallery: true,
+		gallery: appearance.pages.gallery,
 		// 设备页面开关
 		// ⚠️ /devices/ 页面尚未实现，开关只能保持 false，打开会 404
 		devices: false,
 		// 日记页面开关
-		diary: true,
+		diary: appearance.pages.diary,
 		// 项目页面开关
-		projects: true,
+		projects: appearance.pages.projects,
 		// 时间线页面开关
 		// ⚠️ /timeline/ 页面尚未实现，开关只能保持 false，打开会 404
 		timeline: false,
 		// 技能页面开关
-		skills: true,
+		skills: appearance.pages.skills,
 	},
 	// 日记页面配置
 	diary: {

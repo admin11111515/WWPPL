@@ -1,15 +1,19 @@
 import type { BackgroundWallpaperConfig } from "@/types/backgroundWallpaper";
+import { appearance } from "./appearance";
 import { siteInfo } from "./siteInfo";
 
 export const backgroundWallpaper: BackgroundWallpaperConfig = {
 	// 壁纸模式："banner" 横幅壁纸，"fullscreen" 全屏壁纸，"overlay" 全屏透明，"none" 纯色背景无壁纸
-	mode: "fullscreen",
+	// 后台「站点外观」页（/admin/appearance/）可改，值存在 src/data/appearance.json
+	mode: appearance.wallpaperMode,
 	// 是否允许用户通过导航栏切换壁纸模式
 	// 且同时维护多种壁纸模式过于复杂（已经屎山代码），在切换时有时候可能会出现一些奇怪的过渡效果或者bug
 	// 推荐只选择自己喜欢的模式并关闭切换功能
-	switchable: true,
+	// 后台「站点外观」页可改
+	switchable: appearance.wallpaperSwitchable,
 	// 是否启用背景视频播放，配置后将在导航栏显示视频播放按钮
-	playerEnable: true,
+	// 后台「站点外观」页可改
+	playerEnable: appearance.wallpaperPlayer,
 	/**
 	 * 背景图片配置
 	 * 图片路径支持三种格式：
@@ -69,8 +73,8 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 		playerMode: "random",
 		// 主页横幅文字
 		homeText: {
-			// 是否启用主页横幅文字
-			enable: true,
+			// 是否启用主页横幅文字（后台「站点外观」页可改）
+			enable: appearance.bannerText,
 			// 是否允许用户通过控制面板切换横幅标题显示
 			switchable: true,
 			// 主页横幅主标题

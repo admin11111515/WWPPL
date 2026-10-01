@@ -220,7 +220,17 @@ const templatesForAdmin = (externalNotebooksConfig.templates || []).map(
       <div class="card">
         <div class="list-header">
           <div class="field-label" style="margin:0"><span class="icon" set:html={uiIcon("fluent-color:document-text-24")} /> <span id="list-title">已有笔记</span></div>
-          <span class="count" id="list-count"></span>
+          <div class="list-tools">
+            <input
+              type="search"
+              id="entries-search"
+              class="input-single"
+              placeholder="搜标题、正文、日期"
+              aria-label="搜索笔记"
+              oninput="filterEntries()"
+            />
+            <span class="count" id="list-count"></span>
+          </div>
         </div>
         <div id="entries-list">
           <div class="empty-state"><p>请先选择笔记本</p></div>
@@ -243,6 +253,7 @@ const templatesForAdmin = (externalNotebooksConfig.templates || []).map(
       warning: uiIcon("fluent-color:warning-24"),
       check: uiIcon("fluent-color:checkmark-circle-24"),
       note: uiIcon("fluent-color:document-text-24"),
+      search: uiIcon("fluent-color:search-visual-24"),
     })}>
     var _script = document.currentScript;
     var NOTEBOOK_GISTS = JSON.parse(_script.getAttribute("data-gists") || "{}");
@@ -317,6 +328,17 @@ const templatesForAdmin = (externalNotebooksConfig.templates || []).map(
       setStatus(true, "已连接（" + configured.length + " 个笔记本已配置 Gist）");
     }
 
+    /** 一条笔记里能被搜到的东西：标题、正文、日期、笔记本名 */
+    function entryHaystack(e) {
+      return [
+        e.title || "",
+        e.content || "",
+        e.date || (e.createdAt || ""),
+        e.notebook || "",
+      ].join(" ").toLowerCase();
+    }
+    function filterEntries() { renderEntries(); }
+
     // ===== 加载当前笔记本的笔记 =====
     function loadEntries() {
       if (!currentNotebook) return;
@@ -345,12 +367,26 @@ const templatesForAdmin = (externalNotebooksConfig.templates || []).map(
         $("list-count").textContent = "";
         return;
       }
-      var filtered = allEntries.filter(function(e) { return e.notebook === currentNotebook; });
-      filtered.sort(function(a, b) { return new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt); });
-      $("list-count").textContent = filtered.length + " 篇";
+      var inBook = allEntries.filter(function(e) { return e.notebook === currentNotebook; });
+      inBook.sort(function(a, b) { return new Date(b.date || b.createdAt) - new Date(a.date || b.createdAt); });
+
+      // 搜索只影响"显示哪些"：allEntries 是一次读回来的全量，过滤在内存里做，
+      // 敲一个字不重新请求（笔记全在同一个 Gist 里，一次就读完了）
+      var kw = String(($("entries-search") || {}).value || "").trim().toLowerCase();
+      var filtered = kw
+        ? inBook.filter(function(e) { return entryHaystack(e).indexOf(kw) >= 0; })
+        : inBook;
+      $("list-count").textContent = kw && filtered.length !== inBook.length
+        ? filtered.length + " / " + inBook.length + " 篇"
+        : inBook.length + " 篇";
 
       if (!filtered.length) {
-        list.innerHTML = '<div class="empty-state"><div class="icon">' + ICONS.note + '</div><p>该笔记本还没有远程笔记</p></div>';
+        // 分清两种空：这个笔记本本来就是空的 / 搜了但没匹配上 —— 提示不一样
+        if (!inBook.length) {
+          list.innerHTML = '<div class="empty-state"><div class="icon">' + ICONS.note + '</div><p>该笔记本还没有远程笔记</p></div>';
+        } else {
+          list.innerHTML = '<div class="empty-state"><div class="icon">' + ICONS.search + '</div><p>这个笔记本里没有匹配「' + esc(kw) + '」的笔记</p></div>';
+        }
         return;
       }
 

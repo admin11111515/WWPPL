@@ -41,6 +41,8 @@ const EXPLICIT_ICONS = [
 	"fluent-color:document-folder-24", // 传图片（上传到仓库的图片库，2026-10-01 加）
 	"fluent-color:contact-card-24", // 站点信息（名片 = 资料）
 	"fluent-color:document-edit-24", // 页面内容（改页面正文）
+	"fluent-color:apps-list-detail-24", // 导航菜单（一条清单带详情，2026-10-02 加）
+	"fluent-color:paint-brush-24", // 站点外观（配色、壁纸，2026-10-02 加）
 	// 字段标签
 	"fluent-color:document-text-24", // 内容
 	"fluent-color:image-24", // 图片（带外框，用于字段标签）

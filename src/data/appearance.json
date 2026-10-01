@@ -1,0 +1,21 @@
+{
+	"themeHue": 270,
+	"visitorCanChangeHue": true,
+	"defaultMode": "system",
+	"cardBorder": true,
+	"cardFollowTheme": true,
+	"wallpaperMode": "fullscreen",
+	"wallpaperSwitchable": true,
+	"wallpaperPlayer": true,
+	"bannerText": true,
+	"pages": {
+		"friends": true,
+		"sponsor": true,
+		"guestbook": true,
+		"anime": true,
+		"gallery": true,
+		"diary": true,
+		"projects": true,
+		"skills": true
+	}
+}

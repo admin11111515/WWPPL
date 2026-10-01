@@ -576,6 +576,35 @@ textarea:focus {
 	flex: none;
 }
 
+/* 列表头右侧的「搜索框 + 条数」：搜索框占满剩余宽度，条数不许被挤没。
+   窄屏时整组换行到下一行，搜索框自己撑满，别和标题抢位置 */
+.list-header .list-tools {
+	display: flex;
+	align-items: center;
+	gap: 0.625rem;
+	min-width: 0;
+	flex: 1;
+	justify-content: flex-end;
+}
+.list-header .list-tools input[type="search"] {
+	flex: 1;
+	min-width: 0;
+	max-width: 16rem;
+	font-size: 0.8125rem;
+}
+@media (max-width: 640px) {
+	.list-header {
+		flex-wrap: wrap;
+	}
+	.list-header .list-tools {
+		flex-basis: 100%;
+		justify-content: space-between;
+	}
+	.list-header .list-tools input[type="search"] {
+		max-width: none;
+	}
+}
+
 .post-row {
 	display: flex;
 	align-items: center;
@@ -871,22 +900,7 @@ textarea:focus {
 	border-bottom: 1px solid var(--line-soft);
 }
 
-/* 站点导航在后台里不该换行：两字的中文标签被挤成竖排最像"没做完"。
-   ⚠️ 不要加 `body.authed` 前缀 —— 那个类是**后台首页登录后**才加的，
-   别的后台页没有，加了就等于只给首页修（2026-10-01 第一版就是这么错的）。
-   admin.css 本身只在 /admin/* 里加载，不写前缀也影响不到博客。 */
-#navbar-wrapper,
-#navbar-wrapper a,
-#navbar-wrapper button,
-#navbar-wrapper span {
-	white-space: nowrap;
-}
-#navbar-wrapper a,
-#navbar-wrapper button {
-	flex-shrink: 0;
-}
-
-/* 入口页原来收在 720px，7 张卡片排成 3+3+1 很难看；放宽到 960px */
+/* 入口页原来收在 720px，卡片排成 3+3+1 很难看；放宽到 960px */
 #admin-main { --admin-content-max: 960px; }
 .admin-grid { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
 
@@ -1130,4 +1144,76 @@ textarea { border-radius: 0.75rem; }
 	height: 1em;
 	flex-shrink: 0;
 	vertical-align: -0.125em;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   第二遍（2026-10-02）：把"看着不对劲但说不出哪不对"的地方收掉
+   ① 删除按钮默认是红的，不是悬停才红
+   ② 说说 / 笔记两页的行与文章列表同一种观感
+   ③ 窄屏（<640px）别让行里的按钮挤成一团
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── 8. 危险按钮：默认就该看得出"这一步会删东西" ────────────── */
+/* 原来它是个灰幽灵按钮、只有悬停才变红 —— 平铺在每一行里，
+   扫一眼分不出「编辑」和「删除」哪个会动手。改成常驻淡红底 + 红字。 */
+.btn-danger-sm {
+	background: color-mix(in oklab, var(--danger) 12%, transparent);
+	border-color: color-mix(in oklab, var(--danger) 42%, transparent);
+	color: var(--danger);
+}
+.btn-danger-sm:hover {
+	background: color-mix(in oklab, var(--danger) 20%, transparent);
+	border-color: var(--danger);
+	color: var(--danger);
+}
+.btn-danger-sm:active {
+	background: color-mix(in oklab, var(--danger) 30%, transparent);
+}
+
+/* ── 9. 说说 / 笔记的行：与文章列表同一种观感 ───────────────── */
+/* 这两页的行原本只有一条底边，悬停才浮起来；文章列表用的是
+   「透明整框 + 悬停描边」，两边看着不像同一个后台 —— 统一成后者。
+   ⚠️ `border` 会吃掉原先的 border-bottom：这是有意的，行与行之间
+   不再靠细线分，靠 hover 时的整框，和 .post-row 一致。 */
+.moment-row,
+.entry-row {
+	border: 1px solid transparent;
+	border-radius: 0.625rem;
+	transition: background-color 0.15s, border-color 0.15s;
+}
+.moment-row:hover,
+.entry-row:hover {
+	background: var(--hover);
+	border-color: var(--line-soft);
+}
+.moment-row:last-child,
+.entry-row:last-child {
+	border-bottom: 1px solid transparent;
+}
+
+/* ── 10. 窄屏：行里的按钮另起一行，别挤在正文右边 ───────────── */
+@media (max-width: 560px) {
+	.moment-row,
+	.entry-row {
+		flex-wrap: wrap;
+	}
+	/* 操作区整行放，右对齐；按钮跟着第 3 节的统一高度，点得到 */
+	.moment-row > div:last-child,
+	.entry-actions {
+		width: 100%;
+		display: flex;
+		justify-content: flex-end;
+		gap: 0.5rem;
+	}
+	/* 列表头：标题一行、搜索一行，各占满宽 */
+	.list-header {
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+	.list-header .list-tools {
+		flex-basis: 100%;
+	}
+	.list-header .list-tools input[type="search"] {
+		max-width: none;
+	}
 }

@@ -526,6 +526,16 @@ import { uiIcon } from "@/constants/ui-icons";
           <div class="admin-card-title">站点信息</div>
           <div class="admin-card-desc">改站点标题、个人签名、页脚等文案</div>
         </a>
+        <a href="/admin/nav/" class="card-base admin-card">
+          <div class="admin-card-icon" set:html={uiIcon("fluent-color:apps-list-detail-24")} />
+          <div class="admin-card-title">导航菜单</div>
+          <div class="admin-card-desc">改导航栏的菜单、图标与顺序</div>
+        </a>
+        <a href="/admin/appearance/" class="card-base admin-card">
+          <div class="admin-card-icon" set:html={uiIcon("fluent-color:paint-brush-24")} />
+          <div class="admin-card-title">站点外观</div>
+          <div class="admin-card-desc">改主题色、明暗、壁纸与页面开关</div>
+        </a>
         <button type="button" class="card-base admin-card" onclick="toggleAvatarPanel()">
           <div class="admin-card-icon" set:html={uiIcon("fluent-color:image-24")} />
           <div class="admin-card-title">换头像</div>

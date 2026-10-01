@@ -1,0 +1,117 @@
+[
+	{
+		"name": "主页",
+		"url": "/",
+		"icon": "material-symbols:home"
+	},
+	{
+		"name": "文章",
+		"url": "#",
+		"icon": "material-symbols:article",
+		"children": [
+			{
+				"name": "归档",
+				"url": "/archive/",
+				"icon": "material-symbols:archive"
+			},
+			{
+				"name": "分类",
+				"url": "/categories/",
+				"icon": "material-symbols:folder-open-rounded"
+			},
+			{
+				"name": "标签",
+				"url": "/tags/",
+				"icon": "material-symbols:label"
+			}
+		]
+	},
+	{
+		"name": "动态",
+		"url": "#",
+		"icon": "material-symbols:bolt-outline",
+		"children": [
+			{
+				"name": "朋友圈",
+				"url": "/moments/",
+				"icon": "mdi:wechat"
+			},
+			{
+				"name": "相册",
+				"url": "/gallery/",
+				"icon": "material-symbols:photo-album",
+				"pageKey": "gallery"
+			},
+			{
+				"name": "留言",
+				"url": "/guestbook/",
+				"icon": "material-symbols:chat",
+				"pageKey": "guestbook"
+			},
+			{
+				"name": "日记",
+				"url": "/diary/",
+				"icon": "material-symbols:book"
+			}
+		]
+	},
+	{
+		"name": "兴趣",
+		"url": "#",
+		"icon": "material-symbols:person",
+		"children": [
+			{
+				"name": "追番",
+				"url": "/anime/",
+				"icon": "material-symbols:movie",
+				"pageKey": "anime"
+			},
+			{
+				"name": "音乐",
+				"url": "/music/",
+				"icon": "material-symbols:music-note-rounded"
+			},
+			{
+				"name": "友链",
+				"url": "/friends/",
+				"icon": "material-symbols:group",
+				"pageKey": "friends"
+			}
+		]
+	},
+	{
+		"name": "作品",
+		"url": "#",
+		"icon": "material-symbols:more-horiz",
+		"children": [
+			{
+				"name": "项目",
+				"url": "/projects/",
+				"icon": "material-symbols:work"
+			},
+			{
+				"name": "技能",
+				"url": "/skills/",
+				"icon": "material-symbols:psychology"
+			}
+		]
+	},
+	{
+		"name": "关于",
+		"url": "#",
+		"icon": "material-symbols:info",
+		"children": [
+			{
+				"name": "关于我",
+				"url": "/about/",
+				"icon": "material-symbols:person"
+			},
+			{
+				"name": "打赏",
+				"url": "/sponsor/",
+				"icon": "material-symbols:favorite",
+				"pageKey": "sponsor"
+			}
+		]
+	}
+]

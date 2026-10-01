@@ -55,4 +55,8 @@ export { sidebarLayoutConfig } from "./sidebarConfig"; // 侧边栏布局配置
 export { siteConfig } from "./siteConfig"; // 站点基础配置
 // 后台「站点信息」页可改的几段文案（数据在 src/data/siteInfo.json）
 export { siteInfo } from "./siteInfo";
+// 后台「导航菜单」页可改的菜单（数据在 src/data/navLinks.json）
+export { navLinks } from "./navLinks";
+// 后台「站点外观」页可改的配色/壁纸/页面开关（数据在 src/data/appearance.json）
+export { appearance } from "./appearance";
 export { sponsorConfig } from "./sponsorConfig"; // 打赏配置
