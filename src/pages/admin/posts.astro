@@ -22,6 +22,9 @@ const postsConfig = JSON.stringify(externalPostsConfig);
   <style is:inline>
     /* ===== 只放这一页特有的排版，通用部分在 src/styles/admin.css ===== */
 
+    /* 这一页是「列表 + 编辑器」两栏，内容区比别的页宽一些 */
+    #admin-main { --admin-content-max: 1100px; }
+
     .layout-grid {
       display: grid;
       grid-template-columns: 1fr;
@@ -123,7 +126,11 @@ const postsConfig = JSON.stringify(externalPostsConfig);
 </head>
 <body class={adminBodyClass}>
 
-  <AdminTopBar title="文章管理" />
+  {/* ⚠️ 这一层「#admin-main」外壳别删：admin.css 里的内容区宽度、核验脚本的探针都按它取。
+       2026-10-03 发现这一页整段 git 历史里都没有它 —— 结果是这页不受后台外壳约束
+       （宽度跟着 --page-width 走，比别的页宽出一大截），而核验在它上面是"空过"的。 */}
+  <div id="admin-main">
+    <AdminTopBar title="文章管理" />
 
   <div class="container">
     {/* 上次没有保存就离开时，把本地留存的草稿提示出来 */}
@@ -282,6 +289,8 @@ const postsConfig = JSON.stringify(externalPostsConfig);
         </div>
       </main>
     </div>
+
+  </div>
 
   </div>
 
