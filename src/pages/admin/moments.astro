@@ -4,6 +4,8 @@ import AdminTheme from "@/components/admin/AdminTheme.astro";
 import AdminTopBar from "@/components/admin/AdminTopBar.astro";
 import { adminBodyClass, adminHtmlClass } from "@/components/admin/adminShell";
 import { externalMomentsConfig } from "@/config/externalMomentsConfig";
+// 说说本身存 Gist，但**图片必须进仓库**（public/images/），所以这里也要仓库信息
+import { externalPostsConfig } from "@/config/externalPostsConfig";
 // 后台不走博客 Layout，也就没有 iconify 运行时，图标用构建期内联的 SVG
 import { uiIcon } from "@/constants/ui-icons";
 ---
@@ -220,9 +222,18 @@ import { uiIcon } from "@/constants/ui-icons";
             <input type="text" id="image-input" placeholder="粘贴图片链接，回车添加" />
             <button class="btn btn-sm" onclick="addImage()">添加</button>
           </div>
-          <div style="margin-top:0.375rem;">
+          <div style="margin-top:0.5rem;display:flex;gap:0.375rem;flex-wrap:wrap;">
+            {/* 2026-10-02：说说以前插图只能手填链接 —— 接上仓库图片库（共用 admin-media.js） */}
+            <button class="btn btn-sm" type="button" onclick="uploadMomentImage()">
+              <span class="admin-i" set:html={uiIcon("material-symbols:upload")} />上传图片
+            </button>
+            <button class="btn btn-sm" type="button" onclick="pickMomentImage()">
+              <span class="admin-i" set:html={uiIcon("material-symbols:add-photo-alternate")} />从图片库选
+            </button>
+            <input type="file" id="moment-img-file" accept="image/*" multiple class="hidden" />
             <button class="btn btn-sm" onclick="toggleBatchImages()" id="batch-toggle-btn" style="font-size:0.6875rem;"><span class="btn-icon" set:html={uiIcon("material-symbols:playlist-add")} /><span id="batch-toggle-text">批量添加</span></button>
           </div>
+          <div id="moment-img-status" style="margin-top:0.375rem;font-size:0.6875rem;color:var(--text-3);"></div>
           <div class="hidden" id="batch-panel" style="margin-top:0.375rem;">
             <textarea id="batch-images-input" placeholder="每行一个图片链接，支持批量粘贴&#10;https://example.com/1.jpg&#10;https://example.com/2.jpg&#10;https://example.com/3.jpg" style="min-height:80px;font-size:0.8125rem;padding:0.5rem 0.75rem;"></textarea>
             <button class="btn btn-sm" onclick="applyBatchImages()" style="margin-top:0.375rem;">确认添加</button>
@@ -297,9 +308,19 @@ import { uiIcon } from "@/constants/ui-icons";
 
   <script is:inline src="/js/editor-commons.js"></script>
   <script is:inline src="/js/admin-github.js"></script>
+  <script is:inline src="/js/admin-media.js"></script>
   <script is:inline
     data-gist={externalMomentsConfig.gistId || ""}
     data-file={externalMomentsConfig.fileName || "moments.json"}
+    data-repo={JSON.stringify({
+      owner: externalPostsConfig.owner,
+      repo: externalPostsConfig.repo,
+      branch: externalPostsConfig.branch,
+    })}
+    data-media-icons={JSON.stringify({
+      upload: uiIcon("material-symbols:upload"),
+      close: uiIcon("material-symbols:close"),
+    })}
     data-icons={JSON.stringify({
       location: uiIcon("fluent-color:location-ripple-24"),
       loading: uiIcon("material-symbols:progress-activity"),
@@ -312,6 +333,14 @@ import { uiIcon } from "@/constants/ui-icons";
     var FILE_NAME = _script.getAttribute("data-file") || "moments.json";
     // 图标走属性传进来：SVG 字符串里有引号，直接写进脚本正文会打架
     var ICONS = JSON.parse(_script.getAttribute("data-icons") || "{}");
+    // 图片能力（共用 /js/admin-media.js）：图片进仓库，说说本身还是存 Gist
+    var REPO = JSON.parse(_script.getAttribute("data-repo") || "{}");
+    WBMedia.init({
+      owner: REPO.owner, repo: REPO.repo, branch: REPO.branch,
+      uploadDir: "public/images/uploads",
+      listRoot: "public/images",
+      icons: JSON.parse(_script.getAttribute("data-media-icons") || "{}"),
+    });
     // 本地草稿与"是否有未保存改动"的判定基线
     var draftStore = WBEditor.createDraftStore("moment");
     var cleanSnapshot = "";
@@ -371,6 +400,35 @@ import { uiIcon } from "@/constants/ui-icons";
       input.value = ""; renderImgs();
       toast("已添加第 " + imgs.length + " 张图片", "ok");
     }
+
+    // ===== 图片：上传 / 从图片库选（2026-10-02 加，共用 /js/admin-media.js）=====
+    function imgStatus(text) {
+      var el = $("moment-img-status");
+      if (el) el.textContent = text || "";
+    }
+    function pushImageUrl(url) {
+      var imgs = getImages(); imgs.push(url); setImages(imgs); renderImgs();
+      toast("已添加第 " + imgs.length + " 张图片（重建后站上生效）", "ok");
+    }
+    function uploadMomentImage() { $("moment-img-file").click(); }
+    $("moment-img-file").addEventListener("change", function () {
+      // ⚠️ 先把文件取成数组再清空 input：清空后 files 会变空
+      var files = Array.prototype.slice.call(this.files || []);
+      this.value = "";
+      if (!files.length) return;
+      imgStatus("正在上传 " + files.length + " 张…");
+      Promise.all(files.map(function (f) {
+        return WBMedia.upload(f).then(function (r) { pushImageUrl(r.url); }).catch(function (e) { toast("上传失败：" + e.message, "err"); });
+      })).then(function () { imgStatus("传好了（重新构建后站上生效）"); });
+    });
+    function pickMomentImage() {
+      WBMedia.openPicker({
+        title: "从图片库选一张（说说配图）",
+        onPick: function (url) { pushImageUrl(url); },
+      });
+    }
+    // 正文框里直接拖图 / Ctrl+V 粘贴 → 上传并插入 Markdown
+    WBMedia.wireEditor($("content-input"), { onStatus: imgStatus });
 
     function removeImage(i) {
       var imgs = getImages(); imgs.splice(i, 1); setImages(imgs); renderImgs();

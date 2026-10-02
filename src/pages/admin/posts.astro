@@ -243,7 +243,9 @@ const postsConfig = JSON.stringify(externalPostsConfig);
                     <button type="button" class="toolbar-btn" onclick="insertMd('`','`')" title="行内代码">&lt;&gt;</button>
                     <button type="button" class="toolbar-btn" onclick="insertMd('```\n','\n```')" title="代码块" set:html={uiIcon("fluent-color:code-block-24")} />
                     <button type="button" class="toolbar-btn" onclick="insertMd('[','](url)','链接文字')" title="链接（Ctrl+K）" set:html={uiIcon("fluent-color:link-24")} />
-                    <button type="button" class="toolbar-btn" id="body-upload-btn" onclick="pickBodyImage()" title="上传图片" set:html={uiIcon("fluent-color:image-24")} />
+                    <button type="button" class="toolbar-btn" id="body-upload-btn" onclick="pickBodyImage()" title="上传图片（也可以直接把图拖进来 / Ctrl+V 粘贴）" set:html={uiIcon("material-symbols:upload")} />
+                    {/* 2026-10-02：从图片库挑一张插进来（不用先复制再粘贴） */}
+                    <button type="button" class="toolbar-btn" onclick="pickBodyImageFromLibrary()" title="从图片库选一张" set:html={uiIcon("material-symbols:add-photo-alternate")} />
                     <button type="button" class="toolbar-btn" onclick="insertBlock('> 引用')" title="引用" set:html={uiIcon("material-symbols:format-quote")} />
                     <button type="button" class="toolbar-btn" onclick="insertBlock('- 列表项')" title="无序列表" set:html={uiIcon("fluent-color:text-bullet-list-square-24")} />
                     <button type="button" class="toolbar-btn" onclick="insertBlock('1. 列表项')" title="有序列表">1.</button>
@@ -294,7 +296,12 @@ const postsConfig = JSON.stringify(externalPostsConfig);
 
   <script is:inline src="/js/editor-commons.js"></script>
   <script is:inline src="/js/admin-github.js"></script>
+  <script is:inline src="/js/admin-media.js"></script>
   <script is:inline data-config={postsConfig}
+    data-media-icons={JSON.stringify({
+      upload: uiIcon("material-symbols:upload"),
+      close: uiIcon("material-symbols:close"),
+    })}
     // ⚠️ 图标名必须先去 @iconify-json/*/icons.json 核对存在（写错不报错，前台就是一个空白框），
     //    并且要加进 scripts/generate-icons.js 的 EXPLICIT_ICONS —— uiIcon() 只认那份清单，漏了静默返回空串。
     data-icons={JSON.stringify({
@@ -311,6 +318,14 @@ const postsConfig = JSON.stringify(externalPostsConfig);
     var CONFIG = JSON.parse(_script.getAttribute("data-config") || "{}");
     // 图标走属性传进来：SVG 字符串里有引号，直接写进脚本正文会打架
     var ICONS = JSON.parse(_script.getAttribute("data-icons") || "{}");
+    // 图片能力（共用 /js/admin-media.js）：这一页的上传仍走自己的 uploadImage
+    //（图片放 posts/<slug>/ 下，跟文章绑在一起），这里只借它的"从图片库选一张"。
+    WBMedia.init({
+      owner: CONFIG.owner, repo: CONFIG.repo, branch: CONFIG.branch,
+      uploadDir: "public/images/uploads",
+      listRoot: "public/images",
+      icons: JSON.parse(_script.getAttribute("data-media-icons") || "{}"),
+    });
     var posts = [];
     var editingPath = "";
     var editingSha = "";
@@ -1059,6 +1074,13 @@ const postsConfig = JSON.stringify(externalPostsConfig);
     // ===== 图片上传 =====
     function pickCover() { $("cover-file").click(); }
     function pickBodyImage() { $("body-file").click(); }
+    /** 从图片库挑一张插进正文（2026-10-02 加） */
+    function pickBodyImageFromLibrary() {
+      WBMedia.openPicker({
+        title: "从图片库选一张（插到正文里）",
+        onPick: function (url) { insertBlock("![](" + url + ")"); },
+      });
+    }
     $("cover-file").addEventListener("change", function() {
       if (this.files && this.files[0]) uploadImage(this.files[0], "cover");
       this.value = "";

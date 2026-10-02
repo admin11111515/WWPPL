@@ -209,6 +209,12 @@ function replaceSelection(textarea, text, selectFrom, selectTo) {
 
 	global.WBEditor = {
 		summarize: summarize,
+		// ⚠️ 别再漏掉这一个（2026-10-02 修）：这个函数一直定义在文件里、却**忘了导出**，
+		//    而「文章管理」页的工具栏（加粗 / 引用 / 列表 / 表格 / 图片…）全部走
+		//    `WBEditor.replaceSelection(...)` —— 于是那些按钮点下去抛
+		//    `WBEditor.replaceSelection is not a function`，一个都不生效。
+		//    站长说的「文章中间无法插入图片」根因就在这里，不是缺按钮。
+		replaceSelection: replaceSelection,
 		createDraftStore: createDraftStore,
 		installTabIndent: installTabIndent,
 		installShortcuts: installShortcuts,

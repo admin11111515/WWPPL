@@ -91,6 +91,8 @@ const EXPLICIT_ICONS = [
 	"material-symbols:upload", // 上传
 	"material-symbols:refresh", // 重新加载
 	"material-symbols:close", // 关掉预览
+	// 「从图片库选一张」（说说 / 笔记 / 文章的编辑器共用，2026-10-02 加）
+	"material-symbols:add-photo-alternate",
 ];
 
 // 支持的图标集及其包名

@@ -4,6 +4,8 @@ import AdminTheme from "@/components/admin/AdminTheme.astro";
 import AdminTopBar from "@/components/admin/AdminTopBar.astro";
 import { adminBodyClass, adminHtmlClass } from "@/components/admin/adminShell";
 import { externalNotebooksConfig } from "@/config/externalNotebooksConfig";
+// 笔记本身存 Gist，但**图片必须进仓库**（public/images/），所以这里也要仓库信息
+import { externalPostsConfig } from "@/config/externalPostsConfig";
 // 后台不走博客 Layout，也就没有 iconify 运行时，图标用构建期内联的 SVG
 import { uiIcon } from "@/constants/ui-icons";
 
@@ -170,7 +172,11 @@ const templatesForAdmin = (externalNotebooksConfig.templates || []).map(
                   <button class="toolbar-btn" onclick="insertMd('`','`')" title="行内代码">&lt;&gt;</button>
                   <button class="toolbar-btn" onclick="insertMd('\n```\n','\n```\n')" title="代码块" set:html={uiIcon("fluent-color:code-block-24")} />
                   <button class="toolbar-btn" onclick="insertMd('[','](url)')" title="链接" set:html={uiIcon("fluent-color:link-24")} />
-                  <button class="toolbar-btn" onclick="insertMd('![','](url)')" title="图片" set:html={uiIcon("fluent-color:image-24")} />
+                  <button class="toolbar-btn" onclick="insertMd('![','](url)')" title="插入图片链接" set:html={uiIcon("fluent-color:image-24")} />
+                  {/* 2026-10-02：笔记以前插图只能手填链接 —— 接上仓库图片库（共用 admin-media.js） */}
+                  <button class="toolbar-btn" onclick="uploadNoteImage()" title="上传图片" set:html={uiIcon("material-symbols:upload")} />
+                  <button class="toolbar-btn" onclick="pickNoteImage()" title="从图片库选一张" set:html={uiIcon("material-symbols:add-photo-alternate")} />
+                  <input type="file" id="note-img-file" accept="image/*" multiple hidden />
                   <button class="toolbar-btn" onclick="insertMd('> ','')" title="引用" set:html={uiIcon("material-symbols:format-quote")} />
                   <button class="toolbar-btn" onclick="insertMd('- ','')" title="列表" set:html={uiIcon("fluent-color:text-bullet-list-square-24")} />
                 </div>
@@ -228,9 +234,19 @@ const templatesForAdmin = (externalNotebooksConfig.templates || []).map(
 
   <script is:inline src="/js/editor-commons.js"></script>
   <script is:inline src="/js/admin-github.js"></script>
+  <script is:inline src="/js/admin-media.js"></script>
   <script is:inline
     data-gists={JSON.stringify(externalNotebooksConfig.notebookGists || {})}
     data-templates={JSON.stringify(templatesForAdmin)}
+    data-repo={JSON.stringify({
+      owner: externalPostsConfig.owner,
+      repo: externalPostsConfig.repo,
+      branch: externalPostsConfig.branch,
+    })}
+    data-media-icons={JSON.stringify({
+      upload: uiIcon("material-symbols:upload"),
+      close: uiIcon("material-symbols:close"),
+    })}
     data-icons={JSON.stringify({
       warning: uiIcon("fluent-color:warning-24"),
       check: uiIcon("fluent-color:checkmark-circle-24"),
@@ -242,6 +258,14 @@ const templatesForAdmin = (externalNotebooksConfig.templates || []).map(
     var TEMPLATES = JSON.parse(_script.getAttribute("data-templates") || "[]");
     // 图标走属性传进来：SVG 字符串里有引号，直接写进脚本正文会打架
     var ICONS = JSON.parse(_script.getAttribute("data-icons") || "{}");
+    // 图片能力（共用 /js/admin-media.js）：图片进仓库，笔记本身还是存 Gist
+    var REPO = JSON.parse(_script.getAttribute("data-repo") || "{}");
+    WBMedia.init({
+      owner: REPO.owner, repo: REPO.repo, branch: REPO.branch,
+      uploadDir: "public/images/uploads",
+      listRoot: "public/images",
+      icons: JSON.parse(_script.getAttribute("data-media-icons") || "{}"),
+    });
     var FILE_NAME = "notebooks-entries.json";
 
     var currentNotebook = "";
@@ -422,6 +446,38 @@ const templatesForAdmin = (externalNotebooksConfig.templates || []).map(
       ta.focus(); ta.selectionStart = start + before.length; ta.selectionEnd = start + before.length + selected.length;
       updatePreview();
     }
+
+    // ===== 图片：上传 / 从图片库选（2026-10-02 加，共用 /js/admin-media.js）=====
+    function insertImageMd(url) {
+      var ta = $("content-input");
+      var start = ta.selectionStart == null ? (ta.value || "").length : ta.selectionStart;
+      ta.value = ta.value.substring(0, start) + "![](" + url + ")" + ta.value.substring(start);
+      ta.focus();
+      ta.selectionStart = ta.selectionEnd = start + ("![](" + url + ")").length;
+      updatePreview();
+    }
+    function noteImgStatus(text) { toast(text, /失败/.test(text) ? "err" : "ok"); }
+    function uploadNoteImage() { $("note-img-file").click(); }
+    $("note-img-file").addEventListener("change", function () {
+      // ⚠️ 先把文件取成数组再清空 input：清空后 files 会变空
+      var files = Array.prototype.slice.call(this.files || []);
+      this.value = "";
+      if (!files.length) return;
+      noteImgStatus("正在上传 " + files.length + " 张…");
+      files.forEach(function (f) {
+        WBMedia.upload(f)
+          .then(function (r) { insertImageMd(r.url); noteImgStatus("插图好了（重建后站上生效）"); })
+          .catch(function (e) { noteImgStatus("上传失败：" + e.message); });
+      });
+    });
+    function pickNoteImage() {
+      WBMedia.openPicker({
+        title: "从图片库选一张（笔记插图）",
+        onPick: function (url) { insertImageMd(url); },
+      });
+    }
+    // 编辑器里直接拖图 / Ctrl+V 粘贴 → 上传并插图
+    WBMedia.wireEditor($("content-input"), { onStatus: noteImgStatus });
 
     var previewTimer = null;
     function updatePreview() {
