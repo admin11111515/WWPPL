@@ -132,33 +132,10 @@ const pageSwitches = [
     /* ===== 只放这一页特有的排版，通用部分在 src/styles/admin.css ===== */
     #admin-main { --admin-content-max: 720px; }
 
-    .page-lead {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
-      padding: 0.625rem 0.75rem;
-      background: var(--card-bg-soft);
-      border: 1px dashed var(--line);
-      border-radius: var(--radius-md);
-      font-size: 0.75rem;
-      line-height: 1.75;
-      color: var(--text-2);
-    }
-    .page-lead .lead-icon { flex-shrink: 0; margin-top: 0.2rem; font-size: 1rem; line-height: 1; }
-
-    /* 分区小标题：把"配色""壁纸""页面开关"分开，一页里也好找 */
-    .section-title {
-      display: flex;
-      align-items: center;
-      gap: 0.375rem;
-      margin: 1.25rem 0 0.5rem;
-      font-size: 0.75rem;
-      font-weight: 700;
-      color: var(--text-2);
-      letter-spacing: 0.02em;
-    }
-    .section-title:first-of-type { margin-top: 0.25rem; }
+    /* ⚠️ .page-lead / .section-title / .save-row / .dirty-hint 已提到
+          admin.css 的共享层（第三遍），这里不要重复定义 —— 页面 <style>
+          在 admin.css 之后加载，写了就是本地那份赢，改共享层看着像没生效。
+          下面只留这一页特有的：色相试色块、开关行、页面开关。 */
 
     /* 色相：数字框 + 色块，色块跟着数字实时变 */
     .hue-row { display: flex; align-items: center; gap: 0.625rem; }
@@ -203,17 +180,6 @@ const pageSwitches = [
       gap: 0.25rem 1rem;
     }
     .page-grid .switch-row { border-bottom: none; padding: 0.375rem 0; }
-
-    .save-row {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      flex-wrap: wrap;
-      margin-top: 1.25rem;
-    }
-    .save-row .btn-primary { flex: 1; min-width: 10rem; }
-    .dirty-hint { font-size: 0.6875rem; color: var(--text-3); white-space: nowrap; }
-    .dirty-hint.dirty { color: var(--warning, var(--text-2)); }
   </style>
 </head>
 <body class={adminBodyClass}>
@@ -317,12 +283,14 @@ const pageSwitches = [
             ))
           }
         </div>
-      </div>
 
+      {/* 操作区在卡片**里**：贴卡片左右边缘、有上分隔线，跟卡片是同一张皮，
+          不是卡片外悬着一条通栏。admin.css「第三遍」里的 .card > .save-row 管样式。 */}
       <div class="save-row">
         <button class="btn btn-primary" id="save-btn" onclick="saveAppearance()">保存并生效</button>
         <button class="btn btn-ghost" type="button" onclick="reloadFromRepo()">还原成仓库里的版本</button>
         <span class="dirty-hint" id="dirty-hint"></span>
+      </div>
       </div>
     </div>
 

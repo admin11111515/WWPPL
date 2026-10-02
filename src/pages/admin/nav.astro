@@ -156,20 +156,9 @@ const quickAdd = [
     /* ===== 只放这一页特有的排版，通用部分在 src/styles/admin.css ===== */
     #admin-main { --admin-content-max: 860px; }
 
-    .page-lead {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.5rem;
-      margin-bottom: 0.875rem;
-      padding: 0.625rem 0.75rem;
-      background: var(--card-bg-soft);
-      border: 1px dashed var(--line);
-      border-radius: var(--radius-md);
-      font-size: 0.75rem;
-      line-height: 1.75;
-      color: var(--text-2);
-    }
-    .page-lead .lead-icon { flex-shrink: 0; margin-top: 0.2rem; font-size: 1rem; line-height: 1; }
+    /* ⚠️ .page-lead / .save-row / .dirty-hint 已提到 admin.css 共享层
+          （第三遍），这里不要重复定义：页面 <style> 在 admin.css 之后加载，
+          写了就是本地那份赢，改共享层会看着像没生效。下面只留这一页特有的。 */
 
     /* ===== 预览：把当前菜单按前台的样子排一行 ===== */
     .nav-preview {
@@ -244,24 +233,8 @@ const quickAdd = [
     }
     .nav-hint { font-size: 0.6875rem; color: var(--text-3); line-height: 1.7; }
 
-    /* 底部操作区 */
-    .nav-foot {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-      margin-top: 0.875rem;
-    }
-    .save-row {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      flex-wrap: wrap;
-      margin-top: 1rem;
-    }
-    .save-row .btn-primary { flex: 1; min-width: 10rem; }
-    .dirty-hint { font-size: 0.6875rem; color: var(--text-3); white-space: nowrap; }
-    .dirty-hint.dirty { color: var(--warning, var(--text-2)); }
+    /* 「＋ 加子菜单」这一行：整行左端对齐，别贴到卡片边上 */
+    .nav-foot { margin-top: 0.375rem; }
 
     /* 窄屏：网格排不下，一律改成上下叠 */
     @media (max-width: 700px) {
@@ -312,12 +285,14 @@ const quickAdd = [
           有子菜单的项，地址固定是 <code>#</code>（它渲染成下拉按钮，点了不跳转）；
           子菜单只支持一层，再深前台不显示。
         </div>
-      </div>
 
-      <div class="save-row">
-        <button class="btn btn-primary" id="save-btn" onclick="saveNav()">保存并生效</button>
-        <button class="btn btn-ghost" type="button" onclick="reloadFromRepo()">还原成仓库里的版本</button>
-        <span class="dirty-hint" id="dirty-hint"></span>
+        {/* 操作区在卡片**里**：贴卡片左右边缘、有上分隔线，跟卡片是同一张皮，
+            不是卡片外悬着一条通栏。样式在 admin.css「第三遍」的 .card > .save-row。 */}
+        <div class="save-row">
+          <button class="btn btn-primary" id="save-btn" onclick="saveNav()">保存并生效</button>
+          <button class="btn btn-ghost" type="button" onclick="reloadFromRepo()">还原成仓库里的版本</button>
+          <span class="dirty-hint" id="dirty-hint"></span>
+        </div>
       </div>
     </div>
 

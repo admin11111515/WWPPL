@@ -24,27 +24,12 @@ import { uiIcon } from "@/constants/ui-icons";
     /* 这一页是窄栏内容，标题条与内容区一起收窄，免得四周太空 */
     #admin-main { --admin-content-max: 640px; }
 
-    /* 连接状态独立成一行，单独给它一点卡片感 */
-    .status-bar {
-      display: flex;
-      width: 100%;
-      margin-bottom: 1rem;
-      padding: 0.5rem 0.75rem;
-      background: var(--card-bg);
-      border: 1px solid var(--line-soft);
-      border-radius: var(--radius-md);
-    }
+    /* ⚠️ .status-bar / .submit-row / .save-row / .draft-hint 已提到
+          admin.css 共享层（第三遍：状态条统一成小药丸、操作区收进卡片底栏），
+          这里不要重复定义 —— 页面 <style> 在 admin.css 之后加载，
+          写了就是本地那份赢，改共享层会看着像没生效。
+          状态条原来是"通栏盒子"，跟站点/外观页那个小药丸不是一个说法，统一了。 */
 
-    /* 底部一行：主按钮 + 本地草稿时刻 */
-    .submit-row, .save-row {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      flex-wrap: wrap;
-      margin-top: 1rem;
-    }
-    .submit-row .btn-primary, .save-row .btn-primary { flex: 1; }
-    .draft-hint { font-size: 0.6875rem; color: var(--text-3); white-space: nowrap; }
     .field-footer .hint { opacity: 0.75; }
 
     /* 正文输入框比默认的再高一点 */
@@ -278,7 +263,9 @@ import { uiIcon } from "@/constants/ui-icons";
           <button class="btn btn-primary" id="submit-btn" onclick="submitMoment()">发布</button>
           <span class="draft-hint" id="draft-hint"></span>
         </div>
-        <div class="hidden" id="edit-bar" style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+        {/* 样式与收起都在 admin.css 的 .edit-bar / .edit-bar.hidden：
+            这里**不要**再写内联 display —— 内联会盖掉 .hidden，没在编辑也常驻 */}
+        <div class="hidden edit-bar" id="edit-bar">
           <button class="btn btn-sm" onclick="confirmCancelEdit()" style="flex:1;">取消编辑</button>
         </div>
       </div>

@@ -113,6 +113,22 @@ const fields = [
 		hint: "显示在：友链页「一键复制所有信息」复制出来的内容里。",
 	},
 ];
+
+/**
+ * 这 9 个字段怎么分组显示。
+ *
+ * ⚠️ 只管"这一屏怎么分节"，跟写回 JSON 没关系 —— 写回去的键顺序由下面
+ *    的 KEYS 决定，分组改了不会动到文件内容（diff 干净）。
+ *    分组顺序 > KEYS 顺序：这里把同类字段挨在一起，读着顺。
+ */
+const groups = [
+	{ title: "站点基础", keys: ["siteTitle", "siteSubtitle", "siteUrl", "siteDescription"] },
+	{ title: "个人署名", keys: ["authorName", "bio", "bannerLines", "footerText"] },
+	{ title: "友链页", keys: ["friendsDesc"] },
+];
+
+/** 一次要写五行以上的字段（首页横幅句子）在宽屏下跨两列，别挤成一条 */
+const isWide = (f) => f.rows >= 5;
 ---
 
 <html lang="zh-CN" class={adminHtmlClass}>
@@ -125,49 +141,14 @@ const fields = [
   {/* 样式、字体、主题色都来自这里，页面自己的样式放在它后面 */}
   <AdminTheme />
   <style is:inline>
-    /* ===== 只放这一页特有的排版，通用部分在 src/styles/admin.css ===== */
+    /* ===== 只放这一页特有的排版，通用部分在 src/styles/admin.css =====
+       ⚠️ .page-lead / .save-row / .section-title / .dirty-hint 这几样
+          已经提到 admin.css 的「第三遍」共享层，这里**不要再写一遍**：
+          页面 <style> 在 admin.css 之后加载，写了就是本地那份赢，
+          改共享层会看着像没生效。 */
 
     /* 这一页是表单，内容窄一些更好读 */
     #admin-main { --admin-content-max: 720px; }
-
-    /* 开头的说明块：说清楚"改完怎么生效"，是这一页最该先被看到的东西 */
-    .page-lead {
-      display: flex;
-      /* 图标必须顶对齐：默认的 stretch 会把图标撑满两行高度，
-         SVG 作为行内元素就落到基线（看起来像掉到第二行去了） */
-      align-items: flex-start;
-      gap: 0.5rem;
-      margin-bottom: 0.25rem;
-      padding: 0.625rem 0.75rem;
-      background: var(--card-bg-soft);
-      border: 1px dashed var(--line);
-      border-radius: var(--radius-md);
-      font-size: 0.75rem;
-      line-height: 1.75;
-      color: var(--text-2);
-    }
-    .page-lead .lead-icon {
-      flex-shrink: 0;
-      margin-top: 0.2rem;
-      font-size: 1rem;
-      line-height: 1;
-    }
-
-    /* 底部一行：主按钮 + 还原 + 改动提示 */
-    .save-row {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      flex-wrap: wrap;
-      margin-top: 1rem;
-    }
-    .save-row .btn-primary { flex: 1; min-width: 10rem; }
-    .dirty-hint {
-      font-size: 0.6875rem;
-      color: var(--text-3);
-      white-space: nowrap;
-    }
-    .dirty-hint.dirty { color: var(--warning, var(--text-2)); }
 
     /* 多行输入框比默认再高一点，句子长的时候不至于只看见一行 */
     .card textarea { min-height: 4.5rem; }
@@ -195,31 +176,42 @@ const fields = [
           </span>
         </div>
 
-        {
-          fields.map((f) => (
-            <div class="field">
-              <div class="field-label">{f.label}</div>
-              {f.kind === "lines" ? (
-                <textarea id={f.key} rows={f.rows} placeholder={f.placeholder} />
-              ) : (
-                <input
-                  type="text"
-                  class="input-single"
-                  id={f.key}
-                  maxlength={f.maxlength}
-                  placeholder={f.placeholder}
-                />
-              )}
-              <div class="field-hint" set:html={f.hint} />
-            </div>
-          ))
-        }
-      </div>
+        <div class="form-grid">
+          {
+            groups.map((g) => (
+              <div class="form-group">
+                <div class="section-title">{g.title}</div>
+                {g.keys.map((key) => {
+                  const f = fields.find((x) => x.key === key);
+                  return (
+                    <div class={isWide(f) ? "field wide" : "field"}>
+                      <div class="field-label">{f.label}</div>
+                      {f.kind === "lines" ? (
+                        <textarea id={f.key} rows={f.rows} placeholder={f.placeholder} />
+                      ) : (
+                        <input
+                          type="text"
+                          class="input-single"
+                          id={f.key}
+                          maxlength={f.maxlength}
+                          placeholder={f.placeholder}
+                        />
+                      )}
+                      <div class="field-hint" set:html={f.hint} />
+                    </div>
+                  );
+                })}
+              </div>
+            ))
+          }
+        </div>
 
-      <div class="save-row">
-        <button class="btn btn-primary" id="save-btn" onclick="saveSiteInfo()">保存并生效</button>
-        <button class="btn btn-ghost" type="button" onclick="reloadFromRepo()">还原成仓库里的版本</button>
-        <span class="dirty-hint" id="dirty-hint"></span>
+        {/* 操作区在卡片**里**（贴卡片左右边缘），不是卡片外一条通栏 */}
+        <div class="save-row">
+          <button class="btn btn-primary" id="save-btn" onclick="saveSiteInfo()">保存并生效</button>
+          <button class="btn btn-ghost" type="button" onclick="reloadFromRepo()">还原成仓库里的版本</button>
+          <span class="dirty-hint" id="dirty-hint"></span>
+        </div>
       </div>
     </div>
 

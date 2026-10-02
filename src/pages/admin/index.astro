@@ -339,9 +339,11 @@ import { uiIcon } from "@/constants/ui-icons";
     }
     .upload-item-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 
+    /* 9 张入口卡：下限 180px 时 960px 容器排成 4 列 = 4+4+1，
+       最后一行孤零零一张。提到 240px 正好 3 列，9 = 3×3 排满。 */
     .admin-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 0.875rem;
     }
     /* 入口卡片：底色、边框、圆角、阴影都由博客的 .card-base 负责

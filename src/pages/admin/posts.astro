@@ -80,7 +80,8 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       .editor-actions { padding: 0.875rem 1.5rem; }
     }
     .save-actions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-    .edit-bar { display: flex; align-items: center; gap: 0.5rem; }
+    /* ⚠️ .edit-bar 的样式与收起已提到 admin.css（原来这里写 display:flex，
+          同特异性下压掉了 .hidden → 没在编辑也常驻一条「取消编辑」） */
     .draft-hint { font-size: 0.6875rem; color: var(--text-3); margin-left: auto; }
 
     /* ===== 字段 ===== */

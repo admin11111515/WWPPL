@@ -1232,3 +1232,199 @@ textarea { border-radius: 0.75rem; }
 		max-width: none;
 	}
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   第三遍（2026-10-02）：内容区骨架
+   ------------------------------------------------------------------
+   站长原话「内容区你是一点没改啊」—— 之前两遍动的都是顶栏与列表行，
+   顶栏下面那块真正干活的地方没动。这一遍补的是内容区本身的骨架，
+   四件事：
+
+     ① 卡片内操作底栏
+        主操作按钮原来是**卡片外**一条通栏（站点/导航/外观三页都是），
+        和上面的卡片是两张皮，像悬在半空的另一块 UI。收进卡片里，
+        贴左右边缘、有上分隔线、底纹比卡片深一点 —— 一眼看得出
+        「这个动作属于这张卡片」。
+
+     ② 长表单分组
+        站点信息一页 9 个字段一根长列往下滚，看不出有几件事。
+        加分组小标题（一条竖杠 + 跟一条细线），结构自己会说话。
+
+     ③ 状态条
+        同一个后台里两种说法：站点/外观是"小药丸"，说说/笔记是
+        "通栏盒子"。统一成小药丸（admin.css 第 1106 行那版）。
+
+     ④ 内容区底部留白 + 入口网格
+   凡是这里写过的声明，各页面**本地的重复定义就删掉**（页面 <style>
+   在 admin.css 之后加载，留着就是本地那份赢，改这里没用）。
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── 1. 卡片内操作底栏 ───────────────────────────────────────────
+   负外边距把这条底栏顶到卡片左右边缘（卡片有 padding），
+   于是"内缩的内容"与"通栏的动作"之间有了层次。 */
+.card > .save-row,
+.card > .submit-row {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	flex-wrap: wrap;
+	margin: 1.25rem -1.25rem -1.375rem;
+	padding: 0.8125rem 1.25rem;
+	border-top: 1px solid var(--line-soft);
+	background: color-mix(in oklab, var(--card-bg-soft) 55%, transparent);
+}
+
+.card > .save-row .btn-primary,
+.card > .submit-row .btn-primary {
+	flex: 1;
+	min-width: 9rem;
+}
+.card > .save-row .btn-ghost,
+.card > .submit-row .btn-ghost {
+	flex: none;
+}
+
+/* 「有改动没保存」这类提示永远靠右，别抢主按钮的位置 */
+.dirty-hint,
+.draft-hint {
+	margin-left: auto;
+	font-size: 0.6875rem;
+	color: var(--text-3);
+	white-space: nowrap;
+}
+.dirty-hint.dirty,
+.draft-hint.dirty {
+	color: var(--warning, var(--text-2));
+}
+
+/* ── 2. 收起：草稿提示条必须真的收得起来 ─────────────────────────
+   ⚠️ 这是修一个真 bug，不是"顺手加一条规则"：
+      说说 / 笔记 / 文章页顶上那条「本地草稿」提示（.restore-bar）在
+      admin.css 里写了 display:flex，而收起它用的 .hidden 是 Tailwind
+      工具类（在 main.css，先加载）—— 同特异性、后写者胜，于是
+      "根本没有草稿"也一直挂着一条「恢复 / 丢弃」，还带着个转圈图标。
+      修法用**两个类**的组合选择器（特异性 0,2,0）压过 .restore-bar，
+      ⚠️ 刻意不用 !important：`.hidden lg:flex` 这种响应式显隐是同一个类名，
+         !important 会把它们一律按死（导航栏的菜单就是这么被藏掉的），
+         而这里只需要治 .restore-bar 一处。 */
+.restore-bar.hidden {
+	display: none;
+}
+
+/* 同一类毛病还有「编辑态操作条」（取消编辑 / 删除 那一行）：
+   文章页把它写成页面 <style> 里的 .edit-bar{display:flex}，说说与笔记页
+   更直接 —— 写在内联 style 上。两处都盖掉了 .hidden，于是**没在编辑**
+   也常驻一条「取消编辑」。样式统一在这里给，收起同样用两类组合选择器；
+   三个页面里那份内联 / 本地写法一并去掉。 */
+.edit-bar {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+	margin-top: 0.5rem;
+}
+.edit-bar.hidden {
+	display: none;
+}
+
+/* ── 3. 页首说明块（卡片最上面那块虚线框）───────────────────────
+   ⚠️ align-items 必须是 flex-start：默认的 stretch 会把图标撑满
+   两行高，SVG 作为行内元素就落到基线（看着像掉到第二行去了）。 */
+.page-lead {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.5rem;
+	margin-bottom: 0.25rem;
+	padding: 0.625rem 0.75rem;
+	background: var(--card-bg-soft);
+	border: 1px dashed var(--line);
+	border-radius: var(--radius-md);
+	font-size: 0.75rem;
+	line-height: 1.75;
+	color: var(--text-2);
+}
+.page-lead .lead-icon {
+	flex-shrink: 0;
+	margin-top: 0.2rem;
+	font-size: 1rem;
+	line-height: 1;
+}
+.page-lead svg {
+	width: 1em;
+	height: 1em;
+	flex-shrink: 0;
+}
+
+/* ── 3. 分组小标题 ────────────────────────────────────────────────
+   左边一条竖杠（是"这一节"），右边一条细线（把下一节推开）。 */
+.section-title {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	margin: 1.5rem 0 0.875rem;
+	font-size: 0.75rem;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	color: var(--text-2);
+}
+.section-title::before {
+	content: "";
+	width: 3px;
+	height: 0.875rem;
+	flex: none;
+	border-radius: 2px;
+	background: var(--primary);
+}
+.section-title::after {
+	content: "";
+	flex: 1;
+	height: 1px;
+	background: var(--line-soft);
+}
+/* 一页里第一个分组不必再顶一块空，紧跟页首说明的那节抬起来一点 */
+.form-group:first-child .section-title,
+.card > .section-title:first-child {
+	margin-top: 0.25rem;
+}
+
+/* ── 4. 长表单：宽屏两列，别一根长条往下滚 ───────────────────────
+   外层 .form-grid 是列；每个 .form-group 自己也是一列宽的网格，
+   宽屏时变成两列 —— 分组标题跨两列。
+   短字段（单行/两行）并排，长字段（横幅句子这类 5 行的）用 .wide 跨两列。 */
+.form-grid,
+.form-group {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 0 1.5rem;
+}
+.form-group > .field {
+	margin-bottom: 1rem;
+}
+@media (min-width: 860px) {
+	.form-group {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+	/* 分组标题、.wide 长字段：跨满两列 */
+	.form-group > .section-title,
+	.form-group > .field.wide {
+		grid-column: 1 / -1;
+	}
+}
+
+/* ── 5. 内容区底部留白 ──────────────────────────────────────────
+   5rem 是给"底部那排宠物墙"留的呼吸位；这里收一点，
+   免得最后一张卡片和宠物墙之间空出一大块。 */
+.container {
+	padding-bottom: 3.5rem;
+}
+@media (max-width: 640px) {
+	.container {
+		padding-bottom: 3rem;
+	}
+}
+
+/* ── 6. 入口网格：4 列排 9 张卡是 4+4+1，最后一行孤零零一张 ─────
+   提到 240px 下限后 960px 容器里正好 3 列 —— 9 张卡 3×3 排满。 */
+.admin-grid {
+	grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
