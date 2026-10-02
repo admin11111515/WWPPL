@@ -3,8 +3,8 @@
 import AdminTheme from "@/components/admin/AdminTheme.astro";
 import AdminTopBar from "@/components/admin/AdminTopBar.astro";
 import { adminBodyClass, adminHtmlClass } from "@/components/admin/adminShell";
-import { externalMomentsConfig } from "@/config/externalMomentsConfig";
-import { externalNotebooksConfig } from "@/config/externalNotebooksConfig";
+// （externalMomentsConfig / externalNotebooksConfig 的导入已随概览面板一起删掉：
+//   那两个配置只被那一块的 data-gist / data-notebooks 用到）
 import { externalPostsConfig } from "@/config/externalPostsConfig";
 // 后台不走博客 Layout，也就没有 iconify 运行时，图标用构建期内联的 SVG
 import { uiIcon } from "@/constants/ui-icons";
@@ -257,52 +257,9 @@ import { uiIcon } from "@/constants/ui-icons";
       justify-content: center;
       min-height: calc(100vh - 8rem);
     }
-    .admin-welcome { text-align: center; margin-bottom: 1.5rem; }
-    .admin-welcome h2 { font-size: 1.125rem; font-weight: 700; margin-bottom: 0.25rem; }
-    /* 标题里的图标：inline-flex 让图标与文字垂直居中，父层的 text-align:center 仍然生效 */
-    .admin-welcome h2 { display: inline-flex; align-items: center; gap: 0.375rem; }
-    .admin-welcome p { font-size: 0.8125rem; color: var(--text-3); }
-
-    /* ===== 概览面板（2026-10-01 加）=====
-       四格数字 + 一行状态。窄屏两列、宽屏四列，跟入口卡片同一套卡片观感。 */
-    .admin-overview {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 0.75rem;
-      margin-bottom: 0.5rem;
-    }
-    @media (min-width: 720px) {
-      .admin-overview { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    }
-    .admin-stat {
-      background: var(--card-bg);
-      border: 1px solid var(--line-divider);
-      border-radius: var(--radius-large, 1rem);
-      padding: 0.875rem 0.75rem;
-      text-align: center;
-    }
-    .admin-stat-num {
-      font-size: 1.5rem;
-      font-weight: 700;
-      line-height: 1.2;
-      color: var(--text);
-      /* 数字还没取回来时显示的是「·」，先别让高度塌掉 */
-      min-height: 1.8rem;
-    }
-    .admin-stat-label {
-      font-size: 0.75rem;
-      color: var(--text-3, var(--muted, #6b7280));
-      margin-top: 0.125rem;
-    }
-    /* 概览脚下一行：只放一句「正在读取仓库…」的状态文字。
-       （「退出」已收进页头那一行，这里不再重复） */
-    .admin-overview-foot {
-      display: block;
-      font-size: 0.75rem;
-      color: var(--text-3, var(--muted, #6b7280));
-      margin: 0 0 1.25rem;
-      min-height: 1rem;
-    }
+    /* .admin-welcome / .admin-overview / .admin-stat* / .admin-overview-foot
+       的样式已随那两块 UI 一起删掉（站长 2026-10-03：这一整块不需要）。
+       现在首页就是页头 + 九张入口卡。 */
 
     /* ===== 传图片面板（2026-10-01 加）===== */
     .upload-row {
@@ -473,41 +430,12 @@ import { uiIcon } from "@/constants/ui-icons";
     {/* 后台首页：页头只写名字 + 退出，不要返回（返回的是自己）、不要状态（这页不调 setStatus） */}
     <AdminTopBar title="后台管理" withStatus={false} />
     <div class="container container-narrow">
-      <div class="admin-welcome">
-        <h2><span class="admin-i" set:html={uiIcon("material-symbols:waving-hand")} />欢迎回来</h2>
-        <p>选择要管理的功能</p>
-      </div>
-      {/* 概览：登录后先看到内容规模与仓库状态，再挑要管的功能（2026-10-01 加）。
-          每一格各自取数、各自兜底，任一格取不到也只是显示「—」，不会拖住整页。 */}
-      <div
-        class="admin-overview"
-        id="admin-overview"
-        data-gist={externalMomentsConfig.gistId || ""}
-        data-file="moments.json"
-        data-notebooks={String(Object.keys(externalNotebooksConfig.notebookGists || {}).length)}
-      >
-        <div class="admin-stat">
-          <div class="admin-stat-num" id="stat-posts">·</div>
-          <div class="admin-stat-label">篇文章</div>
-        </div>
-        <div class="admin-stat">
-          <div class="admin-stat-num" id="stat-moments">·</div>
-          <div class="admin-stat-label">条说说</div>
-        </div>
-        <div class="admin-stat">
-          <div class="admin-stat-num" id="stat-notebooks">·</div>
-          <div class="admin-stat-label">个笔记本</div>
-        </div>
-        <div class="admin-stat">
-          <div class="admin-stat-num" id="stat-commit">·</div>
-          <div class="admin-stat-label" id="stat-commit-label">最近提交</div>
-        </div>
-      </div>
-      <div class="admin-overview-foot">
-        {/* 「退出」已经回到页头那一行里（2026-10-03 站长选的第五版页头），
-            这里不再重复放一个 */}
-        <span id="overview-foot">正在读取仓库…</span>
-      </div>
+      {/* 2026-10-03 站长：「欢迎回来 / 选择要管理的功能 / 58 篇文章 / 0 条说说 /
+          6 个笔记本 / — 最近提交 / 读不到提交记录 —— 这部分都是不需要的」。
+          于是首页只剩入口卡片：欢迎语（页头已经有「后台管理」了）、四格统计、
+          底部那行仓库状态**整块删掉**，连带它们的取数脚本一起（别留死代码）。
+          ⚠️ 要恢复的话：四格数据来自 listDir(src/content/posts) + Gist + /commits，
+              那套逻辑在 git 历史里（提交 190470e 之前）。 */}
       <div class="admin-grid">
         <a href="/admin/moments/" class="card-base admin-card">
           <div class="admin-card-icon" set:html={uiIcon("fluent-color:chat-24")} />
@@ -617,84 +545,9 @@ import { uiIcon } from "@/constants/ui-icons";
       $("login-page").style.display = "none";
       $("admin-main").classList.remove("hidden");
       $("admin-main").style.display = "";
-      loadOverview();
     }
 
-    // ===== 概览面板：登录后先给你看一眼内容规模 =====
-    // 四格各自取数、各自兜底：某一格取不到只显示「—」，不会把整页拖住。
-    function setStat(id, value) {
-      var el = $(id);
-      if (el) el.textContent = value;
-    }
-    function ago(iso) {
-      var d = new Date(iso);
-      if (isNaN(d.getTime())) return "—";
-      var s = Math.max(0, (Date.now() - d.getTime()) / 1000);
-      if (s < 60) return "刚刚";
-      if (s < 3600) return Math.round(s / 60) + " 分钟前";
-      if (s < 86400) return Math.round(s / 3600) + " 小时前";
-      if (s < 86400 * 30) return Math.round(s / 86400) + " 天前";
-      return d.toISOString().slice(0, 10);
-    }
-    async function loadOverview() {
-      var box = $("admin-overview");
-      if (!box) return;
-      var owner = AVATAR.owner, repo = AVATAR.repo, branch = AVATAR.branch;
-      var gistId = box.getAttribute("data-gist") || "";
-      var momentsFile = box.getAttribute("data-file") || "moments.json";
-      var nbCount = Number(box.getAttribute("data-notebooks") || 0);
-      setStat("stat-notebooks", nbCount || "—");
-
-      // 文章：posts 目录下每个分类目录里的 .md
-      try {
-        var roots = await WBGitHub.listDir({ owner: owner, repo: repo, branch: branch, path: "src/content/posts" });
-        var dirs = roots.filter(function (d) { return d.type === "dir"; }).map(function (d) { return d.name; });
-        var lists = await Promise.all(dirs.map(function (n) {
-          return WBGitHub.listDir({ owner: owner, repo: repo, branch: branch, path: "src/content/posts/" + n })
-            .catch(function () { return []; });
-        }));
-        var n = 0;
-        lists.forEach(function (l) {
-          n += l.filter(function (f) { return f.type === "file" && /\.md$/.test(f.name || ""); }).length;
-        });
-        setStat("stat-posts", n);
-      } catch (e) {
-        setStat("stat-posts", "—");
-      }
-
-      // 说说：存在 Gist 里
-      if (gistId) {
-        try {
-          var g = await WBGitHub.readGist(gistId);
-          var arr = [];
-          try { arr = JSON.parse(WBGitHub.gistText(g, momentsFile) || "[]"); } catch (e) {}
-          setStat("stat-moments", Array.isArray(arr) ? arr.length : "—");
-        } catch (e) {
-          setStat("stat-moments", "—");
-        }
-      } else {
-        setStat("stat-moments", "—");
-      }
-
-      // 最近一次提交：知道"现在站上跑的是哪一版"
-      try {
-        var cs = await WBGitHub.request("/repos/" + owner + "/" + repo + "/commits?per_page=1&sha=" + encodeURIComponent(branch));
-        var c = Array.isArray(cs) ? cs[0] : null;
-        var when = c && c.commit && c.commit.committer ? c.commit.committer.date : (c && c.commit ? c.commit.author.date : "");
-        setStat("stat-commit", when ? ago(when) : "—");
-        var foot = $("overview-foot");
-        if (foot) {
-          foot.textContent = "仓库 " + owner + "/" + repo + "（" + branch + "）";
-          if (c && c.commit && c.commit.message) {
-            foot.textContent += " · 最近：" + String(c.commit.message).split("\n")[0].slice(0, 40);
-          }
-        }
-      } catch (e) {
-        setStat("stat-commit", "—");
-        var foot2 = $("overview-foot");
-        if (foot2) foot2.textContent = "读不到提交记录（不影响使用）";
-      }
-    }
+    // （原「概览面板」的取数逻辑已随那一块 UI 一起删掉，见正文里的注释）
 
     // ===== 传图片：本机压缩 → 传进仓库 → 给出可直接粘贴的地址 =====
     function toggleUploadPanel() {
