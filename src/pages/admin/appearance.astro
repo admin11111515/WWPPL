@@ -185,14 +185,9 @@ const pageSwitches = [
 
   <div id="admin-main">
     {/* 连接状态放在内容区顶部（顶栏那个位置留给页面名，别两处都叫 status-dot） */}
-    <AdminTopBar />
+    <AdminTopBar title="站点外观" />
 
     <div class="container">
-      <div class="status-bar" id="status-bar" style="margin-bottom:0.75rem;">
-        <span class="status-dot" id="status-dot"></span>
-        <span id="status-text">正在连接…</span>
-      </div>
-
       <div class="card">
         <div class="page-lead">
           <span class="lead-icon" set:html={uiIcon("fluent-color:paint-brush-24")} />

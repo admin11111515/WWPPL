@@ -107,15 +107,10 @@ const templatesForAdmin = (externalNotebooksConfig.templates || []).map(
 
   <div id="admin-main">
     {/* 这一页正文里已有独立的连接状态条，标题条上不再重复一次 */}
-    <AdminTopBar />
+    <AdminTopBar title="笔记管理" />
 
     <div class="container">
       <!-- 连接状态 -->
-      <div class="status-bar" id="status-bar">
-        <span class="status-dot" id="status-dot"></span>
-        <span id="status-text">正在连接...</span>
-      </div>
-
       {/* 上次没有保存就离开时，把本地留存的草稿提示出来 */}
       <div class="restore-bar hidden" id="restore-bar">
         <span class="restore-icon" set:html={uiIcon("fluent-color:history-24")} />

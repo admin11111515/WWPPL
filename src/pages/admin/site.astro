@@ -155,15 +155,10 @@ const groups = [
 
   <!-- ===== 后台主页 ===== -->
   <div id="admin-main">
-    <AdminTopBar />
+    <AdminTopBar title="站点信息" />
 
     <div class="container">
       <!-- 连接状态 -->
-      <div class="status-bar" id="status-bar">
-        <span class="status-dot" id="status-dot"></span>
-        <span id="status-text">正在连接…</span>
-      </div>
-
       <div class="card">
         <div class="page-lead">
           <span class="lead-icon" set:html={uiIcon("fluent-color:contact-card-24")} />

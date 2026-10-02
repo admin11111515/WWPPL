@@ -895,6 +895,16 @@ textarea:focus {
 #navbar-wrapper span {
 	white-space: nowrap;
 }
+
+/* 后台里藏掉导航栏右上角那个「后台管理」入口（2026-10-03）。
+   站长说「有的又太多余」—— 后台页面上能回后台首页的地方本来有两个：
+   ① 这个只有图标的账号图标；② 内容区顶部的「← 后台首页」面包屑。
+   你已经在后台了，① 是纯重复；前台仍然保留它（那是从博客进后台的正门）。
+   ⚠️ 不要加 `body.authed` 前缀：那个类只有后台首页登录后才加，别的后台页没有；
+      admin.css 只在 /admin/* 里加载，不写前缀也影响不到前台。 */
+#navbar-wrapper a[aria-label="后台管理"] {
+	display: none;
+}
 #navbar-wrapper a,
 #navbar-wrapper button {
 	flex-shrink: 0;

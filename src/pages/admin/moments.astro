@@ -186,15 +186,10 @@ import { uiIcon } from "@/constants/ui-icons";
 
   <!-- ===== 后台主页 ===== -->
   <div id="admin-main">
-    <AdminTopBar />
+    <AdminTopBar title="写说说" />
 
     <div class="container">
       <!-- 连接状态 -->
-      <div class="status-bar" id="status-bar">
-        <span class="status-dot" id="status-dot"></span>
-        <span id="status-text">正在连接...</span>
-      </div>
-
       {/* 上次没有保存就离开时，把本地留存的草稿提示出来 */}
       <div class="restore-bar hidden" id="restore-bar">
         <span class="restore-icon" set:html={uiIcon("fluent-color:history-24")} />
