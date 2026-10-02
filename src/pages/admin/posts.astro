@@ -28,8 +28,11 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       gap: 1rem;
       align-items: start;
     }
+    /* 左栏 340 → 400px（2026-10-02）：三个操作按钮带上图标之后是图标按钮，
+       340px 里标题只剩 100px（"深夜写代码时听…"）。加宽到 400px 后标题有 160px，
+       右栏还留着 855px，编辑器不受影响。 */
     @media (min-width: 980px) {
-      .layout-grid { grid-template-columns: 340px minmax(0, 1fr); }
+      .layout-grid { grid-template-columns: 400px minmax(0, 1fr); }
     }
 
     /* 文章列表：跟随页面滚动，长列表不会把编辑器顶下去 */
@@ -147,7 +150,9 @@ const postsConfig = JSON.stringify(externalPostsConfig);
           <div class="field-label" style="margin:0"><span class="icon" set:html={uiIcon("fluent-color:document-text-24")} /> 已有文章</div>
           <span class="count" id="list-count"></span>
         </div>
-        <button class="btn" onclick="startNewPost()" style="width:100%;margin-bottom:0.75rem;">＋ 新建文章</button>
+        <button class="btn" onclick="startNewPost()" style="width:100%;margin-bottom:0.75rem;">
+          <span class="admin-i" set:html={uiIcon("material-symbols:note-add")} />新建文章
+        </button>
         <div class="list-filter">
           <input type="search" class="input-single" id="list-search" placeholder="搜标题 / 路径 / 标签" />
           <label class="checkbox-row compact">
@@ -290,9 +295,17 @@ const postsConfig = JSON.stringify(externalPostsConfig);
   <script is:inline src="/js/editor-commons.js"></script>
   <script is:inline src="/js/admin-github.js"></script>
   <script is:inline data-config={postsConfig}
+    // ⚠️ 图标名必须先去 @iconify-json/*/icons.json 核对存在（写错不报错，前台就是一个空白框），
+    //    并且要加进 scripts/generate-icons.js 的 EXPLICIT_ICONS —— uiIcon() 只认那份清单，漏了静默返回空串。
     data-icons={JSON.stringify({
       note: uiIcon("fluent-color:document-text-24"),
+      draftNote: uiIcon("fluent-color:document-edit-24"),
       filterOff: uiIcon("fluent-color:options-24"),
+      // 控件类图标：单色（与全站约定一致，彩色只给内容类）
+      view: uiIcon("material-symbols:open-in-new"),
+      edit: uiIcon("material-symbols:edit"),
+      del: uiIcon("material-symbols:delete"),
+      draft: uiIcon("material-symbols:draft"),
     })}>
     var _script = document.currentScript;
     var CONFIG = JSON.parse(_script.getAttribute("data-config") || "{}");
@@ -485,18 +498,22 @@ const postsConfig = JSON.stringify(externalPostsConfig);
         var row = document.createElement("div");
         row.className = "post-row";
         row.innerHTML =
+          // 行首一枚图标：内容类用彩色（.post-icon 在 admin.css 里定尺寸）
+          '<span class="admin-i post-icon">' + (post.draft ? ICONS.draftNote : ICONS.note) + '</span>' +
           '<div class="post-info">' +
           '<div class="post-title">' + esc(post.title) + '</div>' +
           '<div class="post-meta">' +
           '<span>' + esc(post.published) + '</span>' +
           (post.category ? '<span class="sep">·</span><span>' + esc(post.category) + '</span>' : "") +
-          (post.draft ? '<span class="post-badge draft">草稿</span>' : '') +
+          (post.draft ? '<span class="post-badge draft"><span class="admin-i">' + ICONS.draft + '</span>草稿</span>' : '') +
           '</div></div>' +
           '<div class="post-actions">' +
           // 「查看」直接开站上那一页（新标签），省得自己去拼地址
-          '<a class="btn btn-sm" target="_blank" rel="noopener" href="' + postUrl(post.path) + '" title="在新标签打开站上的这一篇">查看</a>' +
-          '<button class="btn btn-sm" onclick="editPost(\'' + escapeAttr(post.path) + '\')">编辑</button>' +
-          '<button class="btn-danger-sm" onclick="deletePost(\'' + escapeAttr(post.path) + '\')">删除</button>' +
+          // 按钮文字包一层 .btn-t：左栏窄的时候（容器 <520px）只留图标，宽了才把文字放出来。
+          // 这样三个按钮在窄栏里总共只要 ~110px，标题不会被挤成竖排。
+          '<a class="btn btn-sm" target="_blank" rel="noopener" href="' + postUrl(post.path) + '" title="在新标签打开站上的这一篇"><span class="admin-i">' + ICONS.view + '</span><span class="btn-t">查看</span></a>' +
+          '<button class="btn btn-sm" title="编辑" onclick="editPost(\'' + escapeAttr(post.path) + '\')"><span class="admin-i">' + ICONS.edit + '</span><span class="btn-t">编辑</span></button>' +
+          '<button class="btn-danger-sm" title="删除" onclick="deletePost(\'' + escapeAttr(post.path) + '\')"><span class="admin-i">' + ICONS.del + '</span><span class="btn-t">删除</span></button>' +
           '</div>';
         $("post-list").appendChild(row);
       });

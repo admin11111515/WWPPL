@@ -77,6 +77,13 @@ const EXPLICIT_ICONS = [
 	"material-symbols:explore", // 没指定笔记时的提示
 	// 后台首页
 	"material-symbols:waving-hand", // 欢迎回来
+	// 文章列表的行与操作按钮（2026-10-02 加：站长说「文章管理还是没有图标」）
+	// ⚠️ 控件类图标按约定一律用 material-symbols 单色，别混成 fluent-color 彩色
+	"material-symbols:open-in-new", // 查看（新标签打开站上那一篇）
+	"material-symbols:edit", // 编辑
+	"material-symbols:delete", // 删除
+	"material-symbols:note-add", // 新建文章
+	"material-symbols:draft", // 草稿徽标
 ];
 
 // 支持的图标集及其包名

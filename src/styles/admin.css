@@ -1486,6 +1486,49 @@ textarea { border-radius: 0.75rem; }
 	}
 }
 
+/* ── 5b. 文章列表：行首图标 + 带图标的操作按钮 ───────────────────
+   2026-10-02 站长：「文章管理还是没有图标」。这一页原先的每一行只有文字
+   （标题 / 日期 / 分类 / 「查看 编辑 删除」三个纯字按钮），和别的后台页
+   （说说、笔记、页面内容都带 fluent-color 图标）不是一个样子。
+   ⚠️ 行首那枚是**内容类** → fluent-color 彩色；按钮上的三枚是**控件类** →
+      material-symbols 单色（全站约定，彩色只给内容）。 */
+.post-icon {
+	flex: none;
+	font-size: 1.125rem;
+	line-height: 1;
+}
+.post-icon svg {
+	width: 1em;
+	height: 1em;
+}
+/* 按钮里的图标：跟按钮文字同高再大一点，13px 的 1em 太小看不出是个图标 */
+.post-actions .admin-i,
+.post-actions .admin-i svg {
+	font-size: 1rem;
+}
+
+/* 左栏是**固定 340px**的窄列，行内可用宽度只有 ~300px：
+   三个「图标+文字」按钮要 226px，正文会被挤到只剩 10px（标题竖排）。
+   所以文字默认收起、只留图标（`title` 兜住说明），容器够宽才放出来。
+   ⚠️ 默认写成"收起"是刻意的：万一哪天容器查询不被支持，结果是"只有图标"
+     （好用），而不是"三个大按钮把列表撑坏"。 */
+.post-list-card {
+	container-type: inline-size;
+}
+.post-actions .btn-t {
+	display: none;
+}
+@container (min-width: 520px) {
+	.post-actions .btn-t {
+		display: inline;
+	}
+}
+/* 草稿徽标里那枚：跟徽标文字同高，别把小标签撑成一倍高 */
+.post-badge .admin-i {
+	font-size: 0.875em;
+	vertical-align: -0.1em;
+}
+
 /* ── 6. 入口网格：4 列排 9 张卡是 4+4+1，最后一行孤零零一张 ─────
    提到 240px 下限后 960px 容器里正好 3 列 —— 9 张卡 3×3 排满。 */
 .admin-grid {
