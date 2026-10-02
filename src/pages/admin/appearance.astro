@@ -2,6 +2,7 @@
 // 站点外观 —— 读写仓库里的 src/data/appearance.json
 // 改的是色相、明暗、壁纸模式、页面开关这些结构值，保存后重新构建才生效。
 import AdminTheme from "@/components/admin/AdminTheme.astro";
+import AdminAuthGate from "@/components/admin/AdminAuthGate.astro";
 import AdminTopBar from "@/components/admin/AdminTopBar.astro";
 import { adminBodyClass, adminHtmlClass } from "@/components/admin/adminShell";
 import { externalPostsConfig } from "@/config/externalPostsConfig";
@@ -127,6 +128,7 @@ const pageSwitches = [
   {/* 后台是站长自用界面，不该出现在搜索结果里（sitemap 中同样已剔除） */}
   <meta name="robots" content="noindex, nofollow" />
   <AdminTheme />
+  <AdminAuthGate />
   <style is:inline>
     /* ===== 只放这一页特有的排版，通用部分在 src/styles/admin.css ===== */
     #admin-main { --admin-content-max: 720px; }
@@ -502,7 +504,7 @@ const pageSwitches = [
         .catch(function () { window.location.href = "/admin/"; return false; });
     }
     function doLogout() {
-      sessionStorage.removeItem("admin_auth");
+      localStorage.removeItem("admin_auth");
       fetch("/api/auth/logout", { method: "POST" }).catch(function () {});
       window.location.href = "/admin/";
     }

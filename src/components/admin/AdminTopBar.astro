@@ -1,5 +1,6 @@
 ---
 import Navbar from "@components/layout/Navbar.astro";
+import AdminSideNav from "@components/admin/AdminSideNav.astro";
 import { Icon } from "astro-icon/components";
 /**
  * 后台页面顶部：博客导航栏 + **一行页头**。
@@ -32,13 +33,19 @@ const { title, withStatus = true } = Astro.props;
 const isAdminHome = Astro.url.pathname.replace(/\/+$/, "") === "/admin";
 ---
 
-{/* 宽度容器与博客 Layout 的内容区一致：max-w-(--page-width) + xl:w-[92vw] */}
+{/* 宽度容器与博客 Layout 的内容区一致：max-w-(--page-width) + xl:w-[92vw]
+    ⚠️ 这一层在 `#admin-main` 的网格里占满整行（grid-column: 1 / -1），
+       侧栏与内容区在它下面左右分栏 —— 别把它塞进某一列，导航栏要横贯。 */}
 <div class="relative z-50 mx-auto w-full max-w-(--page-width) px-0 md:px-4 xl:w-[92vw]">
   <div id="navbar-wrapper" class="sticky top-0 z-50">
     <Navbar />
   </div>
 </div>
 
+{/* 左侧导航：占网格第一列（见 admin.css 的「后台外壳布局」） */}
+<AdminSideNav />
+
+{/* 页头（+ 页面内容）：落在网格第二列 */}
 <div class="container">
   <div class="admin-head">
     <div class="admin-head-left">

@@ -1,6 +1,7 @@
 ---
 // 笔记管理页面 - 往已有笔记本里写笔记，通过 GitHub Gist 存储
 import AdminTheme from "@/components/admin/AdminTheme.astro";
+import AdminAuthGate from "@/components/admin/AdminAuthGate.astro";
 import AdminTopBar from "@/components/admin/AdminTopBar.astro";
 import { adminBodyClass, adminHtmlClass } from "@/components/admin/adminShell";
 import { externalNotebooksConfig } from "@/config/externalNotebooksConfig";
@@ -32,6 +33,7 @@ const templatesForAdmin = (externalNotebooksConfig.templates || []).map(
   <meta name="robots" content="noindex, nofollow" />
   {/* 样式、字体、主题色都来自这里，页面自己的样式放在它后面 */}
   <AdminTheme />
+  <AdminAuthGate />
   <style is:inline>
     /* ===== 只放这一页特有的排版，通用部分在 src/styles/admin.css ===== */
 
@@ -279,7 +281,7 @@ const templatesForAdmin = (externalNotebooksConfig.templates || []).map(
       clearTimeout(el._t); el._t = setTimeout(function() { el.className = "toast"; }, 2800);
     }
     // toggleDark 与明暗初始化由 <AdminTheme /> 提供
-    function doLogout() { sessionStorage.removeItem("admin_auth"); fetch("/api/auth/logout", { method: "POST" }).catch(function() {}); window.location.href = "/admin/"; }
+    function doLogout() { localStorage.removeItem("admin_auth"); fetch("/api/auth/logout", { method: "POST" }).catch(function() {}); window.location.href = "/admin/"; }
     function setStatus(ok, text) {
       $("status-dot").className = "status-dot " + (ok ? "ok" : "err");
       $("status-text").textContent = text;

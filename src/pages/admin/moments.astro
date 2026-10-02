@@ -1,6 +1,7 @@
 ---
 // 说说写作页面 - 通过 GitHub Gist 存储，完全免费，不修改仓库代码
 import AdminTheme from "@/components/admin/AdminTheme.astro";
+import AdminAuthGate from "@/components/admin/AdminAuthGate.astro";
 import AdminTopBar from "@/components/admin/AdminTopBar.astro";
 import { adminBodyClass, adminHtmlClass } from "@/components/admin/adminShell";
 import { externalMomentsConfig } from "@/config/externalMomentsConfig";
@@ -19,6 +20,7 @@ import { uiIcon } from "@/constants/ui-icons";
   <meta name="robots" content="noindex, nofollow" />
   {/* 样式、字体、主题色都来自这里，页面自己的样式放在它后面 */}
   <AdminTheme />
+  <AdminAuthGate />
   <style is:inline>
     /* ===== 只放这一页特有的排版，通用部分在 src/styles/admin.css ===== */
 
@@ -359,7 +361,7 @@ import { uiIcon } from "@/constants/ui-icons";
 
     // ===== 退出 =====
     function doLogout() {
-      sessionStorage.removeItem("admin_auth");
+      localStorage.removeItem("admin_auth");
       fetch("/api/auth/logout", { method: "POST" }).catch(function() {});
       window.location.href = "/admin/";
     }

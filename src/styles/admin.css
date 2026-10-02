@@ -178,7 +178,6 @@
 
 .empty-state .icon svg,
 .restore-icon svg,
-.admin-card-icon svg,
 .toolbar-btn svg,
 .notebook-tab svg,
 .btn-icon svg {
@@ -880,6 +879,148 @@ textarea:focus {
    收拾成"后台"该有的样子。
    ══════════════════════════════════════════════════════════════════ */
 
+/* ══════════════════════════════════════════════════════════════════
+   后台外壳布局（2026-10-03）：导航栏横贯 → [左侧导航 | 页头 + 内容]
+   ------------------------------------------------------------------
+   为什么加：量过一遍，在「文章管理」页里**直达其它后台功能的链接是 0 个**，
+   换个功能得「回后台首页 → 点卡片」= 2 步 + 一次整页跳转。加了侧栏 = 1 步。
+
+   网格只有两列一行的规矩：
+     · 导航栏那一层 .relative        → 占满整行（1 / -1）
+     · 侧栏 aside.admin-side        → 第 1 列，从页头那一行开始往下跨
+     · 页头容器与内容容器 .container → 第 2 列，按顺序自动落到两行里
+   ⚠️ 别再给 .container 写 grid-row：让它们自动排，才不会两个挤在同一格。
+   ══════════════════════════════════════════════════════════════════ */
+#admin-main {
+	display: grid;
+	grid-template-columns: 13.5rem minmax(0, 1fr);
+	align-items: start;
+}
+#admin-main > .relative {
+	grid-column: 1 / -1;
+}
+#admin-main > .admin-side {
+	grid-column: 1;
+	grid-row: 2 / span 2;
+	position: sticky;
+	top: 4.75rem; /* 顶部那条导航栏是 sticky 的，侧栏要从它下面开始 */
+	max-height: calc(100vh - 4.75rem);
+	overflow-y: auto;
+}
+#admin-main > .container {
+	grid-column: 2;
+	min-width: 0;
+}
+
+/* ── 侧栏本体 ── */
+.admin-side {
+	display: flex;
+	flex-direction: column;
+	padding: 0.75rem 0.625rem 1rem;
+	border-right: 1px solid var(--line-soft);
+}
+.admin-side-nav {
+	display: flex;
+	flex-direction: column;
+	gap: 0.125rem;
+}
+.admin-side-group + .admin-side-group {
+	margin-top: 0.875rem;
+}
+.admin-side-label {
+	padding: 0 0.625rem 0.25rem;
+	font-size: 0.6875rem;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	color: var(--text-4);
+}
+.admin-side-item {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	width: 100%;
+	padding: 0.4375rem 0.625rem;
+	border: 0;
+	border-radius: 0.5rem;
+	background: none;
+	font-family: inherit;
+	font-size: 0.8125rem;
+	font-weight: 600;
+	line-height: 1.4;
+	color: var(--text-2);
+	text-align: left;
+	text-decoration: none;
+	cursor: pointer;
+	transition: background-color 0.15s, color 0.15s;
+}
+.admin-side-item:hover {
+	background: var(--btn-plain-bg-hover);
+	color: var(--text);
+}
+.admin-side-item[aria-current="page"] {
+	background: color-mix(in oklab, var(--primary) 12%, transparent);
+	color: var(--primary);
+}
+.admin-side-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1rem;
+	flex: none;
+}
+.admin-side-icon svg {
+	width: 1rem;
+	height: 1rem;
+}
+.admin-side-foot {
+	display: flex;
+	flex-direction: column;
+	gap: 0.125rem;
+	margin-top: auto;
+	padding-top: 0.625rem;
+	border-top: 1px solid var(--line-soft);
+}
+
+/* 窄屏：侧栏不再占一列，改成横向滚动的一条 */
+@media (max-width: 900px) {
+	#admin-main {
+		display: block;
+	}
+	#admin-main > .admin-side {
+		position: static;
+		max-height: none;
+		overflow: visible;
+		border-right: 0;
+		border-bottom: 1px solid var(--line-soft);
+		padding: 0.5rem 0.75rem 0.25rem;
+	}
+	.admin-side-nav {
+		flex-direction: row;
+		gap: 0.25rem;
+		overflow-x: auto;
+	}
+	.admin-side-group {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+	}
+	.admin-side-group + .admin-side-group {
+		margin-top: 0;
+	}
+	.admin-side-label {
+		display: none;
+	}
+	.admin-side-item {
+		width: auto;
+		white-space: nowrap;
+	}
+	.admin-side-foot {
+		flex-direction: row;
+		margin-top: 0.25rem;
+		padding-top: 0.25rem;
+	}
+}
+
 /* ── 1. 后台外壳：顶栏就是博客导航栏，没有第二条 ─────────────────
    这里原来有一条 `.admin-topbar`（吸顶 + 毛玻璃 + 下边框），是"后台自己的
    标题条"。2026-10-02 站长把「后台管理 / 首页 / 退出」整行删掉后，它连同
@@ -912,7 +1053,6 @@ textarea:focus {
 
 /* 入口页原来收在 720px，卡片排成 3+3+1 很难看；放宽到 960px */
 #admin-main { --admin-content-max: 960px; }
-.admin-grid { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
 
 /* ── 2. 卡片：统一的边、圆角、悬停 ───────────────────────────── */
 .card,
@@ -923,18 +1063,6 @@ textarea:focus {
 .card { padding: 1.25rem 1.25rem 1.375rem; }
 
 /* 可点的卡片（入口卡）悬停抬起一点，给出"能点"的信号 */
-.admin-card {
-	cursor: pointer;
-	border: 1px solid var(--line-soft);
-	background: var(--card-bg);
-}
-.admin-card:hover {
-	transform: translateY(-2px);
-	border-color: color-mix(in oklab, var(--primary) 35%, var(--line-soft));
-	box-shadow: 0 6px 20px -12px color-mix(in oklab, var(--primary) 55%, transparent);
-}
-.admin-card:active { transform: translateY(0); }
-
 /* 卡片里的图标做成"浅色方块 + 圆角"，别再让图标直接漂在白底上。
    ⚠️ 底色必须是**中性**的（--card-bg-soft），不能用主题淡色（--primary-soft）。
       2026-10-03 站长指着首页截图问「不觉得页面有问题吗」—— 就是这里：
@@ -943,18 +1071,6 @@ textarea:focus {
       只有饱和蓝的那几个（说说/笔记/图片）显眼 —— 于是"有几张卡的图标是空的"。
       ⚠️ 判定"图标有没有画出来"不能只数 svg 里的图元（我按那个查过，报的 0 空白）；
          要量**它跟底色的对比**，见 _gen/_图标可读性核验.mjs。 */
-.admin-card-icon {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 2.75rem;
-	height: 2.75rem;
-	border-radius: 0.875rem;
-	background: var(--card-bg-soft);
-	margin-bottom: 0.75rem;
-}
-.admin-card-icon svg { font-size: 1.5rem; }
-
 /* 概览数字格：数字更大、标签更小，标签与数字的层级拉开 */
 .admin-stat {
 	border: 1px solid var(--line-soft);
@@ -1002,8 +1118,1763 @@ textarea:focus {
 .btn-icon:focus-visible,
 input:focus-visible,
 select:focus-visible,
-textarea:focus-visible,
-.admin-card:focus-visible {
+textarea:focus-visible {
+	outline: 2px solid var(--primary-ring);
+	outline-offset: 2px;
+}
+
+/* ── 4. 表单：高度、焦点、说明文字的层次 ─────────────────────── */
+.input-single,
+.form-input,
+input[type="text"],
+input[type="search"],
+input[type="password"],
+input[type="date"],
+input[type="url"],
+select {
+	height: 2.25rem;
+	border-radius: 0.625rem;
+	border: 1px solid var(--line-soft);
+	transition: border-color 0.15s, box-shadow 0.15s;
+}
+.input-single:hover,
+input[type="text"]:hover,
+input[type="search"]:hover,
+input[type="password"]:hover,
+input[type="date"]:hover,
+input[type="url"]:hover,
+select:hover {
+	border-color: color-mix(in oklab, var(--primary) 30%, var(--line-soft));
+}
+.input-single:focus,
+.form-input:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	border-color: color-mix(in oklab, var(--primary) 55%, var(--line-soft));
+	box-shadow: 0 0 0 3px var(--primary-ring);
+	outline: none;
+}
+textarea { border-radius: 0.75rem; }
+::placeholder { color: var(--text-4); }
+.field-label { font-size: 0.75rem; letter-spacing: 0.02em; text-transform: none; }
+.field-hint { color: var(--text-3); }
+
+/* ── 5. 列表：行悬停、分隔线、按钮不再挤成一团 ───────────────── */
+.post-row {
+	align-items: center;
+	gap: 0.75rem;
+	padding: 0.625rem 0.75rem;
+	border-radius: 0.625rem;
+	border: 1px solid transparent;
+	transition: background-color 0.15s, border-color 0.15s;
+}
+.post-row:hover {
+	background: var(--hover);
+	border-color: var(--line-soft);
+}
+.post-row .post-actions {
+	display: flex;
+	align-items: center;
+	gap: 0.375rem;
+	flex-shrink: 0;
+}
+.post-row .post-title { font-weight: 600; }
+
+/* 草稿之类的标记做成小药丸，别用裸文字 */
+.post-badge,
+.badge {
+	display: inline-flex;
+	align-items: center;
+	height: 1.25rem;
+	padding: 0 0.4375rem;
+	border-radius: 999px;
+	font-size: 0.6875rem;
+	font-weight: 600;
+	line-height: 1;
+	background: var(--primary-soft);
+	color: var(--btn-content);
+}
+.post-badge.draft { background: color-mix(in oklab, var(--danger) 18%, transparent); color: var(--danger); }
+
+/* 左右分栏的列表滚动区：细滚动条，别用浏览器的粗条 */
+.post-list-scroll { scrollbar-width: thin; }
+.post-list-scroll::-webkit-scrollbar { width: 8px; }
+.post-list-scroll::-webkit-scrollbar-thumb {
+	background: color-mix(in oklab, var(--text-4) 60%, transparent);
+	border-radius: 999px;
+}
+.post-list-scroll::-webkit-scrollbar-track { background: transparent; }
+
+/* 标签页（笔记/分类切换）统一成胶囊 */
+.notebook-tab {
+	height: 1.875rem;
+	padding: 0 0.75rem;
+	border-radius: 999px;
+	font-size: 0.75rem;
+	font-weight: 600;
+	transition: background-color 0.15s, color 0.15s;
+}
+.notebook-tab:hover { background: var(--hover); }
+.notebook-tab.active,
+.notebook-tab[aria-selected="true"] { background: var(--primary-soft); color: var(--btn-content); }
+
+/* ── 6. 状态条 / 提示条 / 空态 ──────────────────────────────── */
+.status-bar {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4375rem;
+	height: 1.75rem;
+	padding: 0 0.625rem;
+	border-radius: 999px;
+	background: var(--btn-regular-bg);
+	font-size: 0.75rem;
+	color: var(--text-2);
+}
+.status-dot { width: 0.4375rem; height: 0.4375rem; border-radius: 999px; background: var(--text-4); }
+.status-bar.ok .status-dot { background: var(--success); }
+.status-bar.err .status-dot { background: var(--danger); }
+
+.empty-state {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	padding: 2rem 1rem;
+	color: var(--text-3);
+	font-size: 0.8125rem;
+	text-align: center;
+}
+/* 空态里那枚图标同理：底色要中性，不然淡色图标（空文章/无匹配）会糊掉 */
+.empty-state .icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 2.75rem;
+	height: 2.75rem;
+	border-radius: 0.875rem;
+	background: var(--card-bg-soft);
+}
+.empty-state .icon svg { font-size: 1.5rem; }
+
+.toast {
+	border-radius: 0.75rem;
+	box-shadow: 0 10px 30px -12px rgb(0 0 0 / 0.35);
+	font-size: 0.8125rem;
+}
+
+/* ── 7. 图标与文字对齐（到处漏一点最显毛糙）─────────────────── */
+.field-label svg,
+.btn svg,
+.btn-sm svg,
+.btn-primary svg,
+.btn-danger-sm svg,
+.notebook-tab svg,
+.status-bar svg,
+.field-hint svg {
+	width: 1em;
+	height: 1em;
+	flex-shrink: 0;
+	vertical-align: -0.125em;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   第二遍（2026-10-02）：把"看着不对劲但说不出哪不对"的地方收掉
+   ① 删除按钮默认是红的，不是悬停才红
+   ② 说说 / 笔记两页的行与文章列表同一种观感
+   ③ 窄屏（<640px）别让行里的按钮挤成一团
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── 8. 危险按钮：默认就该看得出"这一步会删东西" ────────────── */
+/* 原来它是个灰幽灵按钮、只有悬停才变红 —— 平铺在每一行里，
+   扫一眼分不出「编辑」和「删除」哪个会动手。改成常驻淡红底 + 红字。 */
+.btn-danger-sm {
+	background: color-mix(in oklab, var(--danger) 12%, transparent);
+	border-color: color-mix(in oklab, var(--danger) 42%, transparent);
+	color: var(--danger);
+}
+.btn-danger-sm:hover {
+	background: color-mix(in oklab, var(--danger) 20%, transparent);
+	border-color: var(--danger);
+	color: var(--danger);
+}
+.btn-danger-sm:active {
+	background: color-mix(in oklab, var(--danger) 30%, transparent);
+}
+
+/* ── 9. 说说 / 笔记的行：与文章列表同一种观感 ───────────────── */
+/* 这两页的行原本只有一条底边，悬停才浮起来；文章列表用的是
+   「透明整框 + 悬停描边」，两边看着不像同一个后台 —— 统一成后者。
+   ⚠️ `border` 会吃掉原先的 border-bottom：这是有意的，行与行之间
+   不再靠细线分，靠 hover 时的整框，和 .post-row 一致。 */
+.moment-row,
+.entry-row {
+	border: 1px solid transparent;
+	border-radius: 0.625rem;
+	transition: background-color 0.15s, border-color 0.15s;
+}
+.moment-row:hover,
+.entry-row:hover {
+	background: var(--hover);
+	border-color: var(--line-soft);
+}
+.moment-row:last-child,
+.entry-row:last-child {
+	border-bottom: 1px solid transparent;
+}
+
+/* ── 10. 窄屏：行里的按钮另起一行，别挤在正文右边 ───────────── */
+@media (max-width: 560px) {
+	.moment-row,
+	.entry-row {
+		flex-wrap: wrap;
+	}
+	/* 操作区整行放，右对齐；按钮跟着第 3 节的统一高度，点得到 */
+	.moment-row > div:last-child,
+	.entry-actions {
+		width: 100%;
+		display: flex;
+		justify-content: flex-end;
+		gap: 0.5rem;
+	}
+	/* 列表头：标题一行、搜索一行，各占满宽 */
+	.list-header {
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+	.list-header .list-tools {
+		flex-basis: 100%;
+	}
+	.list-header .list-tools input[type="search"] {
+		max-width: none;
+	}
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   第三遍（2026-10-02）：内容区骨架
+   ------------------------------------------------------------------
+   站长原话「内容区你是一点没改啊」—— 之前两遍动的都是顶栏与列表行，
+   顶栏下面那块真正干活的地方没动。这一遍补的是内容区本身的骨架，
+   四件事：
+
+     ① 卡片内操作底栏
+        主操作按钮原来是**卡片外**一条通栏（站点/导航/外观三页都是），
+        和上面的卡片是两张皮，像悬在半空的另一块 UI。收进卡片里，
+        贴左右边缘、有上分隔线、底纹比卡片深一点 —— 一眼看得出
+        「这个动作属于这张卡片」。
+
+     ② 长表单分组
+        站点信息一页 9 个字段一根长列往下滚，看不出有几件事。
+        加分组小标题（一条竖杠 + 跟一条细线），结构自己会说话。
+
+     ③ 状态条
+        同一个后台里两种说法：站点/外观是"小药丸"，说说/笔记是
+        "通栏盒子"。统一成小药丸（admin.css 第 1106 行那版）。
+
+     ④ 内容区底部留白 + 入口网格
+   凡是这里写过的声明，各页面**本地的重复定义就删掉**（页面 <style>
+   在 admin.css 之后加载，留着就是本地那份赢，改这里没用）。
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── 1. 卡片内操作底栏 ───────────────────────────────────────────
+   负外边距把这条底栏顶到卡片左右边缘（卡片有 padding），
+   于是"内缩的内容"与"通栏的动作"之间有了层次。 */
+.card > .save-row,
+.card > .submit-row {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	flex-wrap: wrap;
+	margin: 1.25rem -1.25rem -1.375rem;
+	padding: 0.8125rem 1.25rem;
+	border-top: 1px solid var(--line-soft);
+	background: color-mix(in oklab, var(--card-bg-soft) 55%, transparent);
+}
+
+.card > .save-row .btn-primary,
+.card > .submit-row .btn-primary {
+	flex: 1;
+	min-width: 9rem;
+}
+.card > .save-row .btn-ghost,
+.card > .submit-row .btn-ghost {
+	flex: none;
+}
+
+/* 「有改动没保存」这类提示永远靠右，别抢主按钮的位置 */
+.dirty-hint,
+.draft-hint {
+	margin-left: auto;
+	font-size: 0.6875rem;
+	color: var(--text-3);
+	white-space: nowrap;
+}
+.dirty-hint.dirty,
+.draft-hint.dirty {
+	color: var(--warning, var(--text-2));
+}
+
+/* ── 2. 收起：草稿提示条必须真的收得起来 ─────────────────────────
+   ⚠️ 这是修一个真 bug，不是"顺手加一条规则"：
+      说说 / 笔记 / 文章页顶上那条「本地草稿」提示（.restore-bar）在
+      admin.css 里写了 display:flex，而收起它用的 .hidden 是 Tailwind
+      工具类（在 main.css，先加载）—— 同特异性、后写者胜，于是
+      "根本没有草稿"也一直挂着一条「恢复 / 丢弃」，还带着个转圈图标。
+      修法用**两个类**的组合选择器（特异性 0,2,0）压过 .restore-bar，
+      ⚠️ 刻意不用 !important：`.hidden lg:flex` 这种响应式显隐是同一个类名，
+         !important 会把它们一律按死（导航栏的菜单就是这么被藏掉的），
+         而这里只需要治 .restore-bar 一处。 */
+.restore-bar.hidden {
+	display: none;
+}
+
+/* 同一类毛病还有「编辑态操作条」（取消编辑 / 删除 那一行）：
+   文章页把它写成页面 <style> 里的 .edit-bar{display:flex}，说说与笔记页
+   更直接 —— 写在内联 style 上。两处都盖掉了 .hidden，于是**没在编辑**
+   也常驻一条「取消编辑」。样式统一在这里给，收起同样用两类组合选择器；
+   三个页面里那份内联 / 本地写法一并去掉。 */
+.edit-bar {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+	margin-top: 0.5rem;
+}
+.edit-bar.hidden {
+	display: none;
+}
+
+/* ── 3. 页首说明块（卡片最上面那块虚线框）───────────────────────
+   ⚠️ align-items 必须是 flex-start：默认的 stretch 会把图标撑满
+   两行高，SVG 作为行内元素就落到基线（看着像掉到第二行去了）。 */
+.page-lead {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.5rem;
+	margin-bottom: 0.25rem;
+	padding: 0.625rem 0.75rem;
+	background: var(--card-bg-soft);
+	border: 1px dashed var(--line);
+	border-radius: var(--radius-md);
+	font-size: 0.75rem;
+	line-height: 1.75;
+	color: var(--text-2);
+}
+.page-lead .lead-icon {
+	flex-shrink: 0;
+	margin-top: 0.2rem;
+	font-size: 1rem;
+	line-height: 1;
+}
+.page-lead svg {
+	width: 1em;
+	height: 1em;
+	flex-shrink: 0;
+}
+
+/* ── 3. 分组小标题 ────────────────────────────────────────────────
+   左边一条竖杠（是"这一节"），右边一条细线（把下一节推开）。 */
+.section-title {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	margin: 1.5rem 0 0.875rem;
+	font-size: 0.75rem;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	color: var(--text-2);
+}
+.section-title::before {
+	content: "";
+	width: 3px;
+	height: 0.875rem;
+	flex: none;
+	border-radius: 2px;
+	background: var(--primary);
+}
+.section-title::after {
+	content: "";
+	flex: 1;
+	height: 1px;
+	background: var(--line-soft);
+}
+/* 一页里第一个分组不必再顶一块空，紧跟页首说明的那节抬起来一点 */
+.form-group:first-child .section-title,
+.card > .section-title:first-child {
+	margin-top: 0.25rem;
+}
+
+/* ── 4. 设置类表单：行式排布 + 分组区块 ───────────────────────────
+   2026-10-02：站长连着两次说「内容区你一直没优化」。前一遍做的还是
+   "标签在上、控件压满整行"——那是最像"没做过设计"的一种：每个字段独占
+   一整行，一页滚不到头，而且跟同一页里「开关行」（左说明 / 右开关）的
+   排法打架，一页里两种表单。
+   现在统一成后台最眼熟的那种：**一行一个字段，左边固定宽的标签、右边控件**，
+   字段之间一条虚线分节；每个分组再套一层浅底圆角块，"有几件事"一眼看得出。
+   ⚠️ 只给设置类页面用（.form-rows 是站点信息页与站点外观页的容器）。
+      说说 / 笔记 / 文章那些是编辑器，控件要占满宽度，别套这套。 */
+.form-rows {
+	display: block;
+}
+
+.form-rows > .form-group {
+	margin-bottom: 0.875rem;
+	padding: 0.25rem 1.25rem 0.5rem;
+	border: 1px solid var(--line-soft);
+	border-radius: var(--radius-large);
+	background: color-mix(in oklab, var(--card-bg-soft) 55%, transparent);
+}
+
+.form-rows .form-group > .section-title {
+	margin: 1rem 0 0.25rem;
+}
+.form-rows .form-group:first-child > .section-title {
+	margin-top: 0.75rem;
+}
+
+/* 一个字段 = 一行：标签列 + 控件列。hint 挂在控件列下面，不占标签列。 */
+.form-rows .field {
+	display: grid;
+	grid-template-columns: 7.5rem minmax(0, 1fr);
+	gap: 0.125rem 1.25rem;
+	align-items: start;
+	padding: 0.625rem 0;
+	margin-bottom: 0;
+	border-bottom: 1px dashed var(--line-soft);
+}
+.form-rows .field:last-child {
+	border-bottom: none;
+	padding-bottom: 0.375rem;
+}
+.form-rows .field > .field-label {
+	margin-bottom: 0;
+	/* 和输入框里的第一行文字对齐（输入框 padding 0.5rem + 1px 边框） */
+	padding-top: 0.5625rem;
+}
+.form-rows .field > .field-hint {
+	grid-column: 2;
+	margin-top: 0.375rem;
+}
+/* 开关行：跟字段行走同一套间距，两者混排时不会一边紧一边松 */
+.form-rows .switch-row {
+	padding: 0.6875rem 0;
+	border-bottom: 1px dashed var(--line-soft);
+}
+.form-rows .switch-row:last-child {
+	border-bottom: none;
+}
+.form-rows .page-grid .switch-row {
+	border-bottom: none;
+}
+
+/* ⚠️ 上面那套只给设置类页面。编辑器类页面（说说 / 笔记 / 文章 / 页面）
+   的控制区要占满宽度，不能改成"左标签右控件"；但同样的问题在那儿也存在：
+   十来个字段只靠留白分，扫不出"这里换了一件事"。所以给它们加一条虚线分节 ——
+   间距从 margin 改成 padding，总高度基本不变。 */
+.card > .field {
+	margin-bottom: 0;
+	padding-block: 0.8125rem;
+}
+.card > .field + .field {
+	border-top: 1px dashed var(--line-soft);
+}
+/* 卡片里第一个字段（或紧跟页首说明的那个）别再顶一块空。
+   ⚠️ 别用 `.field:last-of-type` 收尾 —— `:last-of-type` 数的是**标签名**，
+      卡片最后一个 div 通常是 .submit-row / #edit-bar，那条规则会静默失效。 */
+.card > .field:first-child,
+.card > .page-lead + .field,
+.card > .field-label + .field {
+	padding-top: 0.125rem;
+}
+
+@media (max-width: 720px) {
+	.form-rows .field {
+		grid-template-columns: 1fr;
+		gap: 0.375rem;
+	}
+	.form-rows .field > .field-label {
+		padding-top: 0;
+	}
+	.form-rows .field > .field-hint {
+		grid-column: 1;
+		margin-top: 0;
+	}
+	.form-rows > .form-group {
+		padding: 0.125rem 0.875rem 0.375rem;
+	}
+}
+
+/* ── 5. 内容区上下呼吸 ──────────────────────────────────────────
+   2026-10-02：页头那一行删掉之后，内容区第一块直接贴着导航栏，很挤 ——
+   顶部补一点留白。底部原来 5rem 是给"宠物墙页脚"留的位置，后台页脚也已
+   去掉（站长要求），收成 3.5rem。 */
+.container {
+	padding-top: 1.25rem;
+	padding-bottom: 3.5rem;
+}
+@media (max-width: 640px) {
+	.container {
+		padding-bottom: 3rem;
+	}
+}
+
+/* ── 5b. 文章列表：行首图标 + 带图标的操作按钮 ───────────────────
+   2026-10-02 站长：「文章管理还是没有图标」。这一页原先的每一行只有文字
+   （标题 / 日期 / 分类 / 「查看 编辑 删除」三个纯字按钮），和别的后台页
+   （说说、笔记、页面内容都带 fluent-color 图标）不是一个样子。
+   ⚠️ 行首那枚是**内容类** → fluent-color 彩色；按钮上的三枚是**控件类** →
+      material-symbols 单色（全站约定，彩色只给内容）。 */
+.post-icon {
+	flex: none;
+	font-size: 1.125rem;
+	line-height: 1;
+}
+.post-icon svg {
+	width: 1em;
+	height: 1em;
+}
+/* 按钮里的图标：跟按钮文字同高再大一点，13px 的 1em 太小看不出是个图标 */
+.post-actions .admin-i,
+.post-actions .admin-i svg {
+	font-size: 1rem;
+}
+
+/* 左栏是**固定 340px**的窄列，行内可用宽度只有 ~300px：
+   三个「图标+文字」按钮要 226px，正文会被挤到只剩 10px（标题竖排）。
+   所以文字默认收起、只留图标（`title` 兜住说明），容器够宽才放出来。
+   ⚠️ 默认写成"收起"是刻意的：万一哪天容器查询不被支持，结果是"只有图标"
+     （好用），而不是"三个大按钮把列表撑坏"。 */
+.post-list-card {
+	container-type: inline-size;
+}
+.post-actions .btn-t {
+	display: none;
+}
+@container (min-width: 520px) {
+	.post-actions .btn-t {
+		display: inline;
+	}
+}
+/* 草稿徽标里那枚：跟徽标文字同高，别把小标签撑成一倍高 */
+.post-badge .admin-i {
+	font-size: 0.875em;
+	vertical-align: -0.1em;
+}
+
+/* ── 5c. 「从图片库选一张」浮层（public/js/admin-media.js 建的 DOM）─────
+   说说 / 笔记 / 文章三个编辑器共用：点按钮弹出来、选一张就把地址插进正文。
+   样式放这儿是因为三个页面都加载 admin.css，而那份 JS 是静态文件、
+   拿不到构建期的图标，只能管结构。 */
+.wb-picker-mask {
+	position: fixed;
+	inset: 0;
+	z-index: 70;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 1.25rem;
+	background: color-mix(in oklab, #000 62%, transparent);
+	backdrop-filter: blur(3px);
+}
+.wb-picker {
+	display: flex;
+	flex-direction: column;
+	width: min(56rem, 100%);
+	max-height: min(80vh, 44rem);
+	background: var(--card-bg);
+	border: 1px solid var(--line-soft);
+	border-radius: var(--radius-large);
+	box-shadow: 0 24px 60px -24px rgb(0 0 0 / 0.4);
+	overflow: hidden;
+}
+.wb-picker-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+	padding: 0.875rem 1.125rem;
+	border-bottom: 1px solid var(--line-soft);
+}
+.wb-picker-title {
+	font-size: 0.9375rem;
+	font-weight: 700;
+}
+.wb-picker-tools {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+	padding: 0.75rem 1.125rem;
+	border-bottom: 1px solid var(--line-soft);
+}
+.wb-picker-tools .input-single {
+	flex: 1;
+	min-width: 9rem;
+	max-width: 18rem;
+	margin-left: auto;
+}
+.wb-picker-body {
+	flex: 1;
+	min-height: 12rem;
+	overflow-y: auto;
+	padding: 0.875rem 1.125rem 1.125rem;
+}
+.wb-picker-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+	gap: 0.625rem;
+}
+.wb-picker-cell {
+	display: block;
+	padding: 0;
+	border: 1px solid var(--line-soft);
+	border-radius: var(--radius-md);
+	background: var(--card-bg);
+	cursor: pointer;
+	overflow: hidden;
+	text-align: left;
+	transition: border-color 0.15s, transform 0.15s;
+}
+.wb-picker-cell:hover {
+	border-color: var(--primary);
+	transform: translateY(-2px);
+}
+.wb-picker-cell img {
+	display: block;
+	width: 100%;
+	aspect-ratio: 4 / 3;
+	object-fit: cover;
+	background: var(--card-bg-soft);
+}
+.wb-picker-cell span {
+	display: block;
+	padding: 0.375rem 0.5rem 0.4375rem;
+	font-size: 0.6875rem;
+	line-height: 1.4;
+	color: var(--text-3);
+	word-break: break-all;
+}/* ============================================================
+   后台共用样式层
+   ------------------------------------------------------------
+   后台的每个页面（登录/说说/笔记/文章/站点信息）都是独立的 HTML 文档，不走博客的
+   Layout，所以拿不到博客的样式。这份文件把它们接到博客那一套上 ——
+   样式不另立一套，来源就三个：
+
+     · 设计令牌  src/styles/variables.styl      （--primary / --radius-* / --btn-* …）
+     · 组件类    src/styles/main.css            （.card-base / .btn-regular / .btn-plain / .float-panel / .text-90 …）
+     · 正文排版  src/styles/markdown.css        （.custom-md，预览区直接用它）
+
+   这里只做一件事：给「后台原有的类名」补上与博客一致的声明，
+   免得为了换个类名去改每个页面的标签。博客改了观感，后台跟着改。
+   ============================================================ */
+
+@reference "./main.css";
+
+/* ===== 1. 名称映射 =====
+   博客把灰阶写成类（.text-90 / .text-75 / .text-50 / .text-30），后台有些地方
+   写在 <style> 里，用变量更顺手 —— 这里给出同名同值的变量。
+   variables.styl 里已有的名字（--primary / --radius-* / --btn-* / --line-* / --muted
+   / --shadow-* / --admonitions-color-* …）一律不重复定义，直接用博客的。 */
+:root {
+	--text: rgb(0 0 0 / 0.9); /* = .text-90 */
+	--text-2: rgb(0 0 0 / 0.75); /* = .text-75 */
+	--text-3: rgb(0 0 0 / 0.5); /* = .text-50 */
+	--text-4: rgb(0 0 0 / 0.3); /* = .text-30 */
+
+	--line: var(--line-color);
+	--line-soft: var(--line-divider);
+
+	--hover: var(--btn-plain-bg-hover);
+	--input-bg: var(--card-bg);
+	--card-bg-soft: var(--muted);
+
+	/* 编辑器输入框用的等宽字体。variables.styl 里没有等宽字体令牌，
+	   博客的代码块是自己写一串系统等宽栈（见 src/styles/markdown.css 的 code），
+	   这里照同一份写 */
+	--admin-font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular,
+		Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+	--primary-soft: var(--btn-regular-bg);
+	--primary-soft-hover: var(--btn-regular-bg-hover);
+	--primary-soft-active: var(--btn-regular-bg-active);
+	--primary-ring: color-mix(in oklab, var(--primary) 22%, transparent);
+
+	/* 语义色取博客的提示色（variables.styl 的 --admonitions-color-*） */
+	--danger: var(--admonitions-color-caution);
+	--danger-soft: color-mix(
+		in oklab,
+		var(--admonitions-color-caution) 14%,
+		transparent
+	);
+	--success: var(--admonitions-color-tip);
+	--success-soft: color-mix(
+		in oklab,
+		var(--admonitions-color-tip) 16%,
+		transparent
+	);
+}
+
+:root.dark {
+	--text: rgb(255 255 255 / 0.9);
+	--text-2: rgb(255 255 255 / 0.75);
+	--text-3: rgb(255 255 255 / 0.5);
+	--text-4: rgb(255 255 255 / 0.3);
+}
+
+/* ===== 2. 基础 =====
+   页面底色与字号写在 <html> 上的类里（与 Layout.astro 一致）：
+   class="bg-(--page-bg) text-[14px] md:text-[16px]"
+   字体由博客的 <FontManager /> 注入到 body，这里不重复设置。
+   滚动条沿用博客的 src/styles/custom-scrollbar.css。 */
+
+/* 这里原本有一条 h1~h4 的全局 line-height + text-wrap: pretty —— 已删除。
+   博客把 text-wrap 严格限定在 .custom-md（文章正文）里，cjk-typography.css
+   的注释写明了理由：「仅作用于文章正文，避免影响导航栏、卡片这类紧凑 UI
+   的既有布局」。而 text-wrap: pretty 会把 text-wrap-mode 设成 wrap，与
+   Tailwind .truncate 的 white-space: nowrap 争同一个长属性 —— 结果是标题条
+   上的页面名不再省略，被状态文字挤成两行。
+   正文排版由 markdown.css 的 .custom-md 负责，后台不必也不该再定义一遍。 */
+
+/* 可见的键盘焦点圈，鼠标点击不出现 */
+:focus-visible {
+	outline: 2px solid var(--primary);
+	outline-offset: 2px;
+}
+
+/* ===== 3. 宽度容器 ===== 
+   取法与博客内容区一致（Layout 的 max-w-(--page-width) + xl:w-[92vw]）。
+   页面想更窄（窄栏内容）就在 `#admin-main` 上写 --admin-content-max: 720px。
+   ⚠️ 2026-10-02：「页面标题条」（.admin-topbar）已随页头那一行一起删掉，
+      这里不再有同名兄弟节点，宽度只由 .container 一个说了算。 */
+.container {
+	width: 100%;
+	max-width: var(--admin-content-max, var(--page-width));
+	margin-inline: auto;
+	padding-inline: 1rem;
+	padding-bottom: 5rem;
+}
+
+@media (min-width: 768px) {
+	.container {
+		padding-inline: 1.5rem;
+	}
+}
+
+@media (min-width: 1280px) {
+	.container {
+		width: 92vw;
+	}
+}
+
+/* ===== 4. 卡片 =====
+   与博客 main.css 的 .card-base / .enable-card-border .card-base 完全同两条声明，
+   只是顺手带上内边距（博客习惯在标签上写 p-4，后台沿用下来的写法是 .card 自带）。 */
+.card,
+.card-base {
+	@apply rounded-(--radius-large) overflow-hidden bg-(--card-bg) transition-colors duration-150;
+}
+
+.card {
+	padding: 1.25rem;
+}
+
+.enable-card-border .card,
+.enable-card-border .card-base {
+	@apply transition-all duration-300 border border-(--line-divider) shadow-xs;
+}
+
+@media (min-width: 768px) {
+	.card {
+		padding: 1.5rem;
+	}
+}
+
+@media (max-width: 640px) {
+	.card {
+		padding: 1rem;
+	}
+}
+
+/* ===== 5. 表单 ===== */
+.field {
+	margin-bottom: 1rem;
+}
+
+.field:last-child {
+	margin-bottom: 0;
+}
+
+.field-label {
+	display: flex;
+	align-items: center;
+	gap: 0.375rem;
+	font-size: 0.75rem;
+	font-weight: 700;
+	color: var(--text-2);
+	margin-bottom: 0.4375rem;
+	letter-spacing: 0.01em;
+}
+
+.field-label .icon {
+	font-size: 0.875rem;
+	line-height: 1;
+}
+
+/* ── 内联 SVG 图标 ─────────────────────────────────────────────
+   图标来自 src/constants/ui-icons.ts（构建期生成，零外部依赖）。
+   每个 SVG 的宽高都写成 1em，所以字号多大图标就多大，颜色靠
+   fill="currentColor" 继承。下面这些容器有的是 flex、有的是普通
+   行内流，垂直对齐得分开照顾。 */
+.admin-i {
+	display: inline-flex;
+	align-items: center;
+	vertical-align: middle;
+}
+
+.empty-state .icon svg,
+.restore-icon svg,
+.toolbar-btn svg,
+.notebook-tab svg,
+.btn-icon svg {
+	vertical-align: middle;
+}
+
+.field-hint {
+	margin-top: 0.375rem;
+	font-size: 0.75rem;
+	color: var(--text-3);
+	line-height: 1.6;
+}
+
+.field-footer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+	margin-top: 0.375rem;
+	font-size: 0.75rem;
+	color: var(--text-3);
+}
+
+.input-single,
+.form-input,
+input[type="text"],
+input[type="search"],
+input[type="password"],
+input[type="date"],
+input[type="url"],
+select {
+	width: 100%;
+	padding: 0.5rem 0.75rem;
+	border: 1px solid var(--line);
+	border-radius: var(--radius-lg);
+	font-size: 0.875rem;
+	background: var(--input-bg);
+	color: var(--text);
+	outline: none;
+	transition:
+		border-color 0.15s,
+		box-shadow 0.15s,
+		background-color 0.15s;
+}
+
+.input-single:hover,
+input[type="text"]:hover,
+input[type="search"]:hover,
+input[type="password"]:hover,
+input[type="date"]:hover,
+select:hover {
+	border-color: var(--text-4);
+}
+
+.input-single:focus,
+.form-input:focus,
+input[type="text"]:focus,
+input[type="search"]:focus,
+input[type="password"]:focus,
+input[type="date"]:focus,
+select:focus {
+	border-color: var(--primary);
+	box-shadow: 0 0 0 3px var(--primary-ring);
+}
+
+.input-single::placeholder,
+.form-input::placeholder,
+input::placeholder,
+textarea::placeholder {
+	color: var(--text-4);
+}
+
+input[type="search"]::-webkit-search-cancel-button {
+	cursor: pointer;
+}
+
+textarea {
+	width: 100%;
+	min-height: 96px;
+	padding: 0.625rem 0.75rem;
+	border: 1px solid var(--line);
+	border-radius: var(--radius-lg);
+	font-size: 0.875rem;
+	line-height: 1.75;
+	background: var(--input-bg);
+	color: var(--text);
+	outline: none;
+	resize: vertical;
+	transition:
+		border-color 0.15s,
+		box-shadow 0.15s;
+}
+
+textarea:focus {
+	border-color: var(--primary);
+	box-shadow: 0 0 0 3px var(--primary-ring);
+}
+
+/* 勾选项 */
+.checkbox-row {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-size: 0.8125rem;
+	color: var(--text-2);
+	cursor: pointer;
+	user-select: none;
+}
+
+.checkbox-row.compact {
+	font-size: 0.75rem;
+}
+
+.checkbox-row input[type="checkbox"] {
+	width: 1rem;
+	height: 1rem;
+	flex: none;
+	accent-color: var(--primary);
+	cursor: pointer;
+}
+
+/* ===== 5. 按钮 =====
+   博客的按钮只有两种（main.css）：.btn-regular —— 浅色底 + 主题色字；
+   .btn-plain —— 无底色，悬停才浮出来。这里照它们来，没有第三种。 */
+.btn {
+	@apply transition-colors duration-150;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.375rem;
+	padding: 0.5rem 0.875rem;
+	border: 1px solid transparent;
+	border-radius: var(--radius-lg);
+	font-size: 0.8125rem;
+	font-weight: 700;
+	cursor: pointer;
+	background: var(--btn-regular-bg);
+	color: var(--btn-content);
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.btn:hover {
+	background: var(--btn-regular-bg-hover);
+}
+
+.btn:active {
+	background: var(--btn-regular-bg-active);
+}
+
+.btn:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
+
+/* 主要操作：在博客自己的按钮色阶上再深一档，不引入新颜色 */
+.btn-primary {
+	background: var(--btn-regular-bg-active);
+}
+
+.btn-primary:hover {
+	background: var(--btn-regular-bg-active);
+	filter: brightness(0.96);
+}
+
+.btn-primary:active {
+	background: var(--btn-regular-bg-active);
+	filter: brightness(0.92);
+}
+
+/* 次要按钮：无底色，悬停浮出一层（= .btn-plain） */
+.btn-ghost {
+	background: transparent;
+	border-color: var(--line);
+	color: var(--text-2);
+}
+
+.btn-ghost:hover {
+	background: var(--btn-plain-bg-hover);
+	border-color: transparent;
+	color: var(--primary);
+}
+
+.btn-sm {
+	padding: 0.3125rem 0.625rem;
+	font-size: 0.75rem;
+	border-radius: var(--radius-md);
+}
+
+.btn-danger-sm {
+	padding: 0.3125rem 0.5625rem;
+	font-size: 0.6875rem;
+	font-weight: 600;
+	border-radius: var(--radius-md);
+	background: transparent;
+	border-color: var(--line);
+	color: var(--text-3);
+}
+
+.btn-danger-sm:hover {
+	background: var(--danger-soft);
+	border-color: var(--danger);
+	color: var(--danger);
+}
+
+/* 图标按钮 */
+.icon-btn {
+	width: 30px;
+	height: 30px;
+	padding: 0;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: var(--radius-md);
+	background: transparent;
+	border: 1px solid var(--line);
+	color: var(--text-2);
+	cursor: pointer;
+	transition: all 0.15s;
+}
+
+.icon-btn:hover {
+	background: var(--btn-plain-bg-hover);
+	border-color: transparent;
+	color: var(--primary);
+}
+
+/* 分段切换（编辑 / 预览）：轨道用按钮底色，选中项浮成卡片色 */
+.seg {
+	display: inline-flex;
+	align-items: center;
+	gap: 2px;
+	padding: 2px;
+	background: var(--btn-regular-bg);
+	border-radius: var(--radius-lg);
+}
+
+.seg-btn {
+	border: none;
+	background: transparent;
+	color: var(--text-2);
+	font-size: 0.75rem;
+	font-weight: 700;
+	padding: 0.25rem 0.625rem;
+	border-radius: var(--radius-md);
+	cursor: pointer;
+	transition:
+		background-color 0.15s,
+		color 0.15s;
+}
+
+.seg-btn:hover {
+	color: var(--primary);
+}
+
+.seg-btn.active {
+	background: var(--card-bg);
+	color: var(--primary);
+	box-shadow: var(--shadow-xs);
+}
+
+/* ===== 6. 状态提示 ===== */
+.status-bar {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.375rem;
+	font-size: 0.75rem;
+	color: var(--text-3);
+	min-width: 0;
+}
+
+.status-dot {
+	width: 7px;
+	height: 7px;
+	flex: none;
+	border-radius: 50%;
+	background: var(--text-4);
+}
+
+.status-dot.ok {
+	background: var(--success);
+	box-shadow: 0 0 0 3px var(--success-soft);
+}
+
+.status-dot.err {
+	background: var(--danger);
+	box-shadow: 0 0 0 3px var(--danger-soft);
+}
+
+.toast {
+	@apply shadow-xl;
+	position: fixed;
+	top: 5.5rem;
+	left: 50%;
+	transform: translateX(-50%) translateY(-10px);
+	padding: 0.5625rem 1.125rem;
+	font-size: 0.8125rem;
+	font-weight: 700;
+	z-index: var(--z-toast, 999);
+	opacity: 0;
+	pointer-events: none;
+	border-radius: var(--radius-large);
+	background: var(--card-bg);
+	color: var(--text);
+	border: 1px solid var(--line);
+	transition:
+		opacity 0.2s,
+		transform 0.2s;
+	max-width: min(92vw, 32rem);
+	text-align: center;
+}
+
+.toast.show {
+	opacity: 1;
+	transform: translateX(-50%) translateY(0);
+}
+
+.toast.ok {
+	background: var(--success);
+	color: #fff;
+	border-color: var(--success);
+}
+
+.toast.err {
+	background: var(--danger);
+	color: #fff;
+	border-color: var(--danger);
+}
+
+.spinner {
+	display: inline-block;
+	width: 14px;
+	height: 14px;
+	border: 2px solid var(--line);
+	border-top-color: var(--primary);
+	border-radius: 50%;
+	animation: admin-spin 0.6s linear infinite;
+	vertical-align: middle;
+	margin-right: 0.375rem;
+}
+
+@keyframes admin-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.spinner {
+		animation-duration: 2s;
+	}
+}
+
+.empty-state {
+	text-align: center;
+	padding: 2rem 1rem;
+	color: var(--text-3);
+	font-size: 0.8125rem;
+}
+
+.empty-state .icon {
+	font-size: 1.5rem;
+	margin-bottom: 0.5rem;
+	opacity: 0.5;
+}
+
+.empty-state p {
+	font-size: 0.8125rem;
+	line-height: 1.7;
+}
+
+/* ===== 8. 列表行 ===== */
+.list-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+	margin-bottom: 0.75rem;
+}
+
+.list-header .count {
+	font-size: 0.75rem;
+	font-weight: 600;
+	color: var(--text-3);
+	flex: none;
+}
+
+/* 列表头右侧的「搜索框 + 条数」：搜索框占满剩余宽度，条数不许被挤没。
+   窄屏时整组换行到下一行，搜索框自己撑满，别和标题抢位置 */
+.list-header .list-tools {
+	display: flex;
+	align-items: center;
+	gap: 0.625rem;
+	min-width: 0;
+	flex: 1;
+	justify-content: flex-end;
+}
+.list-header .list-tools input[type="search"] {
+	flex: 1;
+	min-width: 0;
+	max-width: 16rem;
+	font-size: 0.8125rem;
+}
+@media (max-width: 640px) {
+	.list-header {
+		flex-wrap: wrap;
+	}
+	.list-header .list-tools {
+		flex-basis: 100%;
+		justify-content: space-between;
+	}
+	.list-header .list-tools input[type="search"] {
+		max-width: none;
+	}
+}
+
+.post-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+	padding: 0.625rem 0.5rem;
+	margin: 0 -0.5rem;
+	border-radius: var(--radius-lg);
+	border-bottom: 1px solid var(--line-soft);
+	transition: background-color 0.15s;
+}
+
+.post-row:hover {
+	background: var(--btn-plain-bg-hover);
+}
+
+.post-row:last-child {
+	border-bottom: none;
+}
+
+.post-info {
+	flex: 1;
+	min-width: 0;
+}
+
+.post-title {
+	font-size: 0.8125rem;
+	font-weight: 700;
+	color: var(--text);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.post-meta {
+	display: flex;
+	align-items: center;
+	gap: 0.375rem;
+	margin-top: 0.1875rem;
+	font-size: 0.6875rem;
+	color: var(--text-3);
+	flex-wrap: wrap;
+}
+
+.post-meta .sep {
+	opacity: 0.5;
+}
+
+.post-badge {
+	display: inline-block;
+	padding: 0.0625rem 0.375rem;
+	border-radius: var(--radius-md);
+	font-size: 0.625rem;
+	font-weight: 700;
+	background: var(--btn-regular-bg);
+	color: var(--btn-content);
+}
+
+.post-badge.draft {
+	background: var(--danger-soft);
+	color: var(--danger);
+}
+
+.post-actions {
+	display: flex;
+	gap: 0.25rem;
+	flex-shrink: 0;
+}
+
+/* ===== 8. 编辑器 ===== */
+.editor-container {
+	display: grid;
+	grid-template-columns: 1fr;
+	border: 1px solid var(--line);
+	border-radius: var(--radius-xl);
+	overflow: hidden;
+	background: var(--card-bg);
+}
+
+@media (min-width: 980px) {
+	.editor-container {
+		grid-template-columns: 1fr 1fr;
+	}
+}
+
+.editor-pane {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+.editor-pane-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+	padding: 0.5rem 0.625rem;
+	background: var(--card-bg-soft);
+	border-bottom: 1px solid var(--line-soft);
+	font-size: 0.75rem;
+	font-weight: 700;
+	color: var(--text-3);
+	min-height: 44px;
+}
+
+.editor-textarea {
+	width: 100%;
+	flex: 1;
+	min-height: 520px;
+	padding: 0.875rem 1rem;
+	border: none;
+	border-radius: 0;
+	font-family: var(--admin-font-mono);
+	font-size: 0.875rem;
+	line-height: 1.85;
+	background: transparent;
+	color: var(--text);
+	outline: none;
+	resize: vertical;
+	tab-size: 2;
+}
+
+.editor-textarea:focus {
+	box-shadow: none;
+}
+
+/* 预览区只负责外壳（高度、滚动、与编辑区之间的分隔线）；
+   里面的排版交给博客的 .custom-md（src/styles/markdown.css）——
+   和文章页正文是同一套样式，所以这里不再自己写一份标题/引用/代码块。 */
+.preview-pane {
+	min-height: 520px;
+	max-height: 78vh;
+	overflow-y: auto;
+	padding: 1.125rem 1.25rem;
+	border-top: 1px solid var(--line-soft);
+}
+
+@media (min-width: 980px) {
+	.preview-pane {
+		border-top: none;
+		border-left: 1px solid var(--line-soft);
+	}
+}
+
+/* 小屏一次只显示一个窗格，靠 data-mobile-pane 切换 */
+@media (max-width: 979px) {
+	.editor-container[data-mobile-pane="preview"] .editor-pane[data-pane="edit"] {
+		display: none;
+	}
+
+	.editor-container:not([data-mobile-pane="preview"])
+		.editor-pane[data-pane="preview"] {
+		display: none;
+	}
+}
+
+@media (min-width: 980px) {
+	.mobile-only {
+		display: none !important;
+	}
+}
+
+.editor-toolbar {
+	display: flex;
+	gap: 0.125rem;
+	flex-wrap: wrap;
+}
+
+/* 工具栏按钮：与博客导航栏上的图标按钮同一形态（.btn-plain） */
+.toolbar-btn {
+	min-width: 28px;
+	height: 28px;
+	padding: 0 0.3125rem;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border: none;
+	background: transparent;
+	color: var(--text-2);
+	border-radius: var(--radius-md);
+	cursor: pointer;
+	font-size: 0.8125rem;
+	font-weight: 700;
+	transition:
+		background-color 0.15s,
+		color 0.15s;
+}
+
+.toolbar-btn:hover {
+	background: var(--btn-plain-bg-hover);
+	color: var(--primary);
+}
+
+.editor-footer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+	flex-wrap: wrap;
+	padding: 0.5rem 0.75rem;
+	border-top: 1px solid var(--line-soft);
+	background: var(--card-bg-soft);
+	font-size: 0.6875rem;
+	color: var(--text-3);
+}
+
+.editor-footer .editor-hint {
+	opacity: 0.85;
+}
+
+.editor-footer kbd {
+	font-family: var(--admin-font-mono);
+	font-size: 0.625rem;
+	padding: 0.0625rem 0.25rem;
+	border: 1px solid var(--line);
+	border-bottom-width: 2px;
+	border-radius: var(--radius-md);
+	background: var(--card-bg);
+	color: var(--text-2);
+}
+
+/* ===== 9. 恢复提示条（上次未保存的本地草稿） ===== */
+.restore-bar {
+	display: flex;
+	align-items: center;
+	gap: 0.625rem;
+	flex-wrap: wrap;
+	margin-bottom: 1rem;
+	padding: 0.75rem 1rem;
+	border: 1px solid transparent;
+	border-radius: var(--radius-large);
+	background: var(--btn-regular-bg);
+	font-size: 0.8125rem;
+	color: var(--text-2);
+}
+
+.restore-bar .restore-icon {
+	flex: none;
+}
+
+.restore-bar .restore-text {
+	flex: 1;
+	min-width: 12rem;
+	line-height: 1.6;
+}
+
+.restore-bar .restore-actions {
+	display: flex;
+	gap: 0.375rem;
+	flex: none;
+}
+
+/* ===== 10. 小屏 ===== */
+@media (max-width: 640px) {
+	.container {
+		padding: 0 0.75rem 4rem;
+	}
+
+	.editor-textarea,
+	.preview-pane {
+		min-height: 340px;
+	}
+
+	.toast {
+		top: auto;
+		bottom: 4.5rem;
+		transform: translateX(-50%) translateY(10px);
+	}
+
+	.toast.show {
+		transform: translateX(-50%) translateY(0);
+	}
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   2026-10-01 整体打磨层（站长要求「从头到尾把后台样式美化」）
+   ------------------------------------------------------------------
+   说明：这一层**只影响后台**（admin.css 只在 /admin/* 里被加载），
+   且放在文件最末尾 —— 同等特异性下后写者胜，所以不用 !important。
+   目标：统一尺度（高度/圆角/间距/字号）、统一状态（hover/active/focus）、
+   统一层级（主按钮/次按钮/危险按钮的视觉权重拉开），并把顶栏与内容区
+   收拾成"后台"该有的样子。
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════════════════
+   后台外壳布局（2026-10-03）：导航栏横贯 → [左侧导航 | 页头 + 内容]
+   ------------------------------------------------------------------
+   为什么加：量过一遍，在「文章管理」页里**直达其它后台功能的链接是 0 个**，
+   换个功能得「回后台首页 → 点卡片」= 2 步 + 一次整页跳转。加了侧栏 = 1 步。
+
+   网格只有两列一行的规矩：
+     · 导航栏那一层 .relative        → 占满整行（1 / -1）
+     · 侧栏 aside.admin-side        → 第 1 列，从页头那一行开始往下跨
+     · 页头容器与内容容器 .container → 第 2 列，按顺序自动落到两行里
+   ⚠️ 别再给 .container 写 grid-row：让它们自动排，才不会两个挤在同一格。
+   ══════════════════════════════════════════════════════════════════ */
+#admin-main {
+	display: grid;
+	grid-template-columns: 13.5rem minmax(0, 1fr);
+	align-items: start;
+}
+#admin-main > .relative {
+	grid-column: 1 / -1;
+}
+#admin-main > .admin-side {
+	grid-column: 1;
+	grid-row: 2 / span 2;
+	position: sticky;
+	top: 4.75rem; /* 顶部那条导航栏是 sticky 的，侧栏要从它下面开始 */
+	max-height: calc(100vh - 4.75rem);
+	overflow-y: auto;
+}
+#admin-main > .container {
+	grid-column: 2;
+	min-width: 0;
+}
+
+/* ── 侧栏本体 ── */
+.admin-side {
+	display: flex;
+	flex-direction: column;
+	padding: 0.75rem 0.625rem 1rem;
+	border-right: 1px solid var(--line-soft);
+}
+.admin-side-nav {
+	display: flex;
+	flex-direction: column;
+	gap: 0.125rem;
+}
+.admin-side-group + .admin-side-group {
+	margin-top: 0.875rem;
+}
+.admin-side-label {
+	padding: 0 0.625rem 0.25rem;
+	font-size: 0.6875rem;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	color: var(--text-4);
+}
+.admin-side-item {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	width: 100%;
+	padding: 0.4375rem 0.625rem;
+	border: 0;
+	border-radius: 0.5rem;
+	background: none;
+	font-family: inherit;
+	font-size: 0.8125rem;
+	font-weight: 600;
+	line-height: 1.4;
+	color: var(--text-2);
+	text-align: left;
+	text-decoration: none;
+	cursor: pointer;
+	transition: background-color 0.15s, color 0.15s;
+}
+.admin-side-item:hover {
+	background: var(--btn-plain-bg-hover);
+	color: var(--text);
+}
+.admin-side-item[aria-current="page"] {
+	background: color-mix(in oklab, var(--primary) 12%, transparent);
+	color: var(--primary);
+}
+.admin-side-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1rem;
+	flex: none;
+}
+.admin-side-icon svg {
+	width: 1rem;
+	height: 1rem;
+}
+.admin-side-foot {
+	display: flex;
+	flex-direction: column;
+	gap: 0.125rem;
+	margin-top: auto;
+	padding-top: 0.625rem;
+	border-top: 1px solid var(--line-soft);
+}
+
+/* 窄屏：侧栏不再占一列，改成横向滚动的一条 */
+@media (max-width: 900px) {
+	#admin-main {
+		display: block;
+	}
+	#admin-main > .admin-side {
+		position: static;
+		max-height: none;
+		overflow: visible;
+		border-right: 0;
+		border-bottom: 1px solid var(--line-soft);
+		padding: 0.5rem 0.75rem 0.25rem;
+	}
+	.admin-side-nav {
+		flex-direction: row;
+		gap: 0.25rem;
+		overflow-x: auto;
+	}
+	.admin-side-group {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+	}
+	.admin-side-group + .admin-side-group {
+		margin-top: 0;
+	}
+	.admin-side-label {
+		display: none;
+	}
+	.admin-side-item {
+		width: auto;
+		white-space: nowrap;
+	}
+	.admin-side-foot {
+		flex-direction: row;
+		margin-top: 0.25rem;
+		padding-top: 0.25rem;
+	}
+}
+
+/* ── 1. 后台外壳：顶栏就是博客导航栏，没有第二条 ─────────────────
+   这里原来有一条 `.admin-topbar`（吸顶 + 毛玻璃 + 下边框），是"后台自己的
+   标题条"。2026-10-02 站长把「后台管理 / 首页 / 退出」整行删掉后，它连同
+   页头一起作废 —— 不删掉会让人以为后台还有第二条顶栏。 */
+
+/* 后台顶部用的是**博客那条导航栏**（站长 2026-10-02 要求，见 AdminTopBar）。
+   它里头的中文标签不许被挤成竖排 —— 两字的标签竖过来最像"没做完"。
+   ⚠️ 不要加 `body.authed` 前缀：那个类是**后台首页登录后**才加的，别的后台页没有，
+   加了等于只给首页修。admin.css 只在 /admin/* 里加载，不写前缀也影响不到博客。 */
+#navbar-wrapper,
+#navbar-wrapper a,
+#navbar-wrapper button,
+#navbar-wrapper span {
+	white-space: nowrap;
+}
+
+/* 后台里藏掉导航栏右上角那个「后台管理」入口（2026-10-03）。
+   站长说「有的又太多余」—— 后台页面上能回后台首页的地方本来有两个：
+   ① 这个只有图标的账号图标；② 内容区顶部的「← 后台首页」面包屑。
+   你已经在后台了，① 是纯重复；前台仍然保留它（那是从博客进后台的正门）。
+   ⚠️ 不要加 `body.authed` 前缀：那个类只有后台首页登录后才加，别的后台页没有；
+      admin.css 只在 /admin/* 里加载，不写前缀也影响不到前台。 */
+#navbar-wrapper a[aria-label="后台管理"] {
+	display: none;
+}
+#navbar-wrapper a,
+#navbar-wrapper button {
+	flex-shrink: 0;
+}
+
+/* 入口页原来收在 720px，卡片排成 3+3+1 很难看；放宽到 960px */
+#admin-main { --admin-content-max: 960px; }
+
+/* ── 2. 卡片：统一的边、圆角、悬停 ───────────────────────────── */
+.card,
+.card-base {
+	border: 1px solid var(--line-soft);
+	box-shadow: 0 1px 2px rgb(0 0 0 / 0.03);
+}
+.card { padding: 1.25rem 1.25rem 1.375rem; }
+
+/* 可点的卡片（入口卡）悬停抬起一点，给出"能点"的信号 */
+/* 卡片里的图标做成"浅色方块 + 圆角"，别再让图标直接漂在白底上。
+   ⚠️ 底色必须是**中性**的（--card-bg-soft），不能用主题淡色（--primary-soft）。
+      2026-10-03 站长指着首页截图问「不觉得页面有问题吗」—— 就是这里：
+      fluent-color 这套图标里有一批本身就是淡紫/淡蓝的（clipboard-text-edit、
+      apps-list-detail 这些），贴在主题淡紫底（oklch(.95 .025 270)）上就看不见了，
+      只有饱和蓝的那几个（说说/笔记/图片）显眼 —— 于是"有几张卡的图标是空的"。
+      ⚠️ 判定"图标有没有画出来"不能只数 svg 里的图元（我按那个查过，报的 0 空白）；
+         要量**它跟底色的对比**，见 _gen/_图标可读性核验.mjs。 */
+/* 概览数字格：数字更大、标签更小，标签与数字的层级拉开 */
+.admin-stat {
+	border: 1px solid var(--line-soft);
+	transition: border-color 0.15s;
+}
+.admin-stat:hover { border-color: color-mix(in oklab, var(--primary) 30%, var(--line-soft)); }
+.admin-stat-num { font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+/* ── 3. 按钮：统一高度、圆角、权重 ───────────────────────────── */
+.btn,
+.btn-primary,
+.btn-danger-sm,
+.btn-sm,
+.btn-icon,
+.toolbar-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.375rem;
+	height: 2.125rem;
+	padding: 0 0.875rem;
+	border-radius: 0.625rem;
+	font-size: 0.8125rem;
+	font-weight: 600;
+	line-height: 1;
+	white-space: nowrap;
+	cursor: pointer;
+	transition: background-color 0.15s, color 0.15s, border-color 0.15s, transform 0.1s;
+}
+.btn-sm { height: 1.875rem; padding: 0 0.6875rem; font-size: 0.75rem; border-radius: 0.5rem; }
+.btn-icon,
+.toolbar-btn { width: 2rem; height: 2rem; padding: 0; border-radius: 0.5rem; }
+.btn:active,
+.btn-sm:active,
+.btn-danger-sm:active,
+.btn-primary:active { transform: translateY(1px); }
+.btn:disabled,
+.btn-primary:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+/* 焦点环：键盘走查时能看清落在哪个控件上 */
+.btn:focus-visible,
+.btn-primary:focus-visible,
+.btn-sm:focus-visible,
+.btn-danger-sm:focus-visible,
+.btn-icon:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
 	outline: 2px solid var(--primary-ring);
 	outline-offset: 2px;
 }
@@ -1641,8 +3512,3 @@ textarea { border-radius: 0.75rem; }
 	word-break: break-all;
 }
 
-/* ── 6. 入口网格：4 列排 9 张卡是 4+4+1，最后一行孤零零一张 ─────
-   提到 240px 下限后 960px 容器里正好 3 列 —— 9 张卡 3×3 排满。 */
-.admin-grid {
-	grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-}

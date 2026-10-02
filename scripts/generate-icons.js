@@ -93,6 +93,21 @@ const EXPLICIT_ICONS = [
 	"material-symbols:close", // 关掉预览
 	// 「从图片库选一张」（说说 / 笔记 / 文章的编辑器共用，2026-10-02 加）
 	"material-symbols:add-photo-alternate",
+	// 后台左侧导航（2026-10-03 加）。导航类一律单色（与顶部导航栏同一约定）
+	"material-symbols:chat-bubble", // 说说
+	"material-symbols:book-2", // 笔记
+	"material-symbols:article", // 文章
+	"material-symbols:description", // 页面内容
+	"material-symbols:badge", // 站点信息
+	"material-symbols:list-alt", // 导航菜单
+	"material-symbols:palette", // 站点外观
+	"material-symbols:image", // 图片库
+	"material-symbols:open-in-new", // 侧栏「看前台」（新标签打开）
+	"material-symbols:logout", // 侧栏「退出登录」
+	"material-symbols:inventory-2", // 首页分组标题「内容」
+	"material-symbols:tune", // 首页分组标题「站点」
+	"fluent-color:person-24", // 首页分组里「换头像」那一行
+	"material-symbols:chevron-right", // 列表行尾的箭头
 ];
 
 // 支持的图标集及其包名

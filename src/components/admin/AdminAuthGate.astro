@@ -1,0 +1,63 @@
+---
+/**
+ * 后台各页 <head> 里的「首帧登录闸门」（2026-10-03 加）。
+ *
+ * 为什么要有它 —— 站长报的「在后台里导航，总会闪一下登录页」就是它造成的：
+ * 以前后台各页一律先按「未登录」渲染（`#admin-main` 被 `body:not(.authed)` 藏起来，
+ * 登录页可见），等 `fetch("/api/auth/status")` 的网络往返回来才切成后台。
+ * 那段时间里屏幕上就是登录页 —— 每次开一个后台页，闪一下。
+ *
+ * 这里的做法是：本地有登录标记时，**同步**、在 <body> 还没解析之前给 <html> 加
+ * `.admin-authed`，浏览器第一次绘制时后台就已经是「已登录」的样子，闪不出登录页。
+ *
+ * 两条硬规矩：
+ *   1. **必须同步、必须放在 <head>**。用 defer / DOMContentLoaded 都来不及 ——
+ *      那就要等第二次绘制，等于没改。
+ *   2. **本地标记不算权限**。它只是"看着像已登录"，真正的判断还是 `/api/auth/status`
+ *      （会话是 HttpOnly cookie，JS 碰不到）。所以校验说不认时：
+ *        · 后台首页（/admin/）→ 把 `.admin-authed` 摘掉，登录页放回来（重新输密码即可）
+ *        · 其余后台页          → 立刻整页跳回 /admin/，不白渲染一遍再跳
+ *      也就是说本地标记丢了（换标签页重建、清过存储）不会把人锁在门外。
+ *
+ * ⚠️ 别把 `admin_auth` 这个键换成 sessionStorage：sessionStorage 一关标签页就没了，
+ *    会导致每次重开都白闪一次登录页。这里存的是「UI 提示」，真正的凭据是 HttpOnly cookie，
+ *    顶掉它也只是先显示后台、下一秒退回登录页，不会变成越权。
+ */
+---
+
+<script is:inline>
+	(function () {
+		var KEY = "admin_auth";
+		var ok = null;
+		try {
+			ok = localStorage.getItem(KEY);
+		} catch (e) {
+			ok = null;
+		}
+		if (!ok) return; // 没标记：不做任何乐观假设，交给各页自己的 checkAuth
+
+		var isLoginPage = location.pathname.replace(/\/+$/, "") + "/" === "/admin/";
+
+		document.documentElement.classList.add("admin-authed");
+
+		fetch("/api/auth/status")
+			.then(function (r) {
+				return r.json();
+			})
+			.then(function (d) {
+				if (d.authed) return;
+				try {
+					localStorage.removeItem(KEY);
+				} catch (e) {}
+				if (isLoginPage) document.documentElement.classList.remove("admin-authed");
+				else window.location.replace("/admin/");
+			})
+			.catch(function () {
+				try {
+					localStorage.removeItem(KEY);
+				} catch (e) {}
+				if (isLoginPage) document.documentElement.classList.remove("admin-authed");
+				else window.location.replace("/admin/");
+			});
+	})();
+</script>

@@ -1,6 +1,7 @@
 ---
 // 文章管理页面 - 通过 GitHub Contents API 读写博客仓库
 import AdminTheme from "@/components/admin/AdminTheme.astro";
+import AdminAuthGate from "@/components/admin/AdminAuthGate.astro";
 import AdminTopBar from "@/components/admin/AdminTopBar.astro";
 import { adminBodyClass, adminHtmlClass } from "@/components/admin/adminShell";
 import { externalPostsConfig } from "@/config/externalPostsConfig";
@@ -19,6 +20,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
   <meta name="robots" content="noindex, nofollow" />
   {/* 样式、字体、主题色都来自这里，页面自己的样式放在它后面 */}
   <AdminTheme />
+  <AdminAuthGate />
   <style is:inline>
     /* ===== 只放这一页特有的排版，通用部分在 src/styles/admin.css ===== */
 
@@ -346,7 +348,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       var el = $("toast"); el.textContent = msg; el.className = "toast " + type + " show";
       clearTimeout(el._t); el._t = setTimeout(function() { el.className = "toast"; }, 2800);
     }
-    function doLogout() { sessionStorage.removeItem("admin_auth"); fetch("/api/auth/logout", { method: "POST" }).catch(function() {}); window.location.href = "/admin/"; }
+    function doLogout() { localStorage.removeItem("admin_auth"); fetch("/api/auth/logout", { method: "POST" }).catch(function() {}); window.location.href = "/admin/"; }
     function setStatus(ok, text) {
       $("status-dot").className = "status-dot " + (ok ? "ok" : "err");
       $("status-text").textContent = text;

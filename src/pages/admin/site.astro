@@ -2,6 +2,7 @@
 // 站点信息 - 改的是文案，不是代码。
 // 读写仓库里的 src/data/siteInfo.json，保存后由 Cloudflare 自动重新构建。
 import AdminTheme from "@/components/admin/AdminTheme.astro";
+import AdminAuthGate from "@/components/admin/AdminAuthGate.astro";
 import AdminTopBar from "@/components/admin/AdminTopBar.astro";
 import { adminBodyClass, adminHtmlClass } from "@/components/admin/adminShell";
 import { externalPostsConfig } from "@/config/externalPostsConfig";
@@ -137,6 +138,7 @@ const groups = [
   <meta name="robots" content="noindex, nofollow" />
   {/* 样式、字体、主题色都来自这里，页面自己的样式放在它后面 */}
   <AdminTheme />
+  <AdminAuthGate />
   <style is:inline>
     /* ===== 只放这一页特有的排版，通用部分在 src/styles/admin.css =====
        ⚠️ .page-lead / .save-row / .section-title / .dirty-hint 这几样
@@ -232,7 +234,7 @@ const groups = [
 
     // ===== 退出 =====
     function doLogout() {
-      sessionStorage.removeItem("admin_auth");
+      localStorage.removeItem("admin_auth");
       fetch("/api/auth/logout", { method: "POST" }).catch(function() {});
       window.location.href = "/admin/";
     }

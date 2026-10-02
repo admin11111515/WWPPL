@@ -16,6 +16,7 @@
  *    所以刚传完的那张在本页用本地 blob 预览，并标一句「重建后站上生效」。
  */
 import AdminTheme from "@/components/admin/AdminTheme.astro";
+import AdminAuthGate from "@/components/admin/AdminAuthGate.astro";
 import AdminTopBar from "@/components/admin/AdminTopBar.astro";
 import { adminBodyClass, adminHtmlClass } from "@/components/admin/adminShell";
 import { externalPostsConfig } from "@/config/externalPostsConfig";
@@ -53,6 +54,7 @@ const ICONS = {
   <title>图片库</title>
   <meta name="robots" content="noindex, nofollow" />
   <AdminTheme />
+  <AdminAuthGate />
   <style is:inline>
     /* 通用部分在 admin.css；这里只放这一页特有的。 */
 

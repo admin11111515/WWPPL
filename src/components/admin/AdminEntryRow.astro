@@ -1,0 +1,27 @@
+---
+import { uiIcon } from "@/constants/ui-icons";
+
+/**
+ * 后台首页分组列表里的一行（2026-10-03，跟九张大卡一起换掉）。
+ *
+ * 九种入口里有八种是「点进去一个页面」，只有「换头像」是「就地弹个面板」,
+ * 所以同一个行模板要能是 <a> 也能是 <button>。
+ * ⚠️ 别为了这个去把整行内容抄两遍（抄过一次就得记住以后改文案要改两处）——
+ *    用动态标签 + 属性展开，两种形态共用一份行内结构。
+ */
+const { href, action, title, desc, icon } = Astro.props;
+
+const Tag = action ? "button" : "a";
+const attrs = action
+	? { type: "button", onclick: action }
+	: { href };
+---
+
+<Tag class="admin-row" {...attrs}>
+  <span class="admin-row-icon" set:html={uiIcon(icon)} />
+  <span class="admin-row-body">
+    <span class="admin-row-title">{title}</span>
+    <span class="admin-row-desc">{desc}</span>
+  </span>
+  <span class="admin-row-go" set:html={uiIcon("material-symbols:chevron-right")} />
+</Tag>

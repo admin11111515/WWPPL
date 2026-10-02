@@ -1,0 +1,78 @@
+---
+import { uiIcon } from "@/constants/ui-icons";
+
+/**
+ * 后台左侧导航（2026-10-03 加，站长选的 A 方案）。
+ *
+ * 为什么要有它：量过一遍 —— 在「文章管理」页里**直达其它后台功能的链接是 0 个**，
+ * 想换个功能得「回后台首页 → 再点卡片」= 2 步 + 一次整页跳转。这就是"不好用"的根。
+ * 加了这个侧栏，切功能 1 步到位。
+ *
+ * 分组照功能性质分：内容（产出入的） / 站点（配置） / 媒体。
+ *
+ * ⚠️ 图标一律单色（material-symbols）—— 跟顶部导航栏同一条约定：
+ *    导航是"一排横向扫过"的构件，彩色在上面显杂。内容类才用 fluent-color。
+ * ⚠️ 侧栏挂在 `#admin-main` 的网格里（见 admin.css 的「后台外壳布局」），
+ *    不是浮层；改布局别把它挤掉。
+ */
+const GROUPS = [
+	{
+		title: "内容",
+		items: [
+			{ name: "说说", href: "/admin/moments/", icon: "chat-bubble" },
+			{ name: "笔记", href: "/admin/notebooks/", icon: "book-2" },
+			{ name: "文章", href: "/admin/posts/", icon: "article" },
+			{ name: "页面", href: "/admin/pages/", icon: "description" },
+		],
+	},
+	{
+		title: "站点",
+		items: [
+			{ name: "站点信息", href: "/admin/site/", icon: "badge" },
+			{ name: "导航菜单", href: "/admin/nav/", icon: "list-alt" },
+			{ name: "站点外观", href: "/admin/appearance/", icon: "palette" },
+		],
+	},
+	{
+		title: "媒体",
+		items: [{ name: "图片库", href: "/admin/media/", icon: "image" }],
+	},
+];
+
+/** 当前页：末尾斜杠归一，跟 href 精确比 */
+const here = Astro.url.pathname.replace(/\/+$/, "") + "/";
+const isActive = (href) => href === here;
+---
+
+<aside class="admin-side" aria-label="后台导航">
+  <nav class="admin-side-nav">
+    {
+      GROUPS.map((g) => (
+        <div class="admin-side-group">
+          <div class="admin-side-label">{g.title}</div>
+          {g.items.map((it) => (
+            <a
+              class="admin-side-item"
+              href={it.href}
+              aria-current={isActive(it.href) ? "page" : undefined}
+            >
+              <span class="admin-side-icon" set:html={uiIcon(`material-symbols:${it.icon}`)} />
+              <span>{it.name}</span>
+            </a>
+          ))}
+        </div>
+      ))
+    }
+  </nav>
+
+  <div class="admin-side-foot">
+    <a class="admin-side-item" href="/" target="_blank" rel="noopener">
+      <span class="admin-side-icon" set:html={uiIcon("material-symbols:open-in-new")} />
+      <span>看前台</span>
+    </a>
+    <button type="button" class="admin-side-item" onclick="doLogout()">
+      <span class="admin-side-icon" set:html={uiIcon("material-symbols:logout")} />
+      <span>退出登录</span>
+    </button>
+  </div>
+</aside>

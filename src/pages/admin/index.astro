@@ -2,12 +2,51 @@
 // 后台管理入口 - 动画角色登录页
 import AdminTheme from "@/components/admin/AdminTheme.astro";
 import AdminTopBar from "@/components/admin/AdminTopBar.astro";
+import AdminAuthGate from "@/components/admin/AdminAuthGate.astro";
 import { adminBodyClass, adminHtmlClass } from "@/components/admin/adminShell";
 // （externalMomentsConfig / externalNotebooksConfig 的导入已随概览面板一起删掉：
 //   那两个配置只被那一块的 data-gist / data-notebooks 用到）
 import { externalPostsConfig } from "@/config/externalPostsConfig";
 // 后台不走博客 Layout，也就没有 iconify 运行时，图标用构建期内联的 SVG
 import { uiIcon } from "@/constants/ui-icons";
+import AdminEntryRow from "@/components/admin/AdminEntryRow.astro";
+
+/**
+ * 后台首页九个入口的分组（2026-10-03，原来是一水儿的大卡片）。
+ * 分组跟左侧导航对齐（内容 / 站点 / 媒体），两边对得上，不用记两套。
+ * action 是「就地弹面板」而不是「跳页面」的那些（现在只有换头像）。
+ */
+const GROUPS = [
+	{
+		title: "内容",
+		icon: "material-symbols:inventory-2",
+		items: [
+			{ href: "/admin/moments/", title: "说说管理", desc: "发布、编辑、删除说说", icon: "fluent-color:chat-24" },
+			{ href: "/admin/notebooks/", title: "笔记管理", desc: "管理笔记本和笔记", icon: "fluent-color:book-open-24" },
+			{ href: "/admin/posts/", title: "文章管理", desc: "编写、编辑、发布文章", icon: "fluent-color:clipboard-text-edit-24" },
+			{ href: "/admin/pages/", title: "页面内容", desc: "改关于我、友链、留言板的正文", icon: "fluent-color:document-edit-24" },
+		],
+	},
+	{
+		title: "站点",
+		icon: "material-symbols:tune",
+		items: [
+			{ href: "/admin/site/", title: "站点信息", desc: "改站点标题、个人签名、页脚等文案", icon: "fluent-color:contact-card-24" },
+			{ href: "/admin/nav/", title: "导航菜单", desc: "改导航栏的菜单、图标与顺序", icon: "fluent-color:apps-list-detail-24" },
+			{ href: "/admin/appearance/", title: "站点外观", desc: "改主题色、明暗、壁纸与页面开关", icon: "fluent-color:paint-brush-24" },
+		],
+	},
+	{
+		title: "媒体",
+		icon: "material-symbols:image",
+		items: [
+			// 图片库（2026-10-02 起）：原来首页那张「传图片」卡（只能复制地址的小面板）整个并过来了，
+			// 能看已有图、预览、改名、删除，上传还支持拖拽和 Ctrl+V 粘贴，比那个小面板完整得多。
+			{ href: "/admin/media/", title: "图片库", desc: "预览、上传、改名、删除与复制地址", icon: "fluent-color:image-24" },
+			{ action: "toggleAvatarPanel()", title: "换头像", desc: "上传新头像，保存后全站生效", icon: "fluent-color:person-24" },
+		],
+	},
+];
 ---
 
 <html lang="zh-CN" class={adminHtmlClass}>
@@ -19,8 +58,124 @@ import { uiIcon } from "@/constants/ui-icons";
   <meta name="robots" content="noindex, nofollow" />
   {/* 样式、字体、主题色都来自这里，页面自己的样式放在它后面 */}
   <AdminTheme />
+  {/* 首帧登录闸门：本地有登录标记时，浏览器第一次绘制就是后台，不会先闪一下登录页。
+      ⚠️ 它必须排在 <style> 之前 —— 规则 `html.admin-authed #login-page{display:none}`
+         要跟页面样式一起进同一份 <style>，且它读的是 <html> 上的类。 */}
+  <AdminAuthGate />
   <style is:inline>
     /* ===== 只放这一页特有的排版，通用部分在 src/styles/admin.css ===== */
+
+    /* ── 首帧防抖（2026-10-03 修「打开后台首页会闪一下登录页」）──────────
+       <AdminAuthGate /> 在 <head> 里**同步**读过本地登录标记，命中就给 <html> 加
+       .admin-authed；下面两条让它第一帧就是后台的样子。
+       ⚠️ 这两条必须能"撤销"：服务端 /api/auth/status 说不认时，脚本会摘掉
+          .admin-authed 把登录页放回来（所以这里不要写 !important）。 */
+    html.admin-authed #login-page { display: none; }
+    html.admin-authed body:not(.authed) #admin-main { display: block !important; }
+
+    /* ── 分组列表（2026-10-03 换掉那九张大卡）─────────────────────
+       大卡那会儿每张 295×152、只写「标题 + 一句话」，九张摞起来页高 982px，
+       找功能得在大片留白里扫。改成横行之后九行一屏装得下、标题左对齐成一条线。
+       分组标题的图标是单色（控件/导航类约定），行里的图标沿用 fluent-color 的彩色（内容类）。 */
+    .admin-groups {
+      display: flex;
+      flex-direction: column;
+      gap: 1.125rem;
+    }
+    .admin-group-head {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0 0.25rem 0.5rem;
+    }
+    .admin-group-icon {
+      display: inline-flex;
+      color: var(--text-3);
+    }
+    .admin-group-icon svg {
+      width: 1.125rem;
+      height: 1.125rem;
+    }
+    .admin-group-title {
+      margin: 0;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--text-3);
+    }
+    .admin-group-count {
+      min-width: 1.375rem;
+      padding: 0 0.4375rem;
+      border-radius: 999px;
+      background: var(--card-bg-soft);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      line-height: 1.375rem;
+      text-align: center;
+      color: var(--text-3);
+    }
+    .admin-group-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.375rem;
+      list-style: none;
+    }
+    .admin-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      width: 100%;
+      padding: 0.625rem 0.875rem;
+      border: 1px solid var(--line-soft);
+      border-radius: 0.75rem;
+      background: var(--card-bg);
+      font-family: inherit;
+      text-align: left;
+      text-decoration: none;
+      cursor: pointer;
+      transition: border-color 0.15s, background-color 0.15s;
+    }
+    .admin-row:hover {
+      border-color: var(--primary-soft);
+      background: var(--card-bg-soft);
+    }
+    .admin-row-icon {
+      flex: none;
+      display: inline-flex;
+    }
+    .admin-row-icon svg {
+      width: 1.375rem;
+      height: 1.375rem;
+    }
+    .admin-row-body {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .admin-row-title {
+      font-size: 0.875rem;
+      font-weight: 600;
+      line-height: 1.4;
+      color: var(--text);
+    }
+    .admin-row-desc {
+      font-size: 0.75rem;
+      line-height: 1.4;
+      color: var(--text-3);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .admin-row-go {
+      flex: none;
+      display: inline-flex;
+      color: var(--text-4);
+    }
+    .admin-row-go svg {
+      width: 1rem;
+      height: 1rem;
+    }
 
     /* ===== 双栏布局 ===== */
     .login-split {
@@ -297,42 +452,6 @@ import { uiIcon } from "@/constants/ui-icons";
     }
     .upload-item-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 
-    /* 9 张入口卡：下限 180px 时 960px 容器排成 4 列 = 4+4+1，
-       最后一行孤零零一张。提到 240px 正好 3 列，9 = 3×3 排满。 */
-    .admin-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 0.875rem;
-    }
-    /* 入口卡片：底色、边框、圆角、阴影都由博客的 .card-base 负责
-       （标签上已经写了），这里只补摆法与悬停抬升 */
-    .admin-card {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      padding: 1.5rem 1rem;
-      text-decoration: none;
-      color: var(--text);
-      transition: transform 0.2s, border-color 0.2s;
-    }
-    .admin-card:hover {
-      border-color: var(--primary);
-      transform: translateY(-2px);
-    }
-    .admin-card-icon {
-      width: 44px;
-      height: 44px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.375rem;
-      border-radius: var(--radius-md);
-      background: var(--primary-soft);
-      margin-bottom: 0.75rem;
-    }
-    .admin-card-title { font-size: 0.9375rem; font-weight: 700; margin-bottom: 0.25rem; }
-    .admin-card-desc { font-size: 0.75rem; color: var(--text-3); line-height: 1.6; }
 
     /* 防止未认证时闪烁：默认隐藏后台主页，JS 判断后再显示 */
     body:not(.authed) #admin-main { display: none !important; }
@@ -436,56 +555,40 @@ import { uiIcon } from "@/constants/ui-icons";
           底部那行仓库状态**整块删掉**，连带它们的取数脚本一起（别留死代码）。
           ⚠️ 要恢复的话：四格数据来自 listDir(src/content/posts) + Gist + /commits，
               那套逻辑在 git 历史里（提交 190470e 之前）。 */}
-      <div class="admin-grid">
-        <a href="/admin/moments/" class="card-base admin-card">
-          <div class="admin-card-icon" set:html={uiIcon("fluent-color:chat-24")} />
-          <div class="admin-card-title">说说管理</div>
-          <div class="admin-card-desc">发布、编辑、删除说说</div>
-        </a>
-        <a href="/admin/notebooks/" class="card-base admin-card">
-          <div class="admin-card-icon" set:html={uiIcon("fluent-color:book-open-24")} />
-          <div class="admin-card-title">笔记管理</div>
-          <div class="admin-card-desc">管理笔记本和笔记</div>
-        </a>
-        <a href="/admin/posts/" class="card-base admin-card">
-          <div class="admin-card-icon" set:html={uiIcon("fluent-color:clipboard-text-edit-24")} />
-          <div class="admin-card-title">文章管理</div>
-          <div class="admin-card-desc">编写、编辑、发布文章</div>
-        </a>
-        <a href="/admin/pages/" class="card-base admin-card">
-          <div class="admin-card-icon" set:html={uiIcon("fluent-color:document-edit-24")} />
-          <div class="admin-card-title">页面内容</div>
-          <div class="admin-card-desc">改关于我、友链、留言板的正文</div>
-        </a>
-        <a href="/admin/site/" class="card-base admin-card">
-          <div class="admin-card-icon" set:html={uiIcon("fluent-color:contact-card-24")} />
-          <div class="admin-card-title">站点信息</div>
-          <div class="admin-card-desc">改站点标题、个人签名、页脚等文案</div>
-        </a>
-        <a href="/admin/nav/" class="card-base admin-card">
-          <div class="admin-card-icon" set:html={uiIcon("fluent-color:apps-list-detail-24")} />
-          <div class="admin-card-title">导航菜单</div>
-          <div class="admin-card-desc">改导航栏的菜单、图标与顺序</div>
-        </a>
-        <a href="/admin/appearance/" class="card-base admin-card">
-          <div class="admin-card-icon" set:html={uiIcon("fluent-color:paint-brush-24")} />
-          <div class="admin-card-title">站点外观</div>
-          <div class="admin-card-desc">改主题色、明暗、壁纸与页面开关</div>
-        </a>
-        <button type="button" class="card-base admin-card" onclick="toggleAvatarPanel()">
-          <div class="admin-card-icon" set:html={uiIcon("fluent-color:image-24")} />
-          <div class="admin-card-title">换头像</div>
-          <div class="admin-card-desc">上传新头像，保存后全站生效</div>
-        </button>
-        {/* 2026-10-02：原来这里是一张「传图片」卡（点开一个只能复制地址的小面板）。
-            图片库页 /admin/media/ 把它整个接过去了 —— 能看已有图、预览、改名、删除，
-            上传还支持拖拽和 Ctrl+V 粘贴，比那个小面板完整得多，入口换过来。 */}
-        <a href="/admin/media/" class="card-base admin-card">
-          <div class="admin-card-icon" set:html={uiIcon("fluent-color:image-24")} />
-          <div class="admin-card-title">图片库</div>
-          <div class="admin-card-desc">预览、上传、改名、删除与复制地址</div>
-        </a>
+      {/* 九个入口改成「分组列表」（2026-10-03）。
+          原来是一水儿的大卡片：每张 295×152、信息只有标题 + 一句话，九张摞下来页高 982px，
+          想找某个功能得先在大片留白里扫一眼。改成按功能分组的横行之后：
+          一屏能装下全部、行高统一、标题左对齐成一条线，眼睛顺着走就行。
+          分组跟左侧导航一致（内容 / 站点 / 媒体），两边对得上不用记两套。 */}
+      <div class="admin-groups">
+        {
+          GROUPS.map((g) => (
+            <section class="admin-group">
+              <div class="admin-group-head">
+                <span class="admin-group-icon" set:html={uiIcon(g.icon)} />
+                <h2 class="admin-group-title">{g.title}</h2>
+                <span class="admin-group-count">{g.items.length}</span>
+              </div>
+              <ul class="admin-group-list">
+                {g.items.map((it) => (
+                  <li>
+                    <AdminEntryRow
+                      href={it.href}
+                      action={it.action}
+                      icon={it.icon}
+                      title={it.title}
+                      desc={it.desc}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))
+        }
       </div>
+
+      {/* ⚠️ 下面这个「传图片」面板已被图片库页 /admin/media/ 取代（入口也在上面那张列表里换过去了），
+          现在没有入口能打开它 —— 留着是因为它的 compressImage() 还被「换头像」用着。
 
       {/* ⚠️ 下面这个「传图片」面板已被图片库页 /admin/media/ 取代（入口卡片也换过去了），
           现在没有入口能打开它 —— 留着是因为它的 compressImage() 还被「换头像」用着。
@@ -694,7 +797,7 @@ import { uiIcon } from "@/constants/ui-icons";
         var d = await r.json();
         if (r.ok && d.ok) {
           $("login-error").textContent = "";
-          sessionStorage.setItem("admin_auth", "1");
+          localStorage.setItem("admin_auth", "1");
           showAdmin();
         } else {
           $("login-error").textContent = d.error || "密码错误";
@@ -708,7 +811,7 @@ import { uiIcon } from "@/constants/ui-icons";
       }
     }
     function doLogout() {
-      sessionStorage.removeItem("admin_auth");
+      localStorage.removeItem("admin_auth");
       fetch("/api/auth/logout", { method: "POST" }).catch(function() {});
       showLogin();
       $("login-pwd").value = "";
@@ -810,17 +913,25 @@ import { uiIcon } from "@/constants/ui-icons";
         .then(function(r) { return r.json(); })
         .then(function(d) {
           if (d.authed) {
-            sessionStorage.setItem("admin_auth", "1");
+            localStorage.setItem("admin_auth", "1");
             showAdmin();
             return;
           }
-          sessionStorage.removeItem("admin_auth");
-          startLoginAnimation();
+          // 本地以为登录了、服务端不认（多半是会话 cookie 过期）→ 把首帧那层隐藏撤掉，
+          // 登录页放回来，并给一句人话，别让人对着空白后台发呆。
+          failLogin();
         })
         .catch(function() {
-          sessionStorage.removeItem("admin_auth");
-          startLoginAnimation();
+          failLogin();
         });
+
+    // 会话失效/接口挂了：清本地标记 + 撤掉首帧防抖 + 显示登录页
+    function failLogin() {
+      localStorage.removeItem("admin_auth");
+      document.documentElement.classList.remove("admin-authed");
+      $("login-error").textContent = "登录已过期，请重新输入密码";
+      startLoginAnimation();
+    }
     })();
 
     // ===== 换头像 =====

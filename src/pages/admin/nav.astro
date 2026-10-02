@@ -2,6 +2,7 @@
 // 导航菜单 —— 读写仓库里的 src/data/navLinks.json
 // 保存后提交进仓库，Cloudflare 重新构建，全站导航栏跟着变。
 import AdminTheme from "@/components/admin/AdminTheme.astro";
+import AdminAuthGate from "@/components/admin/AdminAuthGate.astro";
 import AdminTopBar from "@/components/admin/AdminTopBar.astro";
 import { adminBodyClass, adminHtmlClass } from "@/components/admin/adminShell";
 import { externalPostsConfig } from "@/config/externalPostsConfig";
@@ -151,6 +152,7 @@ const quickAdd = [
   {/* 后台是站长自用界面，不该出现在搜索结果里（sitemap 中同样已剔除） */}
   <meta name="robots" content="noindex, nofollow" />
   <AdminTheme />
+  <AdminAuthGate />
   <style is:inline>
     /* ===== 只放这一页特有的排版，通用部分在 src/styles/admin.css ===== */
     #admin-main { --admin-content-max: 860px; }
@@ -676,7 +678,7 @@ const quickAdd = [
         .catch(function () { window.location.href = "/admin/"; return false; });
     }
     function doLogout() {
-      sessionStorage.removeItem("admin_auth");
+      localStorage.removeItem("admin_auth");
       fetch("/api/auth/logout", { method: "POST" }).catch(function () {});
       window.location.href = "/admin/";
     }

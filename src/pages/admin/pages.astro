@@ -2,6 +2,7 @@
 // 页面内容 - 改的是「关于我 / 友情链接 / 留言板」三个页面的正文。
 // 读写仓库里的 src/content/spec/*.md(x)，保存后由 Cloudflare 自动重新构建。
 import AdminTheme from "@/components/admin/AdminTheme.astro";
+import AdminAuthGate from "@/components/admin/AdminAuthGate.astro";
 import AdminTopBar from "@/components/admin/AdminTopBar.astro";
 import { adminBodyClass, adminHtmlClass } from "@/components/admin/adminShell";
 import { externalPostsConfig } from "@/config/externalPostsConfig";
@@ -71,6 +72,7 @@ const pages = [
   <meta name="robots" content="noindex, nofollow" />
   {/* 样式、字体、主题色都来自这里，页面自己的样式放在它后面 */}
   <AdminTheme />
+  <AdminAuthGate />
   <style is:inline>
     /* ===== 只放这一页特有的排版，通用部分在 src/styles/admin.css ===== */
 
@@ -335,7 +337,7 @@ const pages = [
 
     // ===== 退出 =====
     function doLogout() {
-      sessionStorage.removeItem("admin_auth");
+      localStorage.removeItem("admin_auth");
       fetch("/api/auth/logout", { method: "POST" }).catch(function() {});
       window.location.href = "/admin/";
     }
