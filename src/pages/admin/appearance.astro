@@ -1,5 +1,4 @@
 ---
-import Footer from "@components/layout/Footer.astro";
 // 站点外观 —— 读写仓库里的 src/data/appearance.json
 // 改的是色相、明暗、壁纸模式、页面开关这些结构值，保存后重新构建才生效。
 import AdminTheme from "@/components/admin/AdminTheme.astro";
@@ -203,6 +202,8 @@ const pageSwitches = [
           </span>
         </div>
 
+        <div class="form-rows">
+        <div class="form-group">
         <div class="section-title">配色与明暗</div>
         {
           fields.slice(0, 5).map((f) =>
@@ -244,6 +245,8 @@ const pageSwitches = [
           )
         }
 
+        </div>
+        <div class="form-group">
         <div class="section-title">壁纸</div>
         {
           fields.slice(5).map((f) =>
@@ -267,6 +270,8 @@ const pageSwitches = [
           )
         }
 
+        </div>
+        <div class="form-group">
         <div class="section-title">页面开关</div>
         <div class="field-hint" style="margin-bottom:0.375rem;">
           关掉的页面会返回 404，导航栏里那一项也会自动消失。
@@ -283,6 +288,8 @@ const pageSwitches = [
             ))
           }
         </div>
+        </div>
+        </div>
 
       {/* 操作区在卡片**里**：贴卡片左右边缘、有上分隔线，跟卡片是同一张皮，
           不是卡片外悬着一条通栏。admin.css「第三遍」里的 .card > .save-row 管样式。 */}
@@ -294,7 +301,6 @@ const pageSwitches = [
       </div>
     </div>
 
-    <Footer />
   </div>
 
   <div class="toast" id="toast"></div>

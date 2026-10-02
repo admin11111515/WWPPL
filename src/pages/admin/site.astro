@@ -1,5 +1,4 @@
 ---
-import Footer from "@components/layout/Footer.astro";
 // 站点信息 - 改的是文案，不是代码。
 // 读写仓库里的 src/data/siteInfo.json，保存后由 Cloudflare 自动重新构建。
 import AdminTheme from "@/components/admin/AdminTheme.astro";
@@ -127,8 +126,6 @@ const groups = [
 	{ title: "友链页", keys: ["friendsDesc"] },
 ];
 
-/** 一次要写五行以上的字段（首页横幅句子）在宽屏下跨两列，别挤成一条 */
-const isWide = (f) => f.rows >= 5;
 ---
 
 <html lang="zh-CN" class={adminHtmlClass}>
@@ -176,7 +173,7 @@ const isWide = (f) => f.rows >= 5;
           </span>
         </div>
 
-        <div class="form-grid">
+        <div class="form-rows">
           {
             groups.map((g) => (
               <div class="form-group">
@@ -184,7 +181,7 @@ const isWide = (f) => f.rows >= 5;
                 {g.keys.map((key) => {
                   const f = fields.find((x) => x.key === key);
                   return (
-                    <div class={isWide(f) ? "field wide" : "field"}>
+                    <div class="field">
                       <div class="field-label">{f.label}</div>
                       {f.kind === "lines" ? (
                         <textarea id={f.key} rows={f.rows} placeholder={f.placeholder} />
@@ -215,8 +212,6 @@ const isWide = (f) => f.rows >= 5;
       </div>
     </div>
 
-    {/* 页脚与博客同一个组件 */}
-    <Footer />
   </div>
 
   <div class="toast" id="toast"></div>

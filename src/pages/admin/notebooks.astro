@@ -1,5 +1,4 @@
 ---
-import Footer from "@components/layout/Footer.astro";
 // 笔记管理页面 - 往已有笔记本里写笔记，通过 GitHub Gist 存储
 import AdminTheme from "@/components/admin/AdminTheme.astro";
 import AdminTopBar from "@/components/admin/AdminTopBar.astro";
@@ -223,8 +222,6 @@ const templatesForAdmin = (externalNotebooksConfig.templates || []).map(
       </div>
     </div>
 
-    {/* 页脚与博客同一个组件 */}
-    <Footer />
   </div>
 
   <div class="toast" id="toast"></div>

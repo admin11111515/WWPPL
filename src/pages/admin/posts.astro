@@ -1,5 +1,4 @@
 ---
-import Footer from "@components/layout/Footer.astro";
 // 文章管理页面 - 通过 GitHub Contents API 读写博客仓库
 import AdminTheme from "@/components/admin/AdminTheme.astro";
 import AdminTopBar from "@/components/admin/AdminTopBar.astro";
@@ -284,8 +283,6 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       </main>
     </div>
 
-    {/* 页脚与博客同一个组件 */}
-    <Footer />
   </div>
 
   <div class="toast" id="toast"></div>
