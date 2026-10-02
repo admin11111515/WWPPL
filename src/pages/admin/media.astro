@@ -1,0 +1,537 @@
+---
+/**
+ * 图片库：看仓库里已有哪些图、上传新的、预览、改名、删除、复制 Markdown 插进正文。
+ *
+ * 为什么要有这一页（2026-10-02 站长原话）：
+ *   「后台管理中的功能点不够完善，如图片无法预览和上传以及修改」
+ * 之前只有后台首页一个"传图片"小面板（传完只能复制一段 Markdown），
+ * 看不到仓库里已有什么、不能预览大图、不能改名、不能删。
+ *
+ * 参照：git 型 CMS 的媒体库（decaporg/decap-cms ★1.9万、sveltia/sveltia-cms ★2.9k）。
+ * 它们对同一件事的做法是：一个库 + 搜索 + 缩略图网格 + 选中态 + 「插入 / 删除」，
+ * 上传同时支持点选与拖拽。这里照着做，再加了一条它们没有的：剪贴板粘贴上传。
+ *
+ * ⚠️ 上传的不是"内容"而是静态资源，落在 public/images/ 下。
+ *    线上要在 Cloudflare 重新构建之后才会出现在站上（一两分钟），
+ *    所以刚传完的那张在本页用本地 blob 预览，并标一句「重建后站上生效」。
+ */
+import AdminTheme from "@/components/admin/AdminTheme.astro";
+import AdminTopBar from "@/components/admin/AdminTopBar.astro";
+import { adminBodyClass, adminHtmlClass } from "@/components/admin/adminShell";
+import { externalPostsConfig } from "@/config/externalPostsConfig";
+// 后台不走博客 Layout，也就没有 iconify 运行时，图标用构建期内联的 SVG
+import { uiIcon } from "@/constants/ui-icons";
+
+const target = {
+	owner: externalPostsConfig.owner,
+	repo: externalPostsConfig.repo,
+	branch: externalPostsConfig.branch,
+	/** 图片库的根目录（仓库里的路径） */
+	root: "public/images",
+	/** 默认上传到哪 */
+	uploadDir: "public/images/uploads",
+};
+
+const ICONS = {
+	lead: uiIcon("fluent-color:image-24"),
+	empty: uiIcon("fluent-color:document-folder-24"),
+	search: uiIcon("fluent-color:search-visual-24"),
+	zoom: uiIcon("material-symbols:zoom-in"),
+	copy: uiIcon("material-symbols:content-copy"),
+	rename: uiIcon("material-symbols:drive-file-rename-outline"),
+	del: uiIcon("material-symbols:delete"),
+	upload: uiIcon("material-symbols:upload"),
+	refresh: uiIcon("material-symbols:refresh"),
+	close: uiIcon("material-symbols:close"),
+};
+---
+
+<html lang="zh-CN" class={adminHtmlClass}>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>图片库</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <AdminTheme />
+  <style is:inline>
+    /* 通用部分在 admin.css；这里只放这一页特有的。 */
+
+    /* ===== 工具栏 ===== */
+    .media-tools {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.875rem;
+    }
+    .media-tools .search {
+      flex: 1;
+      min-width: 10rem;
+      max-width: 20rem;
+    }
+    .media-tools .spacer { flex: 1; }
+
+    /* ===== 拖放区：整块网格都能接图 ===== */
+    .media-drop {
+      border: 1px dashed var(--line);
+      border-radius: var(--radius-large);
+      padding: 0.875rem;
+      transition: border-color 0.15s, background-color 0.15s;
+    }
+    .media-drop.over {
+      border-color: var(--primary);
+      background: color-mix(in oklab, var(--primary) 8%, transparent);
+    }
+
+    /* ===== 缩略图网格 ===== */
+    .media-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 0.75rem;
+    }
+    .media-item {
+      border: 1px solid var(--line-soft);
+      border-radius: var(--radius-large);
+      overflow: hidden;
+      background: var(--card-bg);
+      display: flex;
+      flex-direction: column;
+      transition: border-color 0.15s, transform 0.15s;
+    }
+    .media-item:hover {
+      border-color: color-mix(in oklab, var(--primary) 35%, var(--line-soft));
+      transform: translateY(-2px);
+    }
+    .media-thumb {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      background: var(--card-bg-soft);
+      cursor: zoom-in;
+    }
+    .media-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    /* 刚上传、还没重新构建的那张：角标说明"站上还没有" */
+    .media-flag {
+      position: absolute;
+      left: 0.375rem;
+      bottom: 0.375rem;
+      padding: 0.0625rem 0.375rem;
+      border-radius: var(--radius-md);
+      font-size: 0.625rem;
+      font-weight: 700;
+      background: var(--success-soft);
+      color: var(--success);
+    }
+    .media-body {
+      padding: 0.625rem 0.75rem 0.75rem;
+      min-width: 0;
+    }
+    .media-name {
+      font-size: 0.75rem;
+      font-weight: 600;
+      line-height: 1.4;
+      word-break: break-all;
+    }
+    .media-meta {
+      margin-top: 0.125rem;
+      font-size: 0.6875rem;
+      color: var(--text-3);
+      word-break: break-all;
+    }
+    .media-ops {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem;
+      margin-top: 0.5rem;
+    }
+    .media-ops .btn-icon-only {
+      padding: 0;
+      width: 1.75rem;
+      height: 1.75rem;
+      min-height: 0;
+      border-radius: 0.5rem;
+    }
+    .media-ops .btn-icon-only svg { width: 1rem; height: 1rem; }
+    .media-ops .btn-danger-sm.btn-icon-only { width: 1.75rem; height: 1.75rem; }
+
+    /* ===== 预览浮层 ===== */
+    .media-lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      background: color-mix(in oklab, #000 72%, transparent);
+      backdrop-filter: blur(4px);
+    }
+    .media-lightbox img {
+      max-width: 100%;
+      max-height: 82vh;
+      border-radius: var(--radius-large);
+      background: var(--card-bg);
+    }
+    .media-lightbox .lb-bar {
+      position: absolute;
+      top: 1.25rem;
+      right: 1.25rem;
+      display: flex;
+      gap: 0.5rem;
+    }
+    .media-lightbox .lb-info {
+      position: absolute;
+      left: 1.25rem;
+      bottom: 1.25rem;
+      right: 1.25rem;
+      font-size: 0.75rem;
+      color: rgb(255 255 255 / 0.85);
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body class={adminBodyClass}>
+
+  <div id="admin-main">
+    <AdminTopBar />
+
+    <div class="container">
+      <div class="status-bar" id="status-bar">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="status-text">正在连接…</span>
+      </div>
+
+      <div class="card">
+        <div class="page-lead">
+          <span class="lead-icon" set:html={uiIcon("fluent-color:image-24")} />
+          <span>
+            仓库里 <code>public/images/</code> 下的所有图片都在这儿。可以<b>预览大图、改名、删除</b>，
+            也可以直接<b>复制 Markdown</b> 贴进文章或说说。上传支持<b>点选、拖进来、Ctrl+V 粘贴</b>三种。
+            上传后要等 Cloudflare 重新构建（一两分钟）站上才看得到。
+          </span>
+        </div>
+
+        <div class="media-tools">
+          <button class="btn btn-primary" type="button" onclick="pickFiles()">
+            <span class="admin-i" set:html={ICONS.upload} />上传图片
+          </button>
+          <input type="file" id="file-input" accept="image/*" multiple class="hidden" />
+          <button class="btn" type="button" onclick="loadAll(true)">
+            <span class="admin-i" set:html={ICONS.refresh} />刷新
+          </button>
+          <span class="spacer"></span>
+          <input type="search" class="input-single search" id="media-search" placeholder="搜文件名…" oninput="renderMedia()" />
+        </div>
+
+        <div class="media-drop" id="media-drop">
+          <div id="media-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div id="lightbox-root"></div>
+
+  <script is:inline src="/js/admin-github.js"></script>
+  {/* 图标走属性传进来：SVG 字符串里有引号，直接写进脚本正文会打架（posts.astro 同款做法）。
+      ⚠️ 别用 `define:vars` 另开一个 <script> —— 两个 is:inline 脚本之间不共享变量。 */}
+  <script is:inline data-target={JSON.stringify(target)} data-icons={JSON.stringify(ICONS)}>
+    var _script = document.currentScript;
+    var T = JSON.parse(_script.getAttribute("data-target") || "{}");
+    var IC = JSON.parse(_script.getAttribute("data-icons") || "{}");
+
+    // ===== 工具 =====
+    function $(id) { return document.getElementById(id); }
+    var toastTimer = null;
+    function toast(msg, type) {
+      var el = $("toast");
+      el.textContent = msg;
+      el.className = "toast " + type + " show";
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () { el.className = "toast"; }, 3200);
+    }
+    function setStatus(ok, text) {
+      $("status-dot").className = "status-dot " + (ok ? "ok" : "err");
+      $("status-text").textContent = text;
+    }
+    function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+    function copyText(text, what) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () {
+          toast("已复制" + what + "：" + text, "ok");
+        }, function () { window.prompt("复制这段：", text); });
+      } else {
+        window.prompt("复制这段：", text);
+      }
+    }
+    function kb(size) {
+      if (typeof size !== "number") return "";
+      return size < 1024 * 1024 ? Math.round(size / 1024) + " KB" : (size / 1024 / 1024).toFixed(1) + " MB";
+    }
+
+    /** 仓库路径 public/images/... → 站上地址 /images/... */
+    function publicUrl(path) { return "/" + String(path).replace(/^public\//, ""); }
+    function isImage(name) { return /\.(png|jpe?g|gif|webp|avif|svg|bmp|tiff?)$/i.test(name); }
+
+    // ===== 数据 =====
+    var all = [];          // {name, path, sha, size, url, fresh}
+    function opt(path) {
+      return { owner: T.owner, repo: T.repo, branch: T.branch, path: path };
+    }
+
+    /** 递归列目录，最多三层（uploads / posts/<slug> / covers 都够用） */
+    function walk(dir, depth) {
+      return WBGitHub.listDir(opt(dir)).then(function (items) {
+        var out = [];
+        var chain = Promise.resolve();
+        items.forEach(function (it) {
+          if (it.type === "dir") {
+            if (depth < 3) {
+              chain = chain.then(function () {
+                return walk(it.path, depth + 1).then(function (sub) { out = out.concat(sub); });
+              });
+            }
+          } else if (isImage(it.name)) {
+            out.push({ name: it.name, path: it.path, sha: it.sha, size: it.size, url: publicUrl(it.path), fresh: false });
+          }
+        });
+        return chain.then(function () { return out; });
+      });
+    }
+
+    function loadAll(announce) {
+      setStatus(true, "正在读取…");
+      return walk(T.root, 1)
+        .then(function (list) {
+          // 新传的排前面，其余按路径倒序（日期戳文件名，倒序≈新的在前）
+          list.sort(function (a, b) { return b.path < a.path ? -1 : b.path > a.path ? 1 : 0; });
+          all = list;
+          setStatus(true, "已连接 · " + all.length + " 张");
+          renderMedia();
+          if (announce) toast("已刷新，共 " + all.length + " 张", "ok");
+        })
+        .catch(function (e) {
+          setStatus(false, "读取失败");
+          $("media-list").innerHTML =
+            '<div class="empty-state"><div class="icon">' + IC.empty + '</div><p>图片读不出来：' +
+            esc(e && e.message ? e.message : e) + '</p></div>';
+        });
+    }
+
+    function renderMedia() {
+      var kw = ($("media-search").value || "").trim().toLowerCase();
+      var list = kw ? all.filter(function (it) { return it.path.toLowerCase().indexOf(kw) >= 0; }) : all;
+      var box = $("media-list");
+      if (!all.length) {
+        box.innerHTML = '<div class="empty-state"><div class="icon">' + IC.empty + '</div><p>这个目录里还没有图片，先传一张</p></div>';
+        return;
+      }
+      if (!list.length) {
+        box.innerHTML = '<div class="empty-state"><div class="icon">' + IC.search + '</div><p>没找到名字里含「' + esc(kw) + '」的图片</p></div>';
+        return;
+      }
+      box.innerHTML = '<div class="media-grid">' + list.map(function (it) {
+        var url = it.blobUrl || it.url;
+        return '' +
+          '<div class="media-item">' +
+            '<div class="media-thumb" onclick="openLightbox(\'' + esc(it.path) + '\')">' +
+              '<img src="' + esc(url) + '" alt="' + esc(it.name) + '" loading="lazy" />' +
+              (it.fresh ? '<span class="media-flag">刚上传，重建后站上生效</span>' : '') +
+            '</div>' +
+            '<div class="media-body">' +
+              '<div class="media-name">' + esc(it.name) + '</div>' +
+              '<div class="media-meta">' + esc(publicUrl(it.path)) + (kb(it.size) ? ' · ' + kb(it.size) : '') + '</div>' +
+              '<div class="media-ops">' +
+                '<button class="btn btn-sm btn-icon-only" title="预览大图" onclick="openLightbox(\'' + esc(it.path) + '\')">' + IC.zoom + '</button>' +
+                '<button class="btn btn-sm btn-icon-only" title="复制 Markdown（可直接贴进正文）" onclick="copyMd(\'' + esc(it.path) + '\')">' + IC.copy + '</button>' +
+                '<button class="btn btn-sm btn-icon-only" title="复制站上地址" onclick="copyPath(\'' + esc(it.path) + '\')">' + IC.copy + '</button>' +
+                '<button class="btn btn-sm btn-icon-only" title="改名" onclick="renameItem(\'' + esc(it.path) + '\')">' + IC.rename + '</button>' +
+                '<button class="btn-danger-sm btn-icon-only" title="删除" onclick="deleteItem(\'' + esc(it.path) + '\')">' + IC.del + '</button>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+      }).join("") + '</div>';
+    }
+
+    function find(path) {
+      for (var i = 0; i < all.length; i++) if (all[i].path === path) return all[i];
+      return null;
+    }
+
+    // ===== 操作 =====
+    window.copyMd = function (path) {
+      var it = find(path); if (!it) return;
+      copyText("![](" + publicUrl(it.path) + ")", " Markdown");
+    };
+    window.copyPath = function (path) {
+      var it = find(path); if (!it) return;
+      copyText(publicUrl(it.path), "地址");
+    };
+    window.openLightbox = function (path) {
+      var it = find(path); if (!it) return;
+      var url = it.blobUrl || it.url;
+      $("lightbox-root").innerHTML =
+        '<div class="media-lightbox" onclick="closeLightbox()">' +
+          '<div class="lb-bar">' +
+            '<button class="btn btn-sm" onclick="event.stopPropagation();copyMd(\'' + esc(it.path) + '\')">复制 Markdown</button>' +
+            '<button class="btn btn-sm" onclick="event.stopPropagation();closeLightbox()">' + IC.close + '</button>' +
+          '</div>' +
+          '<img src="' + esc(url) + '" alt="' + esc(it.name) + '" onclick="event.stopPropagation()" />' +
+          '<div class="lb-info">' + esc(publicUrl(it.path)) + (kb(it.size) ? ' · ' + kb(it.size) : '') +
+            ' · <a href="' + esc(url) + '" target="_blank" rel="noopener" style="color:inherit">新标签打开</a></div>' +
+        '</div>';
+    };
+    window.closeLightbox = function () { $("lightbox-root").innerHTML = ""; };
+
+    window.renameItem = function (path) {
+      var it = find(path); if (!it) return;
+      var next = window.prompt("改成什么名字？（只改文件名，目录不动）", it.name);
+      if (!next) return;
+      next = next.trim();
+      if (!next || next === it.name) return;
+      if (!isImage(next)) { toast("文件名要带图片后缀（.png / .jpg / .webp …）", "err"); return; }
+      var newPath = it.path.replace(/[^/]+$/, next);
+      toast("正在改名…", "");
+      WBGitHub.getFile(opt(it.path))
+        .then(function (f) {
+          if (!f) throw new Error("原文件读不到了");
+          // GitHub 没有"改名"接口：写一份新的 + 删掉旧的
+          return WBGitHub.putFile({
+            owner: T.owner, repo: T.repo, branch: T.branch,
+            path: newPath, content: f.content, sha: null, message: "图片改名：" + it.name + " → " + next
+          }).then(function () {
+            return WBGitHub.deleteFile({ owner: T.owner, repo: T.repo, branch: T.branch, path: it.path, sha: it.sha, message: "图片改名（删旧）：" + it.name });
+          });
+        })
+        .then(function () { toast("改名完成 ✓（重建后生效）", "ok"); return loadAll(); })
+        .catch(function (e) { toast("改名失败：" + (e && e.message ? e.message : e), "err"); });
+    };
+
+    window.deleteItem = function (path) {
+      var it = find(path); if (!it) return;
+      if (!window.confirm("确定删除这张图？\n\n" + publicUrl(it.path) + "\n\n删掉就找不回来了（正文里引用它的地方会变成裂图）。")) return;
+      toast("正在删除…", "");
+      WBGitHub.deleteFile({ owner: T.owner, repo: T.repo, branch: T.branch, path: it.path, sha: it.sha, message: "删除图片：" + it.name })
+        .then(function () { toast("已删除 ✓（重建后生效）", "ok"); return loadAll(); })
+        .catch(function (e) { toast("删除失败：" + (e && e.message ? e.message : e), "err"); });
+    };
+
+    // ===== 上传 =====
+    window.pickFiles = function () { $("file-input").click(); };
+    $("file-input").addEventListener("change", function () {
+      // ⚠️ 先把文件取成真正的数组再清空 input：清空后 files 会变成空列表
+      var files = Array.prototype.slice.call(this.files || []);
+      this.value = "";
+      files.forEach(uploadOne);
+    });
+
+    function stampName(ext) {
+      var d = new Date();
+      function p(n) { return (n < 10 ? "0" : "") + n; }
+      return "" + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + "-" +
+        p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()) + "-" +
+        Math.random().toString(36).slice(2, 6) + "." + ext;
+    }
+    function extOf(blob, fallback) {
+      var t = (blob && blob.type || "").toLowerCase();
+      if (t.indexOf("webp") >= 0) return "webp";
+      if (t.indexOf("jpeg") >= 0 || t.indexOf("jpg") >= 0) return "jpg";
+      if (t.indexOf("png") >= 0) return "png";
+      if (t.indexOf("gif") >= 0) return "gif";
+      if (t.indexOf("avif") >= 0) return "avif";
+      return (fallback || "png").replace(/^\./, "");
+    }
+    function b64FromBytes(bytes) {
+      var s = "";
+      for (var i = 0; i < bytes.length; i += 0x8000) {
+        s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+      }
+      return btoa(s);
+    }
+
+    /** 压到最长边 1600、质量 0.82；压不动（比如 gif/svg）就原样传 */
+    function compressImage(file) {
+      if (!/^image\//.test(file.type) || /svg|gif/.test(file.type)) return Promise.resolve(file);
+      return new Promise(function (resolve) {
+        var img = new Image();
+        var url = URL.createObjectURL(file);
+        img.onload = function () {
+          var scale = Math.min(1, 1600 / Math.max(img.width, img.height));
+          var w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+          var canvas = document.createElement("canvas");
+          canvas.width = w; canvas.height = h;
+          canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+          URL.revokeObjectURL(url);
+          canvas.toBlob(function (blob) { resolve(blob || file); }, "image/webp", 0.82);
+        };
+        img.onerror = function () { URL.revokeObjectURL(url); resolve(file); };
+        img.src = url;
+      });
+    }
+
+    function uploadOne(file) {
+      if (!/^image\//.test(file.type)) { toast("「" + file.name + "」不是图片，跳过", "err"); return; }
+      toast("正在上传 " + file.name + " …", "");
+      compressImage(file)
+        .then(function (blob) {
+          var ext = extOf(blob, file.name);
+          var name = stampName(ext);
+          var path = T.uploadDir + "/" + name;
+          return blob.arrayBuffer().then(function (buf) {
+            return WBGitHub.putFile({
+              owner: T.owner, repo: T.repo, branch: T.branch,
+              path: path, content: b64FromBytes(new Uint8Array(buf)),
+              message: "上传图片：" + name
+            }).then(function () {
+              // 刚传的这张站上还没有，用本地 blob 先顶上，标一句等重建
+              all.unshift({
+                name: name, path: path, sha: "", size: blob.size,
+                url: publicUrl(path), fresh: true, blobUrl: URL.createObjectURL(blob)
+              });
+              setStatus(true, "已连接 · " + all.length + " 张");
+              renderMedia();
+              toast("上传好了 ✓ 复制 Markdown 就能贴进正文（重建后站上生效）", "ok");
+            });
+          });
+        })
+        .catch(function (e) { toast("上传失败：" + (e && e.message ? e.message : e), "err"); });
+    }
+
+    // ===== 拖放 / 粘贴 =====
+    var drop = $("media-drop");
+    ["dragenter", "dragover"].forEach(function (ev) {
+      drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add("over"); });
+    });
+    ["dragleave", "drop"].forEach(function (ev) {
+      drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove("over"); });
+    });
+    drop.addEventListener("drop", function (e) {
+      var files = e.dataTransfer && e.dataTransfer.files;
+      if (files && files.length) Array.prototype.slice.call(files).forEach(uploadOne);
+    });
+    // 顺便让整页都能接住（拖歪一点也不至于打开图片文件）
+    ["dragover", "drop"].forEach(function (ev) {
+      document.addEventListener(ev, function (e) { if (e.target === document.documentElement) e.preventDefault(); });
+    });
+    document.addEventListener("paste", function (e) {
+      var items = e.clipboardData && e.clipboardData.items;
+      if (!items) return;
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].type && items[i].type.indexOf("image/") === 0) {
+          var f = items[i].getAsFile();
+          if (f) { e.preventDefault(); uploadOne(f); return; }
+        }
+      }
+    });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeLightbox(); });
+
+    // ===== 启动 =====
+    loadAll();
+  </script>
+</body>
+</html>

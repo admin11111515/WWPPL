@@ -84,6 +84,13 @@ const EXPLICIT_ICONS = [
 	"material-symbols:delete", // 删除
 	"material-symbols:note-add", // 新建文章
 	"material-symbols:draft", // 草稿徽标
+	// 图片库 /admin/media/（2026-10-02 加：预览 / 上传 / 改名 / 删除 / 插入正文）
+	"material-symbols:zoom-in", // 放大预览
+	"material-symbols:content-copy", // 复制 Markdown / 复制路径
+	"material-symbols:drive-file-rename-outline", // 改名
+	"material-symbols:upload", // 上传
+	"material-symbols:refresh", // 重新加载
+	"material-symbols:close", // 关掉预览
 ];
 
 // 支持的图标集及其包名

@@ -103,6 +103,9 @@ function collectPosts() {
 }
 const postFiles = collectPosts();
 
+/** 预览里"上传"过的图片：仓库相对路径 → 字节数（仅内存 + dist，不碰源码） */
+const uploadedImages = new Map();
+
 /**
  * 直接从仓库里读一个文件，只放行 src/ 下面的路径。
  *
@@ -307,7 +310,22 @@ function json(res, data, status = 200) {
 	res.end(JSON.stringify(data));
 }
 
-function handleApi(req, res, url) {
+/** 读 POST/PUT/DELETE 的 JSON 请求体（预览里的上传接口要用；文件都很小，直接拼） */
+function readJsonBody(req) {
+	return new Promise((resolve) => {
+		let raw = "";
+		req.on("data", (c) => (raw += c));
+		req.on("end", () => {
+			try {
+				resolve(JSON.parse(raw || "{}"));
+			} catch {
+				resolve(null);
+			}
+		});
+	});
+}
+
+async function handleApi(req, res, url) {
 	const p = url.pathname;
 
 	// 认证：默认回答已登录；未登录状态只在截图时短暂用到
@@ -324,6 +342,43 @@ function handleApi(req, res, url) {
 			data.calendarError = "预览：模拟贡献日历取不到";
 		}
 		return json(res, data);
+	}
+
+	/**
+	 * ⚠️ 例外：`public/images/**` 的**上传 / 删除**在预览里是真的能做的。
+	 *    （2026-10-02）以前这里一律 403，站长在本地点上传必然失败，
+	 *   看起来就像"图片上传功能是坏的"。而图片是静态资源、不是内容，
+	 *   写进去不会污染源码 —— 落到 dist/ 里 + 一份内存清单，列目录时合并出来。
+	 *   ⚠️ 只放图片：文章 / 说说 / 站点信息这些**内容**仍然一律拒绝写，
+	 *     那是要真往仓库里提交的，预览不该假装成功。
+	 */
+	const imgContents = p.match(/^\/api\/github\/repos\/[^/]+\/[^/]+\/contents\/(.+)$/);
+	if (imgContents && req.method !== "GET") {
+		const rel = decodeURIComponent(imgContents[1]).split("/").map(decodeURIComponent).join("/");
+		if (!rel.startsWith("public/images/")) {
+			return json(res, { error: "本地预览不写仓库（只放行 public/images/ 下的图片）" }, 403);
+		}
+		const body = await readJsonBody(req);
+		if (req.method === "PUT") {
+			if (!body || typeof body.content !== "string") {
+				return json(res, { error: "缺少 content" }, 422);
+			}
+			const buf = Buffer.from(body.content, "base64");
+			// public/images/uploads/x.webp → dist/images/uploads/x.webp
+			const outPath = path.join(DIST.dir, rel.replace(/^public\//, ""));
+			fs.mkdirSync(path.dirname(outPath), { recursive: true });
+			fs.writeFileSync(outPath, buf);
+			uploadedImages.set(rel, buf.length);
+			console.log(`  [预览] 上传图片 → ${rel}（${buf.length} 字节）`);
+			return json(res, { content: { path: rel, sha: gitBlobSha(rel + buf.length), name: path.basename(rel) } }, 201);
+		}
+		if (req.method === "DELETE") {
+			const outPath = path.join(DIST.dir, rel.replace(/^public\//, ""));
+			try { fs.unlinkSync(outPath); } catch { /* 本来就没有 */ }
+			uploadedImages.delete(rel);
+			console.log(`  [预览] 删除图片 → ${rel}`);
+			return json(res, { commit: { sha: gitBlobSha(rel) } }, 200);
+		}
 	}
 
 	// 写入类请求：明确拒绝，不假装成功
@@ -370,9 +425,23 @@ function handleApi(req, res, url) {
 							name: d.name,
 							path: rel,
 							type: d.isDirectory() ? "dir" : "file",
+							size: d.isDirectory() ? 0 : fs.statSync(path.join(WWPPL, rel)).size,
 							sha: d.isDirectory() ? gitBlobSha(rel) : gitBlobSha(readRepoFile(rel) ?? ""),
 						};
 					});
+				// 预览里刚上传的图：仓库源码里没有，只有 dist 里有 —— 合并进清单，
+				// 否则传完在图片库里看不到，会被当成"上传没生效"
+				for (const [rel, size] of uploadedImages) {
+					if (path.dirname(rel) === file) {
+						entries.push({
+							name: path.basename(rel),
+							path: rel,
+							type: "file",
+							size,
+							sha: gitBlobSha(rel + size),
+						});
+					}
+				}
 				return json(res, entries);
 			}
 		} catch {
@@ -417,7 +486,7 @@ function handleApi(req, res, url) {
 
 const server = http.createServer((req, res) => {
 	const url = new URL(req.url, `http://${HOST}`);
-	if (url.pathname.startsWith("/api/")) return handleApi(req, res, url);
+	if (url.pathname.startsWith("/api/")) { handleApi(req, res, url).catch(function (e) { console.error("  /api 处理出错：", e && e.message ? e.message : e); try { res.writeHead(500); res.end("api error"); } catch {} }); return; }
 	serveStatic(req, res);
 });
 

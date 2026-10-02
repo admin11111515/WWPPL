@@ -1075,6 +1075,22 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       e.preventDefault();
       if (e.dataTransfer.files && e.dataTransfer.files[0]) uploadImage(e.dataTransfer.files[0], "body");
     }
+    // 粘贴上传（2026-10-02 加）：截图之后 Ctrl+V 直接传进正文。
+    // 之前只有「工具栏按钮」和「拖拽」两条路，粘贴是唯一没接住的一种输入方式 ——
+    // 站长说的「文章中间无法插入图片」，多半就是在正文里按 Ctrl+V 没反应。
+    var bodyArea = $("content-input");
+    if (bodyArea) {
+      bodyArea.addEventListener("paste", function (e) {
+        var items = e.clipboardData && e.clipboardData.items;
+        if (!items) return;
+        for (var i = 0; i < items.length; i++) {
+          if (items[i].type && items[i].type.indexOf("image/") === 0) {
+            var f = items[i].getAsFile();
+            if (f) { e.preventDefault(); uploadImage(f, "body"); return; }
+          }
+        }
+      });
+    }
 
     function loadImage(file) {
       return new Promise(function(resolve, reject) {

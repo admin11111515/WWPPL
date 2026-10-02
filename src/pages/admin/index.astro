@@ -553,15 +553,20 @@ import { uiIcon } from "@/constants/ui-icons";
           <div class="admin-card-title">换头像</div>
           <div class="admin-card-desc">上传新头像，保存后全站生效</div>
         </button>
-        <button type="button" class="card-base admin-card" onclick="toggleUploadPanel()">
-          <div class="admin-card-icon" set:html={uiIcon("fluent-color:document-folder-24")} />
-          <div class="admin-card-title">传图片</div>
-          <div class="admin-card-desc">传到仓库并给出地址，文章/说说里直接用</div>
-        </button>
+        {/* 2026-10-02：原来这里是一张「传图片」卡（点开一个只能复制地址的小面板）。
+            图片库页 /admin/media/ 把它整个接过去了 —— 能看已有图、预览、改名、删除，
+            上传还支持拖拽和 Ctrl+V 粘贴，比那个小面板完整得多，入口换过来。 */}
+        <a href="/admin/media/" class="card-base admin-card">
+          <div class="admin-card-icon" set:html={uiIcon("fluent-color:image-24")} />
+          <div class="admin-card-title">图片库</div>
+          <div class="admin-card-desc">预览 / 上传 / 改名 / 删除，复制 Markdown 直接用</div>
+        </a>
       </div>
 
-      {/* 传图片面板：选图（可多选）→ 浏览器里压成 WebP → 传进仓库 public/images/uploads/
-          → 给出可直接粘贴的 Markdown / 地址。2026-10-01 加 */}
+      {/* ⚠️ 下面这个「传图片」面板已被图片库页 /admin/media/ 取代（入口卡片也换过去了），
+          现在没有入口能打开它 —— 留着是因为它的 compressImage() 还被「换头像」用着。
+          要清理的话：把面板 HTML、pickUpload / uploadOne / addUploadResult / copyText /
+          stampName / extFromBlob / b64FromBytes 一起删，compressImage 保留。 */}
       <div id="upload-panel" class="card hidden">
         <div class="field-label"><span class="icon" set:html={uiIcon("fluent-color:document-folder-24")} /> 传图片</div>
         <div class="field-hint">
