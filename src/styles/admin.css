@@ -87,36 +87,26 @@
 }
 
 /* ===== 3. 宽度容器 ===== 
-   内容区（.container）与页面标题条（.admin-topbar）同宽，取法与博客内容区
-   一致（Layout 的 max-w-(--page-width) + xl:w-[92vw]）。
-   页面想更窄（窄栏内容）就在共同祖先上写 --admin-content-max: 640px ——
-   写在 .container 上标题条继承不到，两者是兄弟节点。 */
-.container,
-.admin-topbar {
+   取法与博客内容区一致（Layout 的 max-w-(--page-width) + xl:w-[92vw]）。
+   页面想更窄（窄栏内容）就在 `#admin-main` 上写 --admin-content-max: 720px。
+   ⚠️ 2026-10-02：「页面标题条」（.admin-topbar）已随页头那一行一起删掉，
+      这里不再有同名兄弟节点，宽度只由 .container 一个说了算。 */
+.container {
 	width: 100%;
 	max-width: var(--admin-content-max, var(--page-width));
 	margin-inline: auto;
 	padding-inline: 1rem;
-}
-
-.container {
 	padding-bottom: 5rem;
 }
 
-.admin-topbar {
-	padding-block: 1rem;
-}
-
 @media (min-width: 768px) {
-	.container,
-	.admin-topbar {
+	.container {
 		padding-inline: 1.5rem;
 	}
 }
 
 @media (min-width: 1280px) {
-	.container,
-	.admin-topbar {
+	.container {
 		width: 92vw;
 	}
 }
@@ -890,15 +880,10 @@ textarea:focus {
    收拾成"后台"该有的样子。
    ══════════════════════════════════════════════════════════════════ */
 
-/* ── 1. 后台外壳：顶栏吸顶 + 内容区宽度 ────────────────────────── */
-.admin-topbar {
-	position: sticky;
-	top: 0;
-	z-index: 30;
-	backdrop-filter: blur(12px);
-	background: color-mix(in oklab, var(--card-bg) 82%, transparent);
-	border-bottom: 1px solid var(--line-soft);
-}
+/* ── 1. 后台外壳：顶栏就是博客导航栏，没有第二条 ─────────────────
+   这里原来有一条 `.admin-topbar`（吸顶 + 毛玻璃 + 下边框），是"后台自己的
+   标题条"。2026-10-02 站长把「后台管理 / 首页 / 退出」整行删掉后，它连同
+   页头一起作废 —— 不删掉会让人以为后台还有第二条顶栏。 */
 
 /* 后台顶部用的是**博客那条导航栏**（站长 2026-10-02 要求，见 AdminTopBar）。
    它里头的中文标签不许被挤成竖排 —— 两字的标签竖过来最像"没做完"。

@@ -295,10 +295,17 @@ import { uiIcon } from "@/constants/ui-icons";
       color: var(--text-3, var(--muted, #6b7280));
       margin-top: 0.125rem;
     }
+    /* 概览脚下一行：左边是「正在读取仓库…」，右边挂「退出登录」。
+       2026-10-02：页头那一行（后台管理 / 首页 / 退出）整行删掉后，
+       退出按钮只剩这一处 —— 别删。 */
     .admin-overview-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      flex-wrap: wrap;
       font-size: 0.75rem;
       color: var(--text-3, var(--muted, #6b7280));
-      text-align: center;
       margin: 0 0 1.25rem;
       min-height: 1rem;
     }
@@ -469,7 +476,7 @@ import { uiIcon } from "@/constants/ui-icons";
 
   <!-- ===== 后台主页 ===== -->
   <div id="admin-main" class="hidden">
-    <AdminTopBar title="后台管理" backHref="/" backLabel="首页" withStatus={false} />
+    <AdminTopBar />
     <div class="container container-narrow">
       <div class="admin-welcome">
         <h2><span class="admin-i" set:html={uiIcon("material-symbols:waving-hand")} />欢迎回来</h2>
@@ -501,7 +508,11 @@ import { uiIcon } from "@/constants/ui-icons";
           <div class="admin-stat-label" id="stat-commit-label">最近提交</div>
         </div>
       </div>
-      <div class="admin-overview-foot" id="overview-foot">正在读取仓库…</div>
+      <div class="admin-overview-foot">
+        <span id="overview-foot">正在读取仓库…</span>
+        {/* 退出的唯一入口（原来在页头那一行里，那行已按站长要求整行删掉） */}
+        <button type="button" class="btn btn-ghost btn-sm" onclick="doLogout()">退出登录</button>
+      </div>
       <div class="admin-grid">
         <a href="/admin/moments/" class="card-base admin-card">
           <div class="admin-card-icon" set:html={uiIcon("fluent-color:chat-24")} />

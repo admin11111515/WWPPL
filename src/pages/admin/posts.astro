@@ -121,9 +121,16 @@ const postsConfig = JSON.stringify(externalPostsConfig);
 </head>
 <body class={adminBodyClass}>
 
-  <AdminTopBar title="文章管理" />
+  <AdminTopBar />
 
   <div class="container">
+    {/* 连接状态。原来在页头那一行里，2026-10-02 那一行整行删掉后挪进内容区
+        （照站点信息页的写法）。⚠️ id 不能改：setStatus() 按 id 找。 */}
+    <div class="status-bar" id="status-bar" style="margin-bottom:0.75rem;">
+      <span class="status-dot" id="status-dot"></span>
+      <span id="status-text">正在连接…</span>
+    </div>
+
     {/* 上次没有保存就离开时，把本地留存的草稿提示出来 */}
     <div class="restore-bar hidden" id="restore-bar">
       <span class="restore-icon" set:html={uiIcon("fluent-color:history-24")} />
