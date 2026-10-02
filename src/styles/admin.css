@@ -925,7 +925,14 @@ textarea:focus {
 }
 .admin-card:active { transform: translateY(0); }
 
-/* 卡片里的图标做成"浅色方块 + 圆角"，别再让图标直接漂在白底上 */
+/* 卡片里的图标做成"浅色方块 + 圆角"，别再让图标直接漂在白底上。
+   ⚠️ 底色必须是**中性**的（--card-bg-soft），不能用主题淡色（--primary-soft）。
+      2026-10-03 站长指着首页截图问「不觉得页面有问题吗」—— 就是这里：
+      fluent-color 这套图标里有一批本身就是淡紫/淡蓝的（clipboard-text-edit、
+      apps-list-detail 这些），贴在主题淡紫底（oklch(.95 .025 270)）上就看不见了，
+      只有饱和蓝的那几个（说说/笔记/图片）显眼 —— 于是"有几张卡的图标是空的"。
+      ⚠️ 判定"图标有没有画出来"不能只数 svg 里的图元（我按那个查过，报的 0 空白）；
+         要量**它跟底色的对比**，见 _gen/_图标可读性核验.mjs。 */
 .admin-card-icon {
 	display: flex;
 	align-items: center;
@@ -933,7 +940,7 @@ textarea:focus {
 	width: 2.75rem;
 	height: 2.75rem;
 	border-radius: 0.875rem;
-	background: var(--primary-soft);
+	background: var(--card-bg-soft);
 	margin-bottom: 0.75rem;
 }
 .admin-card-icon svg { font-size: 1.5rem; }
@@ -1114,6 +1121,7 @@ textarea { border-radius: 0.75rem; }
 	font-size: 0.8125rem;
 	text-align: center;
 }
+/* 空态里那枚图标同理：底色要中性，不然淡色图标（空文章/无匹配）会糊掉 */
 .empty-state .icon {
 	display: flex;
 	align-items: center;
@@ -1121,7 +1129,7 @@ textarea { border-radius: 0.75rem; }
 	width: 2.75rem;
 	height: 2.75rem;
 	border-radius: 0.875rem;
-	background: var(--primary-soft);
+	background: var(--card-bg-soft);
 }
 .empty-state .icon svg { font-size: 1.5rem; }
 

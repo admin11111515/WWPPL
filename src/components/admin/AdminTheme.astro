@@ -117,4 +117,57 @@ const pageWidth = `${siteConfig.pageWidth ?? PAGE_WIDTH}rem`;
       applyTheme();
     };
   })();
+
+  /**
+   * 同一枚图标在一页里出现两次时，把 SVG 的 id 就地改名，避免互相抢。
+   *
+   * ⚠️ 这是一个真 bug 的修法，别删（2026-10-03 站长指着首页截图问「不觉得页面
+   *    有问题吗」）：「文章管理」那张卡在页面上是**空框**，而它的 svg 数据完全正常
+   *    （12 条 path、渐变颜色都在）。
+   *    原因：同一枚图标在页面里出现两次 —— 一次在**登录页的 logo**（登录后
+   *    `display:none` 但仍在 DOM 里），一次在文章管理卡。SVG 的 `fill="url(#X)"`
+   *    按**文档顺序**取第一个 id=X 的元素，于是取到了登录页那份；而登录页整块是
+   *    `display:none`，**藏在里面的渐变当不了画刷** → 后面那枚图标什么都画不出来。
+   *    实测：把登录页那块从 DOM 摘掉，这枚图标的墨迹占比立刻从 7% 回到 23%。
+   *
+   * 做法：找出"同一个 id 被不止一个 svg 定义"的，除第一个外全部改名
+   * （连同它自己 svg 内的 url(#…) 引用一起改）。改名对这个 svg 是自洽的，
+   * 所以画出来和原来一模一样，只是不再和别处抢先。
+   */
+  function dedupeSvgIds() {
+    var svgs = document.querySelectorAll("svg");
+    var seen = Object.create(null);
+    // ⚠️ 计数器必须是**全局**的，不能每个 svg 各自从 1 开始：
+    //    否则第 2 个 svg 改出 -dup1、第 3 个也改出 -dup1，两处又撞上了。
+    var n = 0;
+    Array.prototype.forEach.call(svgs, function (svg) {
+      var ids = [];
+      Array.prototype.forEach.call(svg.querySelectorAll("[id]"), function (el) {
+        var id = el.getAttribute("id");
+        if (!id) return;
+        if (seen[id]) ids.push(id);
+        else seen[id] = svg;
+      });
+      if (!ids.length) return;
+      ids.forEach(function (id) {
+        var next = id + "-dup" + ++n;
+        Array.prototype.forEach.call(svg.querySelectorAll('[id="' + id + '"]'), function (el) {
+          el.setAttribute("id", next);
+        });
+        Array.prototype.forEach.call(svg.querySelectorAll("[fill],[mask],[clip-path],[filter],[stroke]"), function (el) {
+          ["fill", "mask", "clip-path", "filter", "stroke"].forEach(function (attr) {
+            var v = el.getAttribute(attr);
+            if (v && v.indexOf("url(#" + id + ")") === 0) {
+              el.setAttribute(attr, v.split("url(#" + id + ")").join("url(#" + next + ")"));
+            }
+          });
+        });
+      });
+    });
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", dedupeSvgIds);
+  } else {
+    dedupeSvgIds();
+  }
 </script>

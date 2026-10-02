@@ -197,6 +197,32 @@ async function loadIconSet(prefix) {
 /**
  * 获取单个图标的 SVG
  */
+/**
+ * 把一枚图标里所有 SVG id 加上"本图标专属"的前缀。
+ *
+ * ⚠️ 为什么必须做（2026-10-03，首页「文章管理」图标整个画不出来）：
+ *    iconify 的 `replaceIDs()` 生成的 id 只是随机串，**不同图标之间会撞**。
+ *    SVG 里 `fill="url(#X)"` 按**文档顺序**取第一个 id=X 的元素 —— 撞了以后，
+ *    后面那枚图标会去引用**别人家的渐变**（几何与颜色都不对），结果整枚图
+ *    什么都画不出来。当时那枚图标的 10 个渐变 id 全被页面上另一个图标占了，
+ *    所以它在卡片里是个空框（放大看才看得出来）。
+ *    ⚠️ 判定"图标有没有画出来"不能只数 svg 里的图元 —— 它 12 条 path 一条不少。
+ *       要么量渲染对比（_gen/_图标可读性核验.mjs），要么查 id 有没有撞
+ *       （_gen/_图标可读性核验.mjs 里的同名前缀检查）。
+ */
+function scopeIds(svg, iconName) {
+	const slug = String(iconName).replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+	const map = new Map();
+	let n = 0;
+	const rename = (id) => {
+		if (!map.has(id)) map.set(id, `i-${slug}-${++n}`);
+		return map.get(id);
+	};
+	return svg
+		.replace(/id="([^"]+)"/g, (m, id) => `id="${rename(id)}"`)
+		.replace(/url\(#([^)]+)\)/g, (m, id) => `url(#${rename(id)})`);
+}
+
 async function getIconSvg(iconName) {
 	const [prefix, name] = iconName.split(":");
 	if (!prefix || !name) {
@@ -221,7 +247,7 @@ async function getIconSvg(iconName) {
 		width: "1em",
 	});
 
-	let svg = iconToHTML(replaceIDs(renderData.body), renderData.attributes);
+	let svg = iconToHTML(scopeIds(replaceIDs(renderData.body), iconName), renderData.attributes);
 
 	// 确保支持 currentColor
 	if (!svg.includes("currentColor")) {
