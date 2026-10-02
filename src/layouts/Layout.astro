@@ -684,6 +684,52 @@ const siteLang = lang.replace("_", "-");
         });
       }
     </script>
+
+    {/* 「回到后台」浮标（2026-10-03 加）。
+        后台文章列表点「查看」会带 ?from=admin 打开前台这一篇；这里据此显示一个
+        小按钮把人送回去 —— 站长原话「查看文章时也能返回到上一级，现在找不到
+        按钮交互」。⚠️ 只有带这个参数才出现，**访客看不到**；普通访问这一页
+        不会渲染任何东西。放在 visit 层而不是文章模板里，是因为后台的「查看」
+        也可能落在归档/分类等列表页上。 */}
+    <script is:inline data-swup-ignore-script>
+      (function () {
+        function fromAdmin() {
+          try {
+            var q = new URLSearchParams(location.search);
+            return q.get("from") === "admin";
+          } catch (e) {
+            return false;
+          }
+        }
+        function mount() {
+          if (!fromAdmin()) return;
+          if (document.getElementById("back-to-admin")) return;
+          var a = document.createElement("a");
+          a.id = "back-to-admin";
+          a.href = "/admin/posts/";
+          a.textContent = "← 回到后台";
+          a.setAttribute("style", [
+            "position:fixed",
+            "left:1rem",
+            "bottom:1rem",
+            "z-index:9998",
+            "padding:0.5rem 0.875rem",
+            "border-radius:999px",
+            "font-size:0.8125rem",
+            "font-weight:600",
+            "text-decoration:none",
+            "color:var(--btn-content)",
+            "background:var(--primary)",
+            "box-shadow:0 6px 20px -8px rgba(0,0,0,.45)",
+          ].join(";"));
+          document.body.appendChild(a);
+        }
+        mount();
+        // swup 站内跳转不会重跑内联脚本，用它的钩子再挂一次
+        document.addEventListener("swup:page:view", mount);
+        document.addEventListener("swup:content:replace", mount);
+      })();
+    </script>
   </body>
 </html>
 

@@ -1,5 +1,6 @@
 ---
 import Navbar from "@components/layout/Navbar.astro";
+import { Icon } from "astro-icon/components";
 /**
  * 后台页面顶部 = 博客的那条导航栏，**只有它**。
  *
@@ -17,6 +18,9 @@ import Navbar from "@components/layout/Navbar.astro";
  *     「欢迎回来」右侧补了一个「退出登录」，否则整站没有退出的地方。
  *     （各页 inline script 里的 `doLogout()` 还在，只是不再有按钮调它。）
  */
+
+/** 后台首页自己不用显示「返回后台首页」—— 那是指向自己 */
+const isAdminHome = Astro.url.pathname.replace(/\/+$/, "") === "/admin";
 ---
 
 {/* 宽度容器与博客 Layout 的内容区一致：max-w-(--page-width) + xl:w-[92vw] */}
@@ -25,3 +29,45 @@ import Navbar from "@components/layout/Navbar.astro";
     <Navbar />
   </div>
 </div>
+
+{/* 返回上一级（2026-10-03 加）。
+    站长：「后台管理中的导航也有问题，我希望的是查看文章时也能返回到上一级，
+    现在找不到按钮交互」—— 查了一遍，九个后台页里**唯一**能回后台首页的入口，
+    是导航栏里那个只有图标、没有文字的「后台管理」（名字只写在 aria-label 上），
+    确实找不到。
+    ⚠️ 注意跟被否掉的那条区分开：站长 2026-10-02 删掉的是
+      「页面名 + 首页 + 退出」**一整条栏**；这里只是一个面包屑式的小链接，
+      没有底色、没有页面名、没有退出。别再长成一条栏。 */}
+{
+  !isAdminHome && (
+    <div class="container">
+      <a href="/admin/" class="admin-back" title="回到后台首页">
+        <Icon name="material-symbols:arrow-back-rounded" class="admin-back-arrow" />
+        <span>后台首页</span>
+      </a>
+    </div>
+  )
+}
+
+<style is:inline>
+  .admin-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 0.75rem;
+    padding: 0.125rem 0.375rem 0.125rem 0.25rem;
+    border-radius: var(--radius-md);
+    font-size: 0.75rem;
+    color: var(--text-3);
+    text-decoration: none;
+    transition: color 0.15s, background-color 0.15s;
+  }
+  .admin-back:hover {
+    color: var(--primary);
+    background: var(--btn-plain-bg-hover);
+  }
+  .admin-back .admin-back-arrow {
+    font-size: 1rem;
+    line-height: 1;
+  }
+</style>

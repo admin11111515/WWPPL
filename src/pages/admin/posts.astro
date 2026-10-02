@@ -526,7 +526,8 @@ const postsConfig = JSON.stringify(externalPostsConfig);
           // 「查看」直接开站上那一页（新标签），省得自己去拼地址
           // 按钮文字包一层 .btn-t：左栏窄的时候（容器 <520px）只留图标，宽了才把文字放出来。
           // 这样三个按钮在窄栏里总共只要 ~110px，标题不会被挤成竖排。
-          '<a class="btn btn-sm" target="_blank" rel="noopener" href="' + postUrl(post.path) + '" title="在新标签打开站上的这一篇"><span class="admin-i">' + ICONS.view + '</span><span class="btn-t">查看</span></a>' +
+          // 带 from=admin：前台那一页据此显示一个「← 回到后台」浮标（访客看不到）
+          '<a class="btn btn-sm" target="_blank" rel="noopener" href="' + postUrl(post.path) + '?from=admin" title="在新标签打开站上的这一篇（那一页左下角有「回到后台」）"><span class="admin-i">' + ICONS.view + '</span><span class="btn-t">查看</span></a>' +
           '<button class="btn btn-sm" title="编辑" onclick="editPost(\'' + escapeAttr(post.path) + '\')"><span class="admin-i">' + ICONS.edit + '</span><span class="btn-t">编辑</span></button>' +
           '<button class="btn-danger-sm" title="删除" onclick="deletePost(\'' + escapeAttr(post.path) + '\')"><span class="admin-i">' + ICONS.del + '</span><span class="btn-t">删除</span></button>' +
           '</div>';
