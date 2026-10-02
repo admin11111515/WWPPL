@@ -258,7 +258,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
                 <input type="file" id="body-file" accept="image/*" class="hidden" />
                 <div class="editor-footer">
                   <span id="content-counter">0 字</span>
-                  <span class="editor-hint"><kbd>Ctrl</kbd>+<kbd>B</kbd> 加粗 · <kbd>Ctrl</kbd>+<kbd>K</kbd> 链接 · <kbd>Ctrl</kbd>+<kbd>S</kbd> 保存 · <kbd>Tab</kbd> 缩进</span>
+                  <span class="editor-hint"><kbd>Ctrl</kbd>+<kbd>B</kbd> 加粗 · <kbd>Ctrl</kbd>+<kbd>K</kbd> 链接 · <kbd>Ctrl</kbd>+<kbd>S</kbd> 保存 · <kbd>Tab</kbd> 缩进 · <b>图片可直接拖进来或 Ctrl+V</b> · <b>从 Word／网页复制的内容粘进来自动转格式</b></span>
                 </div>
               </div>
 
@@ -1025,17 +1025,45 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       return out.join("\n");
     }
 
+    /**
+     * 刚上传的图片：正式地址 → 本地 blob 的映射（2026-10-03 加）。
+     *
+     * 为什么需要：上传后正文里写的是 /images/posts/<slug>/xxx.webp，而这张图
+     * **要等 Cloudflare 重新构建（一两分钟）站上才存在** —— 在那之前预览里
+     * 就是一张裂图，站长会以为"预览不支持图片"。
+     * 所以本地记一份副本：预览渲染完把 src 换成 blob，保存/提交仍是正式地址。
+     * 只活在这次会话里，刷新页面就没了（那时图也已经构建好了）。
+     */
+    var freshImages = {};
+
+    /** 把预览 HTML 里"刚上传、站上还没有"的图换成本地副本 */
+    function swapFreshImages(html) {
+      var keys = Object.keys(freshImages);
+      if (!keys.length) return html;
+      return html.replace(/src="([^"]+)"/g, function(m, src) {
+        return freshImages[src] ? 'src="' + freshImages[src] + '" data-fresh="1"' : m;
+      });
+    }
+
     var previewTimer = null;
     function updatePreview() {
       clearTimeout(previewTimer);
       previewTimer = setTimeout(function() {
         var md = $("content-input").value;
         $("preview-pane").innerHTML = md
-          ? renderMarkdown(md)
+          ? swapFreshImages(renderMarkdown(md))
           : '<div class="empty-state preview-empty"><p>开始写就能在这里看到成稿的样子</p></div>';
       }, 180);
     }
     $("content-input").addEventListener("input", updatePreview);
+
+    // ===== 不想写 Markdown 也能用（2026-10-03 加）=====
+    // ① 从 Word / 网页 / 公众号复制的富文本，粘进来自动转成干净的 Markdown；
+    // ② 回车自动接上列表/引用，不用自己敲「- 」「1. 」「> 」。
+    WBEditor.installRichPaste($("content-input"), {
+      onConverted: function() { toast("已把粘贴的内容转成 Markdown（可再手动微调）", "ok"); }
+    });
+    WBEditor.installAutoList($("content-input"));
 
     // ===== 编辑器工具栏 =====
     // 走 WBEditor.replaceSelection，让插入的文本能进浏览器原生撤销栈，
@@ -1187,6 +1215,9 @@ const postsConfig = JSON.stringify(externalPostsConfig);
           var fileName = Date.now() + "." + imageExtOf(blob);
           var imagePath = CONFIG.imagesPath + "/" + slug + "/" + fileName;
           var imageUrl = "/images/posts/" + slug + "/" + fileName;
+          // 本地留一份副本：正文里写正式地址，但预览先显示本地这张
+          // （否则重建前预览是裂图，看着像"预览不支持图片"）
+          try { freshImages[imageUrl] = URL.createObjectURL(blob); } catch (e) { /* 记不住也不影响上传 */ }
           return blobToBase64(blob).then(function(base64) {
             return WBGitHub.putFile({
               owner: CONFIG.owner, repo: CONFIG.repo, path: imagePath, branch: CONFIG.branch,
@@ -1200,8 +1231,9 @@ const postsConfig = JSON.stringify(externalPostsConfig);
             updateCoverPreview();
           } else {
             insertBlock("![](" + imageUrl + ")");
+            updatePreview(); // 立刻用本地副本渲染，不等重建
           }
-          toast("图片已上传 ✓", "ok");
+          toast("图片已上传 ✓ 预览里已经能看到了（重新构建后站上生效）", "ok");
         })
         .catch(function(e) {
           toast("上传失败：" + e.message, "err");

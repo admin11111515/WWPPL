@@ -184,7 +184,7 @@ const templatesForAdmin = (externalNotebooksConfig.templates || []).map(
               <textarea class="editor-textarea" id="content-input" placeholder="用 Markdown 写下你的笔记..."></textarea>
               <div class="editor-footer">
                 <span id="content-counter">0 字</span>
-                <span class="editor-hint">Ctrl+B 加粗 · Ctrl+S 保存 · Tab 缩进</span>
+                <span class="editor-hint">Ctrl+B 加粗 · Ctrl+S 保存 · Tab 缩进 · <b>图片可直接拖进来或 Ctrl+V</b> · <b>从 Word／网页复制的内容粘进来自动转格式</b></span>
               </div>
             </div>
             <div class="editor-pane">
@@ -777,6 +777,12 @@ const templatesForAdmin = (externalNotebooksConfig.templates || []).map(
       save: submitEntry,
       submit: submitEntry,
     });
+
+    // ===== 不想写 Markdown 也能用（2026-10-03 加，与文章页同一套）=====
+    WBEditor.installRichPaste($("content-input"), {
+      onConverted: function() { toast("已把粘贴的内容转成 Markdown", "ok"); }
+    });
+    WBEditor.installAutoList($("content-input"));
 
     // ===== 初始化 =====
     (function() {

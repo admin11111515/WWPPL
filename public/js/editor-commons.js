@@ -207,8 +207,220 @@ function replaceSelection(textarea, text, selectFrom, selectTo) {
 		});
 	}
 
+	/**
+	 * HTML → Markdown（2026-10-03 加）。
+	 *
+	 * 干什么用的：站长说「我自己并不想编写 md 格式，有没有办法变简单易用」。
+	 * 最省事的路径不是把编辑器改成所见即所得（那种往返转换很容易把格式弄丢），
+	 * 而是**让他在别处写、粘过来就是干净的 Markdown**：Word、Notion、网页、
+	 * 公众号，选中复制，粘进正文即自动转换。
+	 *
+	 * 只处理博客会用到的那一档语法，宁可少认几种，也不乱猜：
+	 *   块级：h1~h6 → #、p → 空行分段、ul/ol → - 与 1.、blockquote → >、
+	 *        pre → 围栏代码块、hr → ---、table → GFM 表格
+	 *   行内：strong/b → **、em/i → *、del/s → ~~、code → `、a → [文字](链接)、
+	 *        img → ![alt](src)
+	 * 其它一律丢掉（style/script/注释、Word 的 mso-* 垃圾、内联样式）。
+	 */
+	function htmlToMarkdown(html) {
+		if (!html) return "";
+		var doc;
+		try {
+			doc = new DOMParser().parseFromString(html, "text/html");
+		} catch (e) {
+			return "";
+		}
+		if (!doc || !doc.body) return "";
+
+		var BLOCK = "address,article,aside,div,dl,fieldset,figcaption,figure,footer,form,h1,h2,h3,h4,h5,h6,header,hr,li,main,nav,ol,p,pre,section,table,blockquote,tr";
+
+		function kids(node) {
+			return Array.prototype.slice.call(node.childNodes || []);
+		}
+		/** 行内 */
+		function inline(node) {
+			if (node.nodeType === 3) {
+				return String(node.nodeValue || "").replace(/\s+/g, " ");
+			}
+			if (node.nodeType !== 1) return "";
+			var tag = node.nodeName.toLowerCase();
+			if (tag === "script" || tag === "style" || tag === "head" || tag === "title") return "";
+			if (tag === "br") return "\n";
+			var inner = kids(node).map(inline).join("");
+			if (!inner.trim() && tag !== "img") return inner;
+			if (tag === "strong" || tag === "b") return "**" + inner.trim() + "**";
+			if (tag === "em" || tag === "i") return "*" + inner.trim() + "*";
+			if (tag === "del" || tag === "s" || tag === "strike") return "~~" + inner.trim() + "~~";
+			if (tag === "code") return "`" + inner.replace(/\n+/g, " ") + "`";
+			if (tag === "img") {
+				var src = node.getAttribute("src") || "";
+				var alt = node.getAttribute("alt") || "";
+				return src ? "![" + alt + "](" + src + ")" : "";
+			}
+			if (tag === "a") {
+				var href = node.getAttribute("href") || "";
+				if (!href || /^javascript:/i.test(href)) return inner;
+				return "[" + inner.trim() + "](" + href + ")";
+			}
+			return inner;
+		}
+
+		/** 块级：返回若干行 */
+		function block(node) {
+			if (node.nodeType === 3) {
+				var t = String(node.nodeValue || "").replace(/\s+/g, " ").trim();
+				return t ? [t] : [];
+			}
+			if (node.nodeType !== 1) return [];
+			var tag = node.nodeName.toLowerCase();
+			if (tag === "script" || tag === "style" || tag === "head" || tag === "title") return [];
+			if (/^h[1-6]$/.test(tag)) {
+				var lv = Math.min(4, Number(tag.slice(1))); // 博客只到 h4
+				var ht = kids(node).map(inline).join("").trim();
+				return ht ? [new Array(lv + 1).join("#") + " " + ht] : [];
+			}
+			if (tag === "hr") return ["---"];
+			if (tag === "pre") {
+				var code = node.textContent.replace(/\n+$/, "");
+				return ["```", code, "```"];
+			}
+			if (tag === "blockquote") {
+				return flatten(kids(node)).map(function (l) { return l ? "> " + l : ">"; });
+			}
+			if (tag === "ul" || tag === "ol") {
+				var out = [];
+				var n = 1;
+				kids(node).forEach(function (li) {
+					if (li.nodeType !== 1 || li.nodeName.toLowerCase() !== "li") return;
+					// li 里可能还有嵌套列表：第一段当内容，其余原样接在后面
+					var sub = [];
+					var parts = [];
+					kids(li).forEach(function (ch) {
+						if (ch.nodeType === 1 && /^(ul|ol)$/.test(ch.nodeName.toLowerCase())) sub.push(ch);
+						else parts.push(ch);
+					});
+					var text = parts.map(inline).join("").trim().replace(/\n+/g, " ");
+					if (text) out.push((tag === "ol" ? ++n - 1 + ". " : "- ") + text);
+					sub.forEach(function (s) {
+						flatten([s]).forEach(function (l) {
+							if (l) out.push("  " + l);
+						});
+					});
+				});
+				return out;
+			}
+			if (tag === "table") {
+				var rows = [];
+				Array.prototype.forEach.call(node.querySelectorAll("tr"), function (tr) {
+					var cells = Array.prototype.map.call(tr.children, function (td) {
+						return kids(td).map(inline).join("").trim().replace(/\|/g, "\\|").replace(/\n+/g, " ");
+					});
+					if (cells.length) rows.push("| " + cells.join(" | ") + " |");
+				});
+				if (!rows.length) return [];
+				var sep = "| " + rows[0].split("|").slice(1, -1).map(function () { return "---"; }).join(" | ") + " |";
+				return [rows[0], sep].concat(rows.slice(1));
+			}
+			if (tag === BLOCK || tag === "div" || tag === "section" || tag === "article") {
+				return flatten(kids(node));
+			}
+			var it = kids(node).map(inline).join("").trim();
+			return it ? [it] : [];
+		}
+
+		function flatten(nodes) {
+			var out = [];
+			nodes.forEach(function (n) {
+				var lines = block(n);
+				if (lines.length) out = out.concat(lines);
+			});
+			return out;
+		}
+
+		var lines = flatten(kids(doc.body));
+		// 收尾：去掉行尾空格、压缩连续空行、去掉首尾空行
+		var text = lines
+			.join("\n")
+			.replace(/[ \t]+\n/g, "\n")
+			.replace(/\n{3,}/g, "\n\n")
+			.replace(/^\n+|\n+$/g, "");
+		return text;
+	}
+
+	/**
+	 * 粘贴富文本时自动转成 Markdown。
+	 *
+	 * ⚠️ 只在剪贴板**真的有 HTML** 且转换结果里含 Markdown 标记时才接管；
+	 *    纯文本粘贴、或转换出来是空的，一律放过去走浏览器默认行为 —— 否则
+	 *    会把"粘贴一段普通文字"也弄坏（缩进、换行全变）。
+	 */
+	function installRichPaste(textarea, opts) {
+		opts = opts || {};
+		textarea.addEventListener("paste", function (e) {
+			var cb = e.clipboardData || window.clipboardData;
+			if (!cb) return;
+			// 剪贴板里有图片就不管（交给 admin-media 的粘贴上传）
+			var items = cb.items;
+			if (items) {
+				for (var i = 0; i < items.length; i++) {
+					if (items[i].type && items[i].type.indexOf("image/") === 0) return;
+				}
+			}
+			var html = "";
+			try { html = cb.getData("text/html") || ""; } catch (err) { html = ""; }
+			if (!html) return;
+			// 纯文本已经很"干净"（没有标签结构）时不必插手
+			if (!/<(p|div|h[1-6]|ul|ol|li|table|blockquote|pre|strong|b|em|i|a|img)\b/i.test(html)) return;
+			var md = htmlToMarkdown(html);
+			if (!md || !/[#*>`\-|]|!\[|\[/.test(md)) return;
+			e.preventDefault();
+			replaceSelection(textarea, md);
+			if (opts && opts.onConverted) opts.onConverted(md);
+		});
+	}
+
+	/**
+	 * 回车自动接上列表/引用（2026-10-03 加）。
+	 *
+	 * 不熟 Markdown 的人最烦的是"打完一条列表，下一行还得自己敲 - "。
+	 * 这里只做这一件事：在当前行是 `- ` / `* ` / `1. ` / `> ` 时，回车自动
+	 * 补出下一行的标记；**当前行是空列表项时回车，则把标记删掉**（结束列表）。
+	 */
+	function installAutoList(textarea) {
+		textarea.addEventListener("keydown", function (e) {
+			if (e.key !== "Enter" || e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
+			var v = textarea.value;
+			var pos = textarea.selectionStart;
+			if (pos !== textarea.selectionEnd) return;
+			var lineStart = v.lastIndexOf("\n", pos - 1) + 1;
+			var line = v.slice(lineStart, pos);
+			var m = line.match(/^(\s*)(?:([-*+])\s+(.*)|\d+\.\s+(.*)|(>)\s?(.*))$/);
+			if (!m) return;
+			e.preventDefault();
+			var indent = m[1] || "";
+			var rest = (m[3] != null ? m[3] : m[4] != null ? m[4] : m[6]) || "";
+			var marker;
+			if (m[2]) marker = m[2] + " ";
+			else if (m[4] != null) {
+				var num = parseInt(line.match(/(\d+)\./)[1], 10) || 1;
+				marker = (num + 1) + ". ";
+			} else marker = "> ";
+			if (rest.trim()) {
+				textarea.setRangeText("\n" + indent + marker, pos, pos, "end");
+			} else {
+				// 空条目再回车 = 结束这个列表：把这一行的标记删掉，光标停在行首
+				// （只插一个换行是不够的 —— 会把「- 」那截留在原处）
+				textarea.setRangeText("", lineStart, pos, "start");
+			}
+			textarea.dispatchEvent(new Event("input", { bubbles: true }));
+		});
+	}
+
 	global.WBEditor = {
 		summarize: summarize,
+		htmlToMarkdown: htmlToMarkdown,
+		installRichPaste: installRichPaste,
+		installAutoList: installAutoList,
 		// ⚠️ 别再漏掉这一个（2026-10-02 修）：这个函数一直定义在文件里、却**忘了导出**，
 		//    而「文章管理」页的工具栏（加粗 / 引用 / 列表 / 表格 / 图片…）全部走
 		//    `WBEditor.replaceSelection(...)` —— 于是那些按钮点下去抛
