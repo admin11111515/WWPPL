@@ -216,6 +216,7 @@ const pageSwitches = [
                     max="360"
                     step="1"
                     data-kind="hue"
+                    aria-label={f.label}
                   />
                   <span class="hue-swatch" id="hue-swatch" />
                 </div>
@@ -225,19 +226,24 @@ const pageSwitches = [
             ) : f.kind === "enum" ? (
               <div class="field">
                 <div class="field-label">{f.label}</div>
-                <select class="input-single" id={f.key} data-kind="enum">
+                <select class="input-single" id={f.key} data-kind="enum" aria-label={f.label}>
                   {f.options.map((o) => <option value={o[0]}>{o[1]}</option>)}
                 </select>
                 <div class="field-hint" set:html={f.hint} />
               </div>
             ) : (
-              <div class="switch-row">
+              // ⚠️ 用 <label> 包住整行：点「名字/说明」也能切换。
+              //    原来只有右边那个 18px 的复选框能点（体检里量到"开关不可点标签"），
+              //    设置页 8 个开关全都得瞄准那个小方块点。
+              //    （注释写成 JS 行注释，别用 {/* */} —— 那个只在元素内部合法，写在
+              //      JSX 表达式位置 Astro 会报 `Expected ")" but found "$$render"`。）
+              <label class="switch-row">
                 <div class="switch-text">
                   <div class="switch-name">{f.label}</div>
                   <div class="switch-hint" set:html={f.hint} />
                 </div>
-                <input type="checkbox" id={f.key} data-kind="bool" />
-              </div>
+                <input type="checkbox" id={f.key} data-kind="bool" aria-label={f.label} />
+              </label>
             ),
           )
         }
@@ -250,19 +256,24 @@ const pageSwitches = [
             f.kind === "enum" ? (
               <div class="field">
                 <div class="field-label">{f.label}</div>
-                <select class="input-single" id={f.key} data-kind="enum">
+                <select class="input-single" id={f.key} data-kind="enum" aria-label={f.label}>
                   {f.options.map((o) => <option value={o[0]}>{o[1]}</option>)}
                 </select>
                 <div class="field-hint" set:html={f.hint} />
               </div>
             ) : (
-              <div class="switch-row">
+              // ⚠️ 用 <label> 包住整行：点「名字/说明」也能切换。
+              //    原来只有右边那个 18px 的复选框能点（体检里量到"开关不可点标签"），
+              //    设置页 8 个开关全都得瞄准那个小方块点。
+              //    （注释写成 JS 行注释，别用 {/* */} —— 那个只在元素内部合法，写在
+              //      JSX 表达式位置 Astro 会报 `Expected ")" but found "$$render"`。）
+              <label class="switch-row">
                 <div class="switch-text">
                   <div class="switch-name">{f.label}</div>
                   <div class="switch-hint" set:html={f.hint} />
                 </div>
-                <input type="checkbox" id={f.key} data-kind="bool" />
-              </div>
+                <input type="checkbox" id={f.key} data-kind="bool" aria-label={f.label} />
+              </label>
             ),
           )
         }
@@ -276,12 +287,12 @@ const pageSwitches = [
         <div class="page-grid" id="page-grid">
           {
             pageSwitches.map((p) => (
-              <div class="switch-row">
+              <label class="switch-row">
                 <div class="switch-text">
                   <div class="switch-name">{p[1]}</div>
                 </div>
-                <input type="checkbox" id={"page-" + p[0]} data-page={p[0]} data-kind="page" />
-              </div>
+                <input type="checkbox" id={"page-" + p[0]} data-page={p[0]} data-kind="page" aria-label={p[1]} />
+              </label>
             ))
           }
         </div>

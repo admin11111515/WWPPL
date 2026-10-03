@@ -192,6 +192,8 @@ const pages = [
       text-decoration: none;
     }
     .open-live:hover { text-decoration: underline; }
+    /* 它是个要点的链接，高度得够（体检里量到 110×18，低于 24px 的触控下限） */
+    .open-live { display: inline-flex; align-items: center; min-height: 24px; }
     /* 后台没有 iconify 运行时，跳转箭头只能写字面字符 */
 
     /* 这一页只有一个编辑窗格，铺满整行 —— 覆盖通用样式里"宽屏分两栏"的设定 */

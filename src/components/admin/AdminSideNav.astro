@@ -35,7 +35,13 @@ const GROUPS = [
 	},
 	{
 		title: "媒体",
-		items: [{ name: "图片库", href: "/admin/media/", icon: "image" }],
+		items: [
+			{ name: "图片库", href: "/admin/media/", icon: "image" },
+			// 「换头像」原来只有后台首页那张入口卡能打开（首页现在改成概览、不再放功能清单），
+			// 所以挪到这儿：指向 /admin/?avatar=1，由首页自己读这个参数把面板展开。
+			// ⚠️ 头像面板的代码仍在 index.astro（它和「传图片」共用 compressImage）。
+			{ name: "换头像", href: "/admin/?avatar=1", icon: "account-circle" },
+		],
 	},
 ];
 

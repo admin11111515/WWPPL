@@ -277,7 +277,7 @@ const quickAdd = [
 
         <div class="nav-foot">
           <button class="btn btn-sm" type="button" onclick="addTop()">＋ 添加菜单</button>
-          <select id="quick-add" class="input-single" style="width:auto;max-width:12rem;">
+          <select id="quick-add" class="input-single" style="width:auto;max-width:12rem;" aria-label="快速添加站内页面">
             <option value="">快速添加站内页面…</option>
           </select>
         </div>
@@ -378,8 +378,8 @@ const quickAdd = [
       var urlId = "url-" + path;
       var iconId = "icon-" + path;
       var urlCell = hasKids
-        ? '<input type="text" class="input-single nav-url" data-kind="url" data-path="' + path + '" id="' + urlId + '" value="#" disabled title="有子菜单的项渲染成下拉按钮，地址不参与跳转" />'
-        : '<input type="text" class="input-single nav-url" data-kind="url" data-path="' + path + '" id="' + urlId + '" value="' + esc(item.url) + '" placeholder="/about/ 或 https://…" />';
+        ? '<input type="text" class="input-single nav-url" data-kind="url" data-path="' + path + '" id="' + urlId + '" value="#" disabled title="有子菜单的项渲染成下拉按钮，地址不参与跳转" aria-label="菜单地址（有子菜单时不可填）" />'
+        : '<input type="text" class="input-single nav-url" data-kind="url" data-path="' + path + '" id="' + urlId + '" value="' + esc(item.url) + '" placeholder="/about/ 或 https://…" aria-label="菜单地址" />';
       var ops =
         '<div class="nav-ops">' +
         '<button class="btn-icon" type="button" title="上移" data-move="-1" data-path="' + path + '">↑</button>' +
@@ -389,8 +389,9 @@ const quickAdd = [
 
       var html =
         '<div class="' + (isChild ? "nav-child-row" : "nav-row") + '">' +
-        '<select class="input-single nav-icon" id="' + iconId + '" data-kind="icon" data-path="' + path + '">' + iconOptionsHtml(item.icon || "") + "</select>" +
-        '<input type="text" class="input-single nav-name" id="' + nameId + '" data-kind="name" data-path="' + path + '" value="' + esc(item.name) + '" placeholder="菜单名" maxlength="20" />' +
+        // 图标下拉与菜单名在视觉上靠列位置区分，但都没有和标签关联 —— 补 aria-label
+        '<select class="input-single nav-icon" id="' + iconId + '" data-kind="icon" data-path="' + path + '" aria-label="菜单图标">' + iconOptionsHtml(item.icon || "") + "</select>" +
+        '<input type="text" class="input-single nav-name" id="' + nameId + '" data-kind="name" data-path="' + path + '" value="' + esc(item.name) + '" placeholder="菜单名" maxlength="20" aria-label="菜单名" />' +
         urlCell +
         ops +
         "</div>";

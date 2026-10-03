@@ -919,6 +919,15 @@ textarea:focus {
 	min-width: 0;
 }
 
+/* 页头那个容器不参与「页面底部留白」。
+   `.container` 的 `padding-bottom: 5rem` 是给**内容容器**收尾用的；页头容器下面还紧跟着
+   页面自己的内容容器（它另有 1.25rem 上内边距），两条叠在一起 → 页头到内容之间
+   空出约 96px 死白（2026-10-04 实测量到 76px 纯空隙）。这里把页头这一份归零，
+   保留内容容器的 1.25rem 作为统一间距。 */
+#admin-main > .container.admin-head-container {
+	padding-bottom: 0;
+}
+
 /* ── 侧栏本体 ── */
 .admin-side {
 	display: flex;

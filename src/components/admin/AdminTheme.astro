@@ -66,6 +66,17 @@ const pageWidth = `${siteConfig.pageWidth ?? PAGE_WIDTH}rem`;
     var SYSTEM_MODE = "system";
     var root = document.documentElement;
 
+    /* 后台页不走博客的 swup（2026-10-04 修）。
+       起因：`@swup/astro` 集成会把它的 loader **注入每一页**，后台这些独立 HTML 也躲不掉，
+       而后台根本没有它在 astro.config.mjs 里声明的那几个容器
+       （#swup-container / #banner-*-container …）。结果：在后台点任何站内链接，
+       swup 都会拦一下再失败，控制台一串
+       `Container mismatch, aborting` + `Container missing …`（点一下报 4 条）。
+       这里在 <html> 上打一个 `data-no-swup`（swup 判定点击时用的是
+       `closest("[data-no-swup]")`，打在根上等于整页都忽略），后台于是走普通跳转。
+       ⚠️ 别删这一行 —— 删了不是「恢复无刷新跳转」，后台从来就没有过它。 */
+    root.setAttribute("data-no-swup", "");
+
     // 色相：博客把访客选的色相存进 localStorage 的 hue，后台跟着走
     var hue = localStorage.getItem("hue") || configHue;
     root.style.setProperty("--hue", hue);

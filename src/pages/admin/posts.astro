@@ -200,7 +200,8 @@ const postsConfig = JSON.stringify(externalPostsConfig);
             </div>
             <div class="field">
               <div class="field-label">发布日期</div>
-              <input type="date" id="date-input" />
+              {/* 旁边那两个字是视觉标签、不是 label，补一个名字给读屏和自动化 */}
+              <input type="date" id="date-input" aria-label="发布日期" />
             </div>
             <div class="field full">
               <div class="field-label">摘要（可选）</div>
@@ -440,6 +441,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
           renderList();
           fillSuggestions();
           setStatus(true, "已连接 · " + posts.length + " 篇");
+          applyDeepLink();
         })
         .catch(function(e) {
           $("post-list").innerHTML = '<div class="empty-state" style="color:var(--danger)">加载失败：' + esc(e.message) + '</div>';
@@ -491,6 +493,28 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       $("tag-options").innerHTML = Object.keys(tags).sort().map(function(t) {
         return '<option value="' + esc(t) + '"></option>';
       }).join("");
+    }
+
+    /**
+     * `?edit=<slug>` 深链：直接进某篇的编辑器。
+     * 为什么加：后台首页要能列出「最近在写的几篇」并且一点就进编辑 ——
+     * 否则每次都得"进文章管理 → 在一长串里找那一篇"，这才是真费事的地方。
+     * slug 就是文章 id（如 `life/end-of-september`），与 /api/allPostMeta.json 的 id 一致。
+     */
+    function applyDeepLink() {
+      var want = "";
+      try {
+        want = new URLSearchParams(location.search).get("edit") || "";
+      } catch (e) {
+        return;
+      }
+      if (!want) return;
+      var hit = posts.filter(function(p) { return p.slug === want || p.path === want; })[0];
+      if (hit) {
+        editPost(hit.path);
+      } else {
+        toast("没找到这篇：" + want, "err");
+      }
     }
 
     function matchesFilter(post) {

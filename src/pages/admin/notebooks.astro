@@ -155,7 +155,8 @@ const templatesForAdmin = (externalNotebooksConfig.templates || []).map(
         </div>
         <div class="field">
           <div class="field-label">日期</div>
-          <input type="date" id="entry-date" />
+          {/* 视觉上旁边有「日期」两个字，但那不是 label，读屏与自动化都认不出这个框是干嘛的 */}
+          <input type="date" id="entry-date" aria-label="日期" />
         </div>
         <div class="field">
           <div class="field-label">内容（Markdown）</div>

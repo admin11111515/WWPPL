@@ -48,8 +48,12 @@ const isAdminHome = Astro.url.pathname.replace(/\/+$/, "") === "/admin";
 {/* 左侧导航：占网格第一列（见 admin.css 的「后台外壳布局」） */}
 <AdminSideNav />
 
-{/* 页头（+ 页面内容）：落在网格第二列 */}
-<div class="container">
+{/* 页头（+ 页面内容）：落在网格第二列。
+    ⚠️ `admin-head-container` 这个类不能省：`.container` 自带 `padding-bottom: 5rem`（给页面
+       收尾留白用的），而页头这个容器**不是内容容器** —— 它下面还紧跟着页面自己的
+       `.container`（也带 1.25rem 上内边距），两条叠起来让页头到内容之间空出 ~96px 死白。
+       见 admin.css 里 `#admin-main > .container.admin-head-container` 那条。 */}
+<div class="container admin-head-container">
   <div class="admin-head">
     <div class="admin-head-left">
       {
@@ -101,14 +105,22 @@ const isAdminHome = Astro.url.pathname.replace(/\/+$/, "") === "/admin";
     gap: 0.5rem;
     min-width: 0;
   }
+  /* ⚠️ 「← 后台首页」是个要点的链接，高度得够：原来只有 18px，
+     体检（_gen/_后台易用性体检.mjs）里它是全站唯一「目标小于 24px」的交互元素 ——
+     鼠标点不中、触屏更点不到。这里给它一个 24px 的触控高度（项目里定的下限），
+     左右再补一点内边距让点击范围不至于刚好卡在文字上。 */
   .admin-back {
     display: inline-flex;
     align-items: center;
     gap: 0.125rem;
+    min-height: 24px;
+    padding: 0 0.25rem;
+    margin-left: -0.25rem;
+    border-radius: var(--radius-md, 0.375rem);
     font-size: 0.75rem;
     color: var(--text-3);
     text-decoration: none;
-    transition: color 0.15s;
+    transition: color 0.15s, background-color 0.15s;
   }
   .admin-back:hover { color: var(--primary); }
   .admin-back .admin-back-arrow {

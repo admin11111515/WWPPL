@@ -9,44 +9,10 @@ import { adminBodyClass, adminHtmlClass } from "@/components/admin/adminShell";
 import { externalPostsConfig } from "@/config/externalPostsConfig";
 // 后台不走博客 Layout，也就没有 iconify 运行时，图标用构建期内联的 SVG
 import { uiIcon } from "@/constants/ui-icons";
-import AdminEntryRow from "@/components/admin/AdminEntryRow.astro";
 
-/**
- * 后台首页九个入口的分组（2026-10-03，原来是一水儿的大卡片）。
- * 分组跟左侧导航对齐（内容 / 站点 / 媒体），两边对得上，不用记两套。
- * action 是「就地弹面板」而不是「跳页面」的那些（现在只有换头像）。
- */
-const GROUPS = [
-	{
-		title: "内容",
-		icon: "material-symbols:inventory-2",
-		items: [
-			{ href: "/admin/moments/", title: "说说管理", desc: "发布、编辑、删除说说", icon: "fluent-color:chat-24" },
-			{ href: "/admin/notebooks/", title: "笔记管理", desc: "管理笔记本和笔记", icon: "fluent-color:book-open-24" },
-			{ href: "/admin/posts/", title: "文章管理", desc: "编写、编辑、发布文章", icon: "fluent-color:clipboard-text-edit-24" },
-			{ href: "/admin/pages/", title: "页面内容", desc: "改关于我、友链、留言板的正文", icon: "fluent-color:document-edit-24" },
-		],
-	},
-	{
-		title: "站点",
-		icon: "material-symbols:tune",
-		items: [
-			{ href: "/admin/site/", title: "站点信息", desc: "改站点标题、个人签名、页脚等文案", icon: "fluent-color:contact-card-24" },
-			{ href: "/admin/nav/", title: "导航菜单", desc: "改导航栏的菜单、图标与顺序", icon: "fluent-color:apps-list-detail-24" },
-			{ href: "/admin/appearance/", title: "站点外观", desc: "改主题色、明暗、壁纸与页面开关", icon: "fluent-color:paint-brush-24" },
-		],
-	},
-	{
-		title: "媒体",
-		icon: "material-symbols:image",
-		items: [
-			// 图片库（2026-10-02 起）：原来首页那张「传图片」卡（只能复制地址的小面板）整个并过来了，
-			// 能看已有图、预览、改名、删除，上传还支持拖拽和 Ctrl+V 粘贴，比那个小面板完整得多。
-			{ href: "/admin/media/", title: "图片库", desc: "预览、上传、改名、删除与复制地址", icon: "fluent-color:image-24" },
-			{ action: "toggleAvatarPanel()", title: "换头像", desc: "上传新头像，保存后全站生效", icon: "fluent-color:person-24" },
-		],
-	},
-];
+/* ⚠️ 这里原来是一份 `GROUPS`（九个入口的分组清单），2026-10-04 随首页改「概览」删掉了：
+   它跟左侧导航是同一份内容、同一屏出现两遍，而且两边还各说各的。
+   要加入口请加在 components/admin/AdminSideNav.astro —— 那里才是导航的唯一来源。 */
 ---
 
 <html lang="zh-CN" class={adminHtmlClass}>
@@ -73,108 +39,73 @@ const GROUPS = [
     html.admin-authed #login-page { display: none; }
     html.admin-authed body:not(.authed) #admin-main { display: block !important; }
 
-    /* ── 分组列表（2026-10-03 换掉那九张大卡）─────────────────────
-       大卡那会儿每张 295×152、只写「标题 + 一句话」，九张摞起来页高 982px，
-       找功能得在大片留白里扫。改成横行之后九行一屏装得下、标题左对齐成一条线。
-       分组标题的图标是单色（控件/导航类约定），行里的图标沿用 fluent-color 的彩色（内容类）。 */
-    .admin-groups {
+    /* ── 概览（2026-10-04）────────────────────────────────────────
+       首页不再复述左侧导航，只放「接着写 + 主要动作」。
+       下面这套 .ov-* 是随首页一起新加的；原来那套 .admin-groups / .admin-row
+       是给「九个入口的分组清单」用的，清单删了、样式一起删（别留死样式）。 */
+    .ov { display: flex; flex-direction: column; gap: 0.75rem; }
+    .ov-head {
       display: flex;
-      flex-direction: column;
-      gap: 1.125rem;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0 0.25rem;
     }
-    .admin-group-head {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0 0.25rem 0.5rem;
-    }
-    .admin-group-icon {
-      display: inline-flex;
-      color: var(--text-3);
-    }
-    .admin-group-icon svg {
-      width: 1.125rem;
-      height: 1.125rem;
-    }
-    .admin-group-title {
+    .ov-title {
       margin: 0;
       font-size: 0.8125rem;
       font-weight: 700;
       letter-spacing: 0.04em;
       color: var(--text-3);
     }
-    .admin-group-count {
-      min-width: 1.375rem;
-      padding: 0 0.4375rem;
-      border-radius: 999px;
-      background: var(--card-bg-soft);
-      font-size: 0.6875rem;
-      font-weight: 600;
-      line-height: 1.375rem;
-      text-align: center;
+    .ov-more {
+      font-size: 0.75rem;
       color: var(--text-3);
+      text-decoration: none;
+      transition: color 0.15s;
     }
-    .admin-group-list {
+    .ov-more:hover { color: var(--primary); }
+    /* ⚠️ 它是要点的链接，得给到 24px 的触控高度（体检里 63×18 被判"目标太小"） */
+    .ov-more { display: inline-flex; align-items: center; min-height: 24px; }
+    .ov-recent { display: flex; flex-direction: column; gap: 0.375rem; }
+    .ov-item {
       display: flex;
-      flex-direction: column;
-      gap: 0.375rem;
-      list-style: none;
-    }
-    .admin-row {
-      display: flex;
-      align-items: center;
+      align-items: baseline;
       gap: 0.75rem;
-      width: 100%;
       padding: 0.625rem 0.875rem;
       border: 1px solid var(--line-soft);
       border-radius: 0.75rem;
       background: var(--card-bg);
-      font-family: inherit;
-      text-align: left;
       text-decoration: none;
-      cursor: pointer;
       transition: border-color 0.15s, background-color 0.15s;
     }
-    .admin-row:hover {
-      border-color: var(--primary-soft);
-      background: var(--card-bg-soft);
-    }
-    .admin-row-icon {
-      flex: none;
-      display: inline-flex;
-    }
-    .admin-row-icon svg {
-      width: 1.375rem;
-      height: 1.375rem;
-    }
-    .admin-row-body {
+    .ov-item:hover { border-color: var(--primary-soft); background: var(--card-bg-soft); }
+    .ov-item-title {
       flex: 1;
       min-width: 0;
-      display: flex;
-      flex-direction: column;
-    }
-    .admin-row-title {
       font-size: 0.875rem;
       font-weight: 600;
-      line-height: 1.4;
       color: var(--text);
-    }
-    .admin-row-desc {
-      font-size: 0.75rem;
-      line-height: 1.4;
-      color: var(--text-3);
+      /* 两行封顶（和后台列表标题一致），长标题能读完又不撑高 */
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
       overflow: hidden;
-      text-overflow: ellipsis;
+      overflow-wrap: anywhere;
+    }
+    .ov-item-meta {
+      flex: none;
+      font-size: 0.6875rem;
+      color: var(--text-3);
       white-space: nowrap;
     }
-    .admin-row-go {
-      flex: none;
-      display: inline-flex;
-      color: var(--text-4);
-    }
-    .admin-row-go svg {
-      width: 1rem;
-      height: 1rem;
+    /* 主要动作：三个按钮一行，窄屏折行 */
+    .ov-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      padding-top: 0.25rem;
     }
 
     /* ===== 双栏布局 ===== */
@@ -555,37 +486,31 @@ const GROUPS = [
           底部那行仓库状态**整块删掉**，连带它们的取数脚本一起（别留死代码）。
           ⚠️ 要恢复的话：四格数据来自 listDir(src/content/posts) + Gist + /commits，
               那套逻辑在 git 历史里（提交 190470e 之前）。 */}
-      {/* 九个入口改成「分组列表」（2026-10-03）。
-          原来是一水儿的大卡片：每张 295×152、信息只有标题 + 一句话，九张摞下来页高 982px，
-          想找某个功能得先在大片留白里扫一眼。改成按功能分组的横行之后：
-          一屏能装下全部、行高统一、标题左对齐成一条线，眼睛顺着走就行。
-          分组跟左侧导航一致（内容 / 站点 / 媒体），两边对得上不用记两套。 */}
-      <div class="admin-groups">
-        {
-          GROUPS.map((g) => (
-            <section class="admin-group">
-              <div class="admin-group-head">
-                <span class="admin-group-icon" set:html={uiIcon(g.icon)} />
-                <h2 class="admin-group-title">{g.title}</h2>
-                <span class="admin-group-count">{g.items.length}</span>
-              </div>
-              <ul class="admin-group-list">
-                {g.items.map((it) => (
-                  <li>
-                    <AdminEntryRow
-                      href={it.href}
-                      action={it.action}
-                      icon={it.icon}
-                      title={it.title}
-                      desc={it.desc}
-                    />
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ))
-        }
-      </div>
+      {/* ── 概览（2026-10-04 重做）──────────────────────────────────────────
+          原来是九个入口的「分组列表」，注释里还写着"跟左侧导航一致，两边对得上不用记两套" ——
+          可那正是毛病：**同一屏上同一份导航出现两遍**，而且两边各说各的
+          （首页有「换头像」、侧栏有「看前台」），第一次进来最值钱的一屏全花在复述侧栏上。
+          现在首页只放两件**侧栏给不了**的事：
+            ① 接着写：最近更新的几篇，点一下直接进那篇的编辑器
+               （靠 /admin/posts/?edit=<id> 深链 —— 不然每次都要"进文章管理 → 在一长串里找"）
+            ② 主要动作：写文章 / 写说说 / 传图片
+          ⚠️ 「换头像」的入口挪到侧栏「媒体」组，指向本页 ?avatar=1（面板还在本页）。
+          ⚠️ 别再往这里加"功能清单"，那是侧栏的活。 */}
+      <section class="ov">
+        <div class="ov-head">
+          <h2 class="ov-title">接着写</h2>
+          <a class="ov-more" href="/admin/posts/">全部文章 →</a>
+        </div>
+        <div class="ov-recent" id="recent-posts">
+          <div class="empty-state"><span class="spinner"></span><p>正在读最近更新…</p></div>
+        </div>
+
+        <div class="ov-actions">
+          <a class="btn btn-primary" href="/admin/posts/">写文章</a>
+          <a class="btn" href="/admin/moments/">写说说</a>
+          <a class="btn" href="/admin/media/">传图片</a>
+        </div>
+      </section>
 
       {/* ⚠️ 下面这个「传图片」面板已被图片库页 /admin/media/ 取代（入口也在上面那张列表里换过去了），
           现在没有入口能打开它 —— 留着是因为它的 compressImage() 还被「换头像」用着。
@@ -993,6 +918,59 @@ const GROUPS = [
       }
       btn.textContent = "上传并生效";
     });
+
+    // ===== 概览：接着写 =====
+    /** 标题/分类是仓库里的数据，插进 innerHTML 前一律转义（这一页原来没有 esc） */
+    function esc(s) {
+      return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+      });
+    }
+    // 数据用构建产物 /api/allPostMeta.json（58 篇的 id/title/published/category），
+    // 不额外打 GitHub 接口 —— 首页只是给人一个"上次写到哪"的落点。
+    // 点进去走 /admin/posts/?edit=<id> 深链，直接进那篇的编辑器。
+    (function renderRecentPosts() {
+      var box = $("recent-posts");
+      if (!box) return;
+      fetch("/api/allPostMeta.json")
+        .then(function (r) {
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          return r.json();
+        })
+        .then(function (all) {
+          var list = (all || []).slice().sort(function (a, b) {
+            return Number(b.published || 0) - Number(a.published || 0);
+          }).slice(0, 5);
+          if (!list.length) {
+            box.innerHTML = '<div class="empty-state"><p>还没有文章，点下面的「写文章」开始</p></div>';
+            return;
+          }
+          box.innerHTML = list.map(function (p) {
+            var d = new Date(Number(p.published) || 0);
+            var date = d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
+            var meta = [date, p.category || ""].filter(Boolean).join(" · ");
+            var href = "/admin/posts/?edit=" + encodeURIComponent(p.id);
+            return '<a class="ov-item" href="' + href + '">' +
+              '<span class="ov-item-title">' + esc(p.title || p.id) + '</span>' +
+              '<span class="ov-item-meta">' + esc(meta) + '</span>' +
+              '</a>';
+          }).join("");
+        })
+        .catch(function (e) {
+          // 读不到就说清楚，别留个转圈（本地预览没有 /api 时也会走到这儿）
+          box.innerHTML = '<div class="empty-state"><p>读不到文章列表（' + esc(e.message) + '），点下面的「写文章」直接进去</p></div>';
+        });
+    })();
+
+    // ===== ?avatar=1：侧栏「换头像」点过来的落点 =====
+    // 头像面板还在本页（它和「传图片」共用 compressImage），侧栏那个入口只是把参数带过来。
+    try {
+      if (new URLSearchParams(location.search).get("avatar") === "1") {
+        toggleAvatarPanel();
+      }
+    } catch (e) {
+      /* 参数读不了就算了，不影响页面 */
+    }
   </script>
 </body>
 </html>
