@@ -462,11 +462,38 @@ const showMini = musicPlayerConfig.showMiniPlayer ?? false;
                 this.audio.volume = 1.0;
                 this.audio.addEventListener('timeupdate', () => this.updateProgress());
                 this.audio.addEventListener('ended', () => this.nextSong(true));
+                // 换歌成功（拿到元数据）就把「备用源已试过」的计数清零 —— 每首歌各给一次机会
+                this.audio.addEventListener('loadedmetadata', () => { this.altTried = 0; });
                 this.audio.addEventListener('play', () => { this.isPlaying = true; this.updateUI(); });
                 this.audio.addEventListener('pause', () => { this.isPlaying = false; this.updateUI(); });
                 // 音频源是第三方接口，配额耗尽/下线时必然触发。这属于外部依赖不可用，
                 // 用 warn 记下具体地址即可；用 error 会在每次加载都污染控制台、掩盖真正的代码错误。
-                this.audio.addEventListener('error', () => console.warn('音频源加载失败：', this.audio.currentSrc || this.audio.src));
+                //
+                // 2026-10-04 补：光记 console 不够 —— 用户那边看到的是「点了播放没反应，
+                // 也不说为什么」。歌单里 28 首全挂在一个第三方主机上，它一挂整块就废。
+                // 现在按顺序做三件事：
+                //   ① 换备用音乐接口，用同一首歌重试一次（_gen/_备用音源实测.mjs 实测
+                //      api.qijieya.cn 那份是活的，能正常 loadedmetadata；i-meto / moeyao
+                //      / ggball 三家实测都失败，别把它们写进来）
+                //   ② 备用源也不行 → 右下角弹一句中文说明，别让按钮「点了没反应」
+                //   ③ 全程只 warn，不用 console.error（见上面那段注释的原因）
+                this.audio.addEventListener('error', () => {
+                    const failed = this.audio.currentSrc || this.audio.src || '';
+                    console.warn('音频源加载失败：', failed);
+                    if (!failed) return;
+                    // ⚠️ 一首歌只换一次源：否则备用源也失败时会「主→备→主→备」来回弹。
+                    //    计数在 loadedmetadata 时清零（换歌成功就重新给一次机会）。
+                    const alt = this.alternateSource(failed);
+                    if (alt && !this.altTried) {
+                        this.altTried = 1;
+                        const wasPlaying = !this.audio.paused;
+                        console.warn('换备用音源重试：', alt);
+                        this.audio.src = alt;
+                        if (wasPlaying) this.audio.play().catch(() => {});
+                        return;
+                    }
+                    this.notifyMusicIssue('这首暂时放不出来（音乐接口连不上），换一首试试');
+                });
                 this.audio.dataset.hasGlobalEvents = "true";
              }
              
@@ -476,6 +503,37 @@ const showMini = musicPlayerConfig.showMiniPlayer ?? false;
                 navigator.mediaSession.setActionHandler('previoustrack', () => this.prevSong());
                 navigator.mediaSession.setActionHandler('nexttrack', () => this.nextSong());
             }
+        }
+
+        /** 音乐接口的备用主机：**只放实测能播的**（`_gen/_备用音源实测.mjs` 实测过：
+         *  api.qijieya.cn 能正常 loadedmetadata；i-meto / moeyao.top / ggball 三家都失败，
+         *  别再往这里加 —— 加进来只会让「换源重试」也一起失败，白等一轮。 */
+        alternateSource(url) {
+            const PRIMARY = 'https://api.injahow.cn/meting/';
+            const BACKUP = 'https://api.qijieya.cn/meting/';
+            if (url.indexOf(PRIMARY) === 0) return BACKUP + url.slice(PRIMARY.length);
+            if (url.indexOf(BACKUP) === 0) return PRIMARY + url.slice(BACKUP.length);
+            return '';
+        }
+
+        /** 右下角弹一句中文说明。不用 alert：那是整页阻塞的，听歌场景里很讨厌。 */
+        notifyMusicIssue(text) {
+            let el = document.getElementById('fm-issue-toast');
+            if (!el) {
+                el = document.createElement('div');
+                el.id = 'fm-issue-toast';
+                el.setAttribute('style',
+                    'position:fixed;right:1rem;bottom:5.5rem;z-index:9999;max-width:16rem;' +
+                    'padding:0.6rem 0.85rem;border-radius:0.75rem;font-size:0.8125rem;line-height:1.5;' +
+                    'background:var(--card-bg,var(--page-bg,#fff));color:var(--text,#111);' +
+                    'border:1px solid var(--line-soft,rgba(0,0,0,0.12));' +
+                    'box-shadow:0 6px 20px rgba(0,0,0,0.18);transition:opacity 0.3s;');
+                document.body.appendChild(el);
+            }
+            el.textContent = text;
+            el.style.opacity = '1';
+            clearTimeout(this.issueTimer);
+            this.issueTimer = setTimeout(() => { el.style.opacity = '0'; }, 6000);
         }
 
         bindMiniPlayerEvents() {

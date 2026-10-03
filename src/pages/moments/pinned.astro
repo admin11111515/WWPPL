@@ -68,10 +68,8 @@ const pinnedMoments = moments
   )}
 </MainGridLayout>
 
-<!-- 引入外部朋友圈数据获取脚本 -->
-<script>
-  import "@/data/moments.ts";
-</script>
+<!-- 外部朋友圈数据获取脚本已挪到全局（src/layouts/Layout.astro）：
+     页面级 <script> 在 swup 站内跳转时不会被执行，见那边注释。 -->
 
 <style>
   /* 页面头部 */

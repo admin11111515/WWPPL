@@ -24,8 +24,9 @@ const postsConfig = JSON.stringify(externalPostsConfig);
   <style is:inline>
     /* ===== 只放这一页特有的排版，通用部分在 src/styles/admin.css ===== */
 
-    /* 这一页是「列表 + 编辑器」两栏，内容区比别的页宽一些 */
-    #admin-main { --admin-content-max: 1100px; }
+    /* 这一页是「列表 + 编辑器」两栏，内容区比别的页宽一些。
+       2026-10-04：1100 → 1320。原来它比全局那档还窄，站长在宽屏上看着就是「右边空一截」。 */
+    #admin-main { --admin-content-max: 1320px; }
 
     .layout-grid {
       display: grid;
@@ -33,11 +34,13 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       gap: 1rem;
       align-items: start;
     }
-    /* 左栏 340 → 400px（2026-10-02）：三个操作按钮带上图标之后是图标按钮，
-       340px 里标题只剩 100px（"深夜写代码时听…"）。加宽到 400px 后标题有 160px，
-       右栏还留着 855px，编辑器不受影响。 */
+    /* 左栏 340 → 400 → **480px**（2026-10-04）：
+       三个操作按钮占掉一截之后，400px 里标题只剩 160px，长标题照样被切；
+       480px + 标题允许两行（见 admin.css 的 .post-title）之后，
+       最长的那条「Astro Content Collections，迁移完我才敢乱改 frontmatter」也能读全。
+       右栏还剩 820px 以上，编辑器不受影响（实测 1366 屏也不挤）。 */
     @media (min-width: 980px) {
-      .layout-grid { grid-template-columns: 400px minmax(0, 1fr); }
+      .layout-grid { grid-template-columns: 480px minmax(0, 1fr); }
     }
 
     /* 文章列表：跟随页面滚动，长列表不会把编辑器顶下去 */

@@ -935,6 +935,13 @@ const siteLang = lang.replace("_", "-");
 </style>
 
 <script>
+  /* 外部朋友圈（GitHub Gist）数据注入。
+     ⚠️ 它必须挂在**全局**脚本里，不能只挂在 /moments/ 页面自己的 <script> 上：
+        本站是 swup 无刷新换页，换页时新内容里的 <script> **不会被执行**，
+        页面级的那份只有「整页打开 /moments/」才跑 —— 表现就是
+        「从导航点进朋友圈，一条外部说说都没有」（2026-10-04 实测定性）。
+        模块自己会用 #moments-config 判断「本页要不要拉数据」，放全局是安全的。 */
+  import "@/data/moments.ts";
   import { pathsEqual, url } from "@/utils/url-utils";
   import {
     BANNER_HEIGHT,

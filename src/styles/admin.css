@@ -621,9 +621,17 @@ textarea:focus {
 	font-size: 0.8125rem;
 	font-weight: 700;
 	color: var(--text);
+	/* 2026-10-04：原来是「单行 + 省略号」。列表栏宽度是写死的，标题能拿到的只有
+	   160px，于是「Astro Content Collections，迁移完我才敢乱改 frontmatter」
+	   永远显示成「Astro Content Colle…」——**把窗口调宽也一点用没有**。
+	   改成最多两行：长标题读得完，短标题仍然只占一行，不浪费高度。 */
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	line-clamp: 2;
 	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
+	white-space: normal;
+	overflow-wrap: anywhere;
 }
 
 .post-meta {
@@ -1043,10 +1051,11 @@ textarea:focus {
    页头是内容区里的一行，下面这些 `#navbar-wrapper` 规则随之作废（一并删了）。 */
 
 /* 入口页原来收在 720px，卡片排成 3+3+1 很难看，先放宽到 960px（2026-10-02）。
-   2026-10-03 站长要求「内容宽度再宽一点」，量过之后放到 1180px：
-   撤掉那条 72px 的横向导航栏后中间空出来的正是这块；1180px ≈ 一行 70 个汉字，
-   编辑器正文不至于长到读起来卡眼。 */
-#admin-main { --admin-content-max: 1180px; }
+   2026-10-03 站长要求「内容宽度再宽一点」→ 1180px（撤掉那条 72px 导航栏后空出来的正是这块）。
+   2026-10-04 站长又说「文章那种会显示不全」→ 1280px。
+   ⚠️ 但**宽度治不了标题被切**：列表栏是写死的列宽，真正的原因在 .post-title
+      的单行省略号 + 左栏 400px（已分别改成两行 + 480px）。两边一起调才有效果。 */
+#admin-main { --admin-content-max: 1280px; }
 
 /* ── 2. 卡片：统一的边、圆角、悬停 ───────────────────────────── */
 .card,

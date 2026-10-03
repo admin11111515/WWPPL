@@ -628,15 +628,28 @@ const COLLAPSED_HEIGHT = "9rem";
 
 		function writeStore(key, data) {
 			try {
-				localStorage.setItem(
-					key,
-					JSON.stringify({
-						data,
-						timestamp: Date.now(),
-					}),
-				);
+				const raw = JSON.stringify({
+					data,
+					timestamp: Date.now(),
+				});
+				localStorage.setItem(key, raw);
+				// 另存一份「上次成功」的，永不判过期：网络抽风时用它把卡片填上，
+				// 免得用户看到一片空白还以为天气功能坏了。
+				localStorage.setItem(CACHE_KEY + "#last", raw);
 			} catch {
 				// 存不下就算了（无痕模式 / 配额满）
+			}
+		}
+
+		// 上一次成功的数据，不看时效（只用于「连不上时别空着」）
+		function readLastGood() {
+			try {
+				const raw = localStorage.getItem(CACHE_KEY + "#last");
+				if (!raw) return null;
+				const obj = JSON.parse(raw);
+				return obj && obj.data ? obj.data : null;
+			} catch {
+				return null;
 			}
 		}
 
@@ -838,12 +851,38 @@ const COLLAPSED_HEIGHT = "9rem";
 				errorEl.classList.add("weather-hidden");
 				content.classList.add("weather-hidden");
 
-				try {
-					const data = await getWeather();
-					updateUI(container, data);
-				} catch (e) {
-					const msg = e && e.name === "AbortError" ? "请求超时" : (e && e.message) || "获取天气信息失败";
-					updateUI(container, null, msg);
+				// 2026-10-04：原来这里失败就把 `e.message` 直接写进卡片 ——
+				// 网络一断，用户看到的是英文的「Failed to fetch」，
+				// 既看不懂也看不出是「等等就好」还是「坏了」。三件事一起补：
+				//   ① 自动重试一次（上游那点是偶发 429/超时，隔一秒多半就过了）
+				//   ② 仍然失败 → 用**上次成功那一次**的数据顶上（卡片不空，也不会误当成实时）
+				//   ③ 文案全中文，并说清现在看到的是什么
+				for (let attempt = 0; attempt < 2; attempt++) {
+					try {
+						const data = await getWeather();
+						updateUI(container, data);
+						return;
+					} catch (e) {
+						if (attempt === 0) {
+							await new Promise((r) => setTimeout(r, 1200));
+							continue;
+						}
+						const stale = readLastGood();
+						if (stale) {
+							updateUI(container, stale);
+							updateUI(
+								container,
+								null,
+								"天气服务连不上，下面是上次成功获取的数据",
+							);
+							return;
+						}
+						const msg =
+							e && e.name === "AbortError"
+								? "天气服务响应太慢，稍后再试"
+								: "天气服务暂时连不上，点「重试」再拉一次";
+						updateUI(container, null, msg);
+					}
 				}
 			}
 

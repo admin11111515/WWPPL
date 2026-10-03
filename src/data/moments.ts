@@ -397,10 +397,40 @@ interface MomentsCache {
 	time: number;
 }
 
+/** 拉取失败时在列表里留一句话。
+ *  ⚠️ 以前这里只有 console.warn —— 用户在页面上看到的就是「朋友圈空空的、什么都不说」，
+ *     分不清是没数据还是没连上。GitHub 的接口在国内网络本来就时通时不通。 */
+function showFetchNotice(feedId: string, text: string): void {
+	const feed = document.getElementById(feedId);
+	if (!feed || feed.querySelector(".ext-fetch-notice")) return;
+	const el = document.createElement("div");
+	el.className = "ext-fetch-notice";
+	el.textContent = text;
+	// 样式写死在这里：它是运行时插进来的，不该依赖某一页的 <style>（换页后可能不在了）
+	el.setAttribute(
+		"style",
+		"margin:0.75rem 0 0.25rem;padding:0.5rem 0.75rem;border-radius:0.5rem;" +
+			"font-size:0.75rem;line-height:1.5;color:var(--text-3);" +
+			"background:var(--btn-regular-bg);border:1px dashed var(--line-soft);",
+	);
+	feed.appendChild(el);
+}
+
+function clearFetchNotice(feedId: string): void {
+	const old = document.getElementById(feedId)?.querySelector(".ext-fetch-notice");
+	if (old) old.remove();
+}
+
+// 在途标记：content:replace 与 page:view 两个钩子会挨着触发，
+// 没有它就会同时发两次请求、把说说插两遍。
+let momentsInFlight = false;
+let pinnedInFlight = false;
+
 function fetchMoments(): void {
 	const feed = document.getElementById("moments-feed");
 	if (!feed) return;
 	if (hasExternalMoments()) return;
+	if (momentsInFlight) return;
 
 	const config = getConfig();
 	if (!config) return;
@@ -420,6 +450,7 @@ function fetchMoments(): void {
 	};
 	if (token) headers.Authorization = `Bearer ${token}`;
 
+	momentsInFlight = true;
 	fetch(`https://api.github.com/gists/${config.gistId}`, { headers })
 		.then((r) => {
 			if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -436,9 +467,17 @@ function fetchMoments(): void {
 			};
 			insertExternalMoments(moments);
 			feed.setAttribute(MARKER, "1");
+			clearFetchNotice("moments-feed");
 		})
 		.catch((e) => {
 			console.warn("[外部说说] 加载失败:", e.message);
+			showFetchNotice(
+				"moments-feed",
+				"外部说说暂时拉不到（GitHub 接口连不上），下面显示的是站内已有的说说。",
+			);
+		})
+		.finally(() => {
+			momentsInFlight = false;
 		});
 }
 
@@ -446,6 +485,7 @@ function fetchPinned(): void {
 	const feed = document.getElementById("pinned-feed");
 	if (!feed) return;
 	if (hasExternalPinned()) return;
+	if (pinnedInFlight) return;
 
 	const config = getConfig();
 	if (!config) return;
@@ -463,6 +503,7 @@ function fetchPinned(): void {
 	};
 	if (token) headers.Authorization = `Bearer ${token}`;
 
+	pinnedInFlight = true;
 	fetch(`https://api.github.com/gists/${config.gistId}`, { headers })
 		.then((r) => {
 			if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -478,9 +519,14 @@ function fetchPinned(): void {
 				time: Date.now(),
 			};
 			insertPinnedExternal(moments);
+			clearFetchNotice("pinned-feed");
 		})
 		.catch((e) => {
 			console.warn("[外部置顶说说] 加载失败:", e.message);
+			showFetchNotice("pinned-feed", "置顶说说暂时拉不到（GitHub 接口连不上）。");
+		})
+		.finally(() => {
+			pinnedInFlight = false;
 		});
 }
 
@@ -507,13 +553,18 @@ if (document.readyState === "loading") {
 // Swup 页面切换后重新加载。
 // 事件名必须是 swup v4 的 swup:content:replace；原来还并列注册了一份
 // swup:contentReplaced（v3 旧名），在 v4 下永远不触发，已删除。
-document.addEventListener("swup:content:replace", () => {
-	setTimeout(() => {
-		if (document.getElementById("moments-feed") && !hasExternalMoments()) {
-			fetchMoments();
-		}
-		if (document.getElementById("pinned-feed") && !hasExternalPinned()) {
-			fetchPinned();
-		}
-	}, 50);
-});
+//
+// 2026-10-04 补 `swup:page:view`：两个事件都挂上，谁先到都行。
+// 光挂 content:replace 时实测过「从导航点进 /moments/ 一条外部说说都不插」——
+// 那次真正的原因是脚本挂在页面级 <script> 上、swup 换页不执行它（已挪到全局），
+// 但既然这里本来就有时序上的窗口，多挂一个更稳的事件不亏（有在途标记，不会重复请求）。
+function refreshMoments(): void {
+	if (document.getElementById("moments-feed") && !hasExternalMoments()) {
+		fetchMoments();
+	}
+	if (document.getElementById("pinned-feed") && !hasExternalPinned()) {
+		fetchPinned();
+	}
+}
+document.addEventListener("swup:content:replace", () => setTimeout(refreshMoments, 50));
+document.addEventListener("swup:page:view", () => setTimeout(refreshMoments, 50));

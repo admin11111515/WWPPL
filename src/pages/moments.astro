@@ -172,10 +172,9 @@ const pinnedData = pinnedMoments.map((m) => ({
   )}
 </MainGridLayout>
 
-<!-- 引入外部朋友圈数据获取脚本 -->
-<script>
-  import "@/data/moments.ts";
-</script>
+<!-- 外部朋友圈数据获取脚本已挪到全局（src/layouts/Layout.astro）。
+     ⚠️ 别再搬回这一页：本站用 swup 换页，页面级 <script> 在站内跳转时不会执行，
+        搬回来就会出现「从导航点进朋友圈，外部说说一条都不见」。 -->
 
 {usesWalinePageViews && (
 <script is:inline>
