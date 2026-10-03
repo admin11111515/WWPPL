@@ -49,8 +49,29 @@ const { class: className, style } = Astro.props;
   (() => {
     const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-    if (!window.timeGreetingImage) {
-        window.timeGreetingImage = `https://random-api.czl.net/pic/fj?t=${new Date().getTime()}`;
+    // 问候卡背景图：**按顺序试，谁能出图用谁**。
+    // 2026-10-04 实测：原来那个 random-api.czl.net 已经出不了图（浏览器 ORB 直接拦掉），
+    // 于是这块图**一直没显示过**，全站每页都白等一次请求。
+    // 顺序：站内其它地方本来就在用 t.alcy.cc；loliapi 备用；原来那个留作最后的兜底。
+    // 实测能出图的：t.alcy.cc(3450px) / loliapi(1920px)；出不了的：czl / btstu / dujin —— 别再往列表里加后者。
+    const IMG_SOURCES = [
+        'https://t.alcy.cc/pc',
+        'https://www.loliapi.com/acg/',
+        'https://random-api.czl.net/pic/fj'
+    ];
+
+    /** 依次预加载候选图，第一个成功的交给 cb；全失败就 cb(null)（保持渐变，不留破图） */
+    function pickGreetingImage(cb) {
+        let i = 0;
+        (function next() {
+            if (i >= IMG_SOURCES.length) { cb(null); return; }
+            const base = IMG_SOURCES[i++];
+            const url = base + (base.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now();
+            const img = new Image();
+            img.onload = () => cb(url);
+            img.onerror = next;
+            img.src = url;   // ⚠️ src 必须在等之前赋，不然图不会开始加载
+        })();
     }
 
     function updateTimeGreeting() {
@@ -117,12 +138,15 @@ const { class: className, style } = Astro.props;
 
       imageContainers.forEach(el => {
           if (el.getAttribute('data-image-set') !== 'true') {
-              el.style.backgroundImage = `url('${window.timeGreetingImage}')`;
-              el.setAttribute('data-image-set', 'true');
-              setTimeout(() => {
-                  el.classList.remove('opacity-0');
-                  el.classList.add('opacity-100');
-              }, 50);
+              el.setAttribute('data-image-set', 'true');   // 先占位，避免 swup 重跑时重复挑图
+              pickGreetingImage(function (url) {
+                  if (!url) return;                        // 全都出不来：保持渐变，不留破图
+                  el.style.backgroundImage = "url('" + url + "')";
+                  setTimeout(() => {
+                      el.classList.remove('opacity-0');
+                      el.classList.add('opacity-100');
+                  }, 50);
+              });
           }
       });
     }

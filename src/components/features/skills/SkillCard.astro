@@ -2,11 +2,20 @@
 import I18nKey from "../../../i18n/i18nKey";
 import { i18n } from "../../../i18n/translation";
 import Icon from "../../misc/Icon.astro";
+import skillIcons from "@/data/skillIcons.json";
 import type { SkillCardProps } from "./types";
 
 const { skill } = Astro.props as SkillCardProps;
 
 const skillColor = skill.color || "#3B82F6";
+
+/* 图标走**构建期内联**（数据由 `_gen/_下载技能图标.mjs` 从 iconify 源头拉一次、落在
+   `src/data/skillIcons.json`）。
+   ⚠️ 别再改回下面那个运行时 `<Icon>`：它渲染的是 `<iconify-icon>` web component，
+   运行时会去 `api.iconify.design` 取 SVG —— 那个域名一不通（国内网络常态），
+   整页 29 个图标**全空白**（2026-10-04 实测：屏蔽后 shadow DOM 里连 svg 都没有）。
+   表里没有的图标才退回运行时那套，保证以后加新技能不会直接掉图标。 */
+const inlineSvg: string = (skillIcons as { icons: Record<string, string> }).icons[skill.icon] || "";
 ---
 
 <div
@@ -19,13 +28,21 @@ const skillColor = skill.color || "#3B82F6";
 				class="w-12 h-12 flex-shrink-0 rounded-lg flex items-center justify-center"
 				style={`background-color: ${skillColor}20`}
 			>
-				<Icon
-					icon={skill.icon}
-					class="text-xl"
-					color={skillColor}
-					fallback={skill.name.charAt(0)}
-					loading="eager"
-				/>
+				{inlineSvg ? (
+					<span
+						class="inline-flex items-center justify-center text-xl [&>svg]:w-[1em] [&>svg]:h-[1em]"
+						style={`color: ${skillColor}`}
+						set:html={inlineSvg}
+					/>
+				) : (
+					<Icon
+						icon={skill.icon}
+						class="text-xl"
+						color={skillColor}
+						fallback={skill.name.charAt(0)}
+						loading="eager"
+					/>
+				)}
 			</div>
 
 			<div class="flex-1 min-w-0">

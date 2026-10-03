@@ -129,3 +129,32 @@ if (footerConfig.enable) {
     -->
   </div>
 </div>
+
+<script>
+  /* 页脚那一排徽章是 img.shields.io 的**第三方图片**。国内网络访问它很不稳定
+     （2026-10-04 实测：同一台机器上时通时断，报 ERR_CERT_AUTHORITY_INVALID /
+     ERR_CONNECTION_CLOSED），一旦取不回来，浏览器画的就是一排**破图图标**
+     —— 页脚每次打开都在，这个瑕疵很显眼。
+     这里只做一件事：**图片没加载出来就把它藏掉**。
+     不影响能加载时的样子（设计一个字没动），也不会留下破图占位。 */
+  (function () {
+    function hideBroken() {
+      document.querySelectorAll("footer img, .footer img, .footer-badge img").forEach(function (img) {
+        if (img.dataset.wwBrokenCheck === "1") return;
+        img.dataset.wwBrokenCheck = "1";
+        var hide = function () {
+          // 徽章一般裹在 <a> 里：只藏 img 会留下一个看不见但能点的空链接，
+          // 所以连它外面那个「只有一个图片、没别的文字」的链接一起藏。
+          var a = img.closest("a");
+          var onlyThisImg = a && a.querySelectorAll("img").length === 1 && (a.textContent || "").trim() === "";
+          (onlyThisImg ? a : img).style.display = "none";
+        };
+        if (img.complete && img.naturalWidth === 0) hide();
+        img.addEventListener("error", hide);
+      });
+    }
+    hideBroken();
+    document.addEventListener("astro:page-load", hideBroken);
+    document.addEventListener("swup:content:replace", hideBroken);
+  })();
+</script>
