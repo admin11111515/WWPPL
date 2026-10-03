@@ -73,9 +73,16 @@ const ICONS = {
     }
     .media-tools .spacer { flex: 1; }
 
-    /* ===== 拖放区：整块网格都能接图 ===== */
+    /* ===== 拖放区：平时不画框，拖进来才亮 =====
+       2026-10-04 改：原来这里是**常驻的虚线框**，看着像一整块"上传区"，
+       而且只在框里能接住文件 —— 拖到工具条/页头/侧栏上没人接，浏览器就按默认行为
+       直接打开你拖进来的那张图（人被踢出后台）。现在改成：
+         · 平时：透明边框（占位用的，去掉布局会跳）+ 无底色，看着就是一块干净的网格
+         · 拖文件进入页面：整块亮起来（虚线 + 主题色淡底），松手哪都能放
+       ⚠️ 边框必须是「透明但有宽度」而不是 border:none —— 不然拖拽时突然多出 1px，
+          网格会整体跳一下。 */
     .media-drop {
-      border: 1px dashed var(--line);
+      border: 1px dashed transparent;
       border-radius: var(--radius-large);
       padding: 0.875rem;
       transition: border-color 0.15s, background-color 0.15s;
@@ -207,7 +214,7 @@ const ICONS = {
           <span class="lead-icon" set:html={uiIcon("fluent-color:image-24")} />
           <span>
             仓库里 <code>public/images/</code> 下的所有图片都在这儿。可以<b>预览大图、改名、删除</b>，
-            也可以直接<b>复制 Markdown</b> 贴进文章或说说。上传支持<b>点选、拖进来、Ctrl+V 粘贴</b>三种。
+            也可以直接<b>复制 Markdown</b> 贴进文章或说说。上传支持<b>点选、拖到页面任意位置、Ctrl+V 粘贴</b>三种。
             上传后要等 Cloudflare 重新构建（一两分钟）站上才看得到。
           </span>
         </div>
@@ -500,20 +507,46 @@ const ICONS = {
     }
 
     // ===== 拖放 / 粘贴 =====
+    // ⚠️ 2026-10-04 改：原来只在 #media-drop（那块虚线框）上接文件。
+    //    实测（_gen/_图片库拖放探查.mjs）拖到**工具条 / 页头 / 侧栏**上时没有任何人 preventDefault，
+    //    浏览器就按默认行为**直接打开你拖进来的那张图** —— 拖歪一点整页就被顶掉。
+    //    现在改成「进页面就接、哪都能放」：
+    //      · 只在拖的是**文件**时接管，拖文字/链接照旧走浏览器默认（别乱拦）
+    //      · dragenter/dragleave 用计数器，鼠标掠过子元素不会闪
     var drop = $("media-drop");
-    ["dragenter", "dragover"].forEach(function (ev) {
-      drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add("over"); });
+    var dragDepth = 0;
+    function dragHasFiles(e) {
+      var t = e.dataTransfer;
+      if (!t) return false;
+      var types = t.types || [];
+      return Array.prototype.indexOf.call(types, "Files") >= 0;
+    }
+    function dropOff() { dragDepth = 0; if (drop) drop.classList.remove("over"); }
+    document.addEventListener("dragenter", function (e) {
+      if (!dragHasFiles(e)) return;
+      dragDepth++;
+      if (drop) drop.classList.add("over");
     });
-    ["dragleave", "drop"].forEach(function (ev) {
-      drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove("over"); });
+    document.addEventListener("dragover", function (e) {
+      if (!dragHasFiles(e)) return;
+      e.preventDefault();                       // 不拦就走浏览器默认（打开这张图）
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
     });
-    drop.addEventListener("drop", function (e) {
+    document.addEventListener("dragleave", function (e) {
+      if (!dragHasFiles(e)) return;
+      dragDepth = Math.max(0, dragDepth - 1);
+      if (dragDepth === 0 && drop) drop.classList.remove("over");
+    });
+    document.addEventListener("drop", function (e) {
+      if (!dragHasFiles(e)) return;
+      e.preventDefault();
+      dropOff();
       var files = e.dataTransfer && e.dataTransfer.files;
-      if (files && files.length) Array.prototype.slice.call(files).forEach(uploadOne);
-    });
-    // 顺便让整页都能接住（拖歪一点也不至于打开图片文件）
-    ["dragover", "drop"].forEach(function (ev) {
-      document.addEventListener(ev, function (e) { if (e.target === document.documentElement) e.preventDefault(); });
+      if (files && files.length) {
+        Array.prototype.slice.call(files).forEach(function (f) {
+          if (/^image\//.test(f.type)) uploadOne(f);
+        });
+      }
     });
     document.addEventListener("paste", function (e) {
       var items = e.clipboardData && e.clipboardData.items;
