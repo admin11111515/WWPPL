@@ -1,21 +1,28 @@
 ---
-import Navbar from "@components/layout/Navbar.astro";
+import LightDarkSwitch from "@components/controls/LightDarkSwitch.svelte";
 import AdminSideNav from "@components/admin/AdminSideNav.astro";
 import { Icon } from "astro-icon/components";
 /**
- * 后台页面顶部：博客导航栏 + **一行页头**。
+ * 后台页面顶部：**只有一行页头**。
  *
- * 这地方的形态被站长来回改过四轮，最后一次是 2026-10-03 定的，别再自己发挥：
+ * 这地方的形态被站长来回改过，最后一次是 2026-10-03，别再自己发挥：
  *   1. 导航栏 + 后台标题条           → 「要博客导航栏不要后台的条」
  *   2. 拆掉导航栏换后台细顶栏        → 最错：别处没有的条 + 手写描边图标
  *   3. 导航栏 + 一行页头（页面名/状态/返回/退出）→ 「这一栏完全没有必要保留」，整行删掉
  *   4. 只剩导航栏 → 于是「查看文章时也返回到上一级，现在找不到按钮交互」
- *   5. **现在（第五版）**：一行页头回来了，但站长看过实际渲染图后选的 ——
- *      左「← 后台首页 / 页面名」，右「● 已连接 + 退出」，下面一条细线。
+ *   5. 导航回来，只留一行页头：左「← 后台首页 / 页面名」，右「● 已连接 + 退出」
+ *   6. **现在（第六版）**：站长要求「后台里不需要顶部博客导航栏」→ 博客 `<Navbar />`
+ *      整个撤掉。它带来的音乐键 / 背景播放 / 显示设置 / 搜索在后台都是前台功能，
+ *      摆在那儿纯是噪音；页头一行照旧，右边顺手接住它留下的**主题开关**。
  *
  * ⚠️ 与第 3 版被否掉那条的区别（核验脚本按这几条断言，别改坏）：
  *      · **没有底色**、**不吸顶**（那是"一条栏"让人烦的地方）
  *      · 就是内容区宽度里的一行，不是另开一条横贯全宽的条
+ *
+ * ⚠️ 撤导航栏会顺带丢掉的三条口子，都已另行接住，别又把导航栏加回来：
+ *      · 回前台 → 侧栏底部「看前台」（新标签打开）
+ *      · 回后台首页 / 换功能 → 侧栏那几组入口 + 页头左的「← 后台首页」面包屑
+ *      · 切主题 → 页头右侧那个开关（开合逻辑见本文件尾部的内联脚本）
  *
  * 页头里的状态点/文字用的是各页 `setStatus()` 认的那两个 id（`status-dot` /
  * `status-text`）—— 所以**各页内容区里那份状态条已经删掉**，别再加回来（会撞 id）。
@@ -33,14 +40,10 @@ const { title, withStatus = true } = Astro.props;
 const isAdminHome = Astro.url.pathname.replace(/\/+$/, "") === "/admin";
 ---
 
-{/* 宽度容器与博客 Layout 的内容区一致：max-w-(--page-width) + xl:w-[92vw]
-    ⚠️ 这一层在 `#admin-main` 的网格里占满整行（grid-column: 1 / -1），
-       侧栏与内容区在它下面左右分栏 —— 别把它塞进某一列，导航栏要横贯。 */}
-<div class="relative z-50 mx-auto w-full max-w-(--page-width) px-0 md:px-4 xl:w-[92vw]">
-  <div id="navbar-wrapper" class="sticky top-0 z-50">
-    <Navbar />
-  </div>
-</div>
+{/* ⚠️ 这里原先是博客 `<Navbar />`（2026-10-03 站长要求撤掉）。
+    它带出来的那几件（音乐 / 背景播放 / 显示设置 / 搜索）在后台全是前台功能；
+    它承着的「切主题」搬到页头右侧，「回前台」由侧栏底部「看前台」承接。
+    删掉这一层后网格只剩侧栏 + 页头容器两列，别再把某个节点塞回这个位置。 */}
 
 {/* 左侧导航：占网格第一列（见 admin.css 的「后台外壳布局」） */}
 <AdminSideNav />
@@ -69,6 +72,12 @@ const isAdminHome = Astro.url.pathname.replace(/\/+$/, "") === "/admin";
           </span>
         )
       }
+      {/*
+        主题开关：博客那条导航栏撤掉后，后台就只剩这一处能切亮/暗/跟随系统了。
+        ⚠️ 开合得自己在下面那个内联脚本里接一次 —— `Navbar.astro` 的
+           `loadButtonScript()` 已经随导航栏一起不加载了，它原来管着 `#scheme-switch`。
+      */}
+      <LightDarkSwitch client:load />
       <button type="button" class="btn btn-sm" onclick="doLogout()">退出</button>
     </div>
   </div>
@@ -127,3 +136,25 @@ const isAdminHome = Astro.url.pathname.replace(/\/+$/, "") === "/admin";
     .admin-head-title { font-size: 0.875rem; }
   }
 </style>
+
+<script is:inline>
+  /* 后台页头上的主题开关：浮层开合。
+     原来这一下是 `Navbar.astro` 的 loadButtonScript() 管的，2026-10-03 撤掉
+     博客导航栏后它不再加载，所以后台这边自己接一次（面板与按钮都在同一个
+     LightDarkSwitch 里，见 LightDarkSwitch.svelte）。 */
+  document.addEventListener("DOMContentLoaded", function () {
+    var btn = document.getElementById("scheme-switch");
+    var panel = document.getElementById("theme-mode-panel");
+    if (!btn || !panel) return;
+    btn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      panel.classList.toggle("float-panel-closed");
+    });
+    document.addEventListener("click", function (e) {
+      if (panel.classList.contains("float-panel-closed")) return;
+      if (e.target instanceof Node && !panel.contains(e.target) && !btn.contains(e.target)) {
+        panel.classList.add("float-panel-closed");
+      }
+    });
+  });
+</script>
