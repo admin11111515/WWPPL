@@ -380,7 +380,10 @@ const ICONS = {
               '<label class="pick" title="选中这张" onclick="event.stopPropagation()">' +
                 '<input type="checkbox" data-pick="' + esc(it.path) + '"' + (pickedM[it.path] ? ' checked' : '') + ' />' +
               '</label>' +
-              '<img src="' + esc(url) + '" alt="' + esc(it.name) + '" loading="lazy" />' +
+              // ⚠️ draggable="false" 不能省：<img> 默认可拖，一拖浏览器就把它当成
+              //    "拖着一个文件"，落回本页会被下面的整页拖放区接住 → 又上传一遍
+              //    （而且文件名带时间戳，于是仓库里多出一份）。用户以为只是拖一下看看。
+              '<img src="' + esc(url) + '" alt="' + esc(it.name) + '" loading="lazy" draggable="false" />' +
               (it.fresh ? '<span class="media-flag">刚上传，重建后站上生效</span>' : '') +
             '</div>' +
             '<div class="media-body">' +
@@ -590,8 +593,14 @@ const ICONS = {
       });
     }
 
-    function uploadOne(file) {
+    function uploadOne(file, quiet) {
       if (!/^image\//.test(file.type)) { toast("「" + file.name + "」不是图片，跳过", "err"); return; }
+      // 同名已经在仓库里 → 先问一句。上传会生成带时间戳的新名字（不会覆盖），
+      // 也就是说会**多出一份** —— 这种"以为在替换、其实多了一份"最容易攒垃圾。
+      var dup = all.filter(function (it) { return it.name === file.name; })[0];
+      if (dup && !quiet) {
+        if (!window.confirm("仓库里已经有同名的《" + file.name + "》。\n\n再传一次不会覆盖它，会多出一份新的（文件名带时间戳）。继续？")) return;
+      }
       toast("正在上传 " + file.name + " …", "");
       compressImage(file)
         .then(function (blob) {
@@ -627,11 +636,25 @@ const ICONS = {
     //      · dragenter/dragleave 用计数器，鼠标掠过子元素不会闪
     var drop = $("media-drop");
     var dragDepth = 0;
+    // ⚠️ 页面内拖拽（拖缩略图、拖选中的文字/链接）**不算**"往这儿传文件"。
+    //    浏览器对内拖的 dataTransfer 里也可能带 Files（拖一张 <img> 就是），
+    //    不设这道闸门的话，拖一下自己的图 = 又传一份（2026-10-04 站长报的问题）。
+    var internalDrag = false;
+    document.addEventListener("dragstart", function () { internalDrag = true; });
+    document.addEventListener("dragend", function () { internalDrag = false; dragDepth = 0; if (drop) drop.classList.remove("over"); });
+    // 缩略图这一片干脆不让起拖：少一个误触入口（真要拖出去复制图片，用右键另存）
+    $("media-list").addEventListener("dragstart", function (e) { e.preventDefault(); });
+
     function dragHasFiles(e) {
+      if (internalDrag) return false;
       var t = e.dataTransfer;
       if (!t) return false;
       var types = t.types || [];
-      return Array.prototype.indexOf.call(types, "Files") >= 0;
+      if (Array.prototype.indexOf.call(types, "Files") < 0) return false;
+      // 页面内拖拽（跨页拖也一样）会带 uri-list / html —— 那不是"从系统拖文件过来"
+      if (Array.prototype.indexOf.call(types, "text/uri-list") >= 0) return false;
+      if (Array.prototype.indexOf.call(types, "text/html") >= 0) return false;
+      return true;
     }
     function dropOff() { dragDepth = 0; if (drop) drop.classList.remove("over"); }
     document.addEventListener("dragenter", function (e) {

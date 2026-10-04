@@ -1250,11 +1250,33 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       this.value = "";
     });
     function onBodyDragOver(e) {
+      // 拖页面里的图（带 uri-list/html）不显示"可以放"的光标 —— 那种放下不会上传，
+      // 给个 copy 光标等于骗人（详见下面 isExternalFileDrop 的注释）
+      if (!isExternalFileDrop(e)) return;
       e.preventDefault();
-      e.dataTransfer.dropEffect = "copy";
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
     }
+    /**
+     * 只认「从系统拖进来的文件」。
+     * ⚠️ 2026-10-04 站长报的「拖动图片会导致复制 / 重新上传」就是这么来的：
+     *    浏览器把"拖页面里的图片"也当成拖一个文件（dataTransfer.files 里塞了一份），
+     *    这里不分辨就会把同一张图**又传一遍**（文件名带时间戳 → 仓库里多一份）。
+     * 判据：页面内拖拽会附带 `text/uri-list` / `text/html`（"拖的是页面里的东西"），
+     *      真正从资源管理器拖文件过来只有 Files。
+     */
+    function isExternalFileDrop(e) {
+      var t = e.dataTransfer;
+      if (!t) return false;
+      var types = [];
+      try { types = Array.prototype.slice.call(t.types || []); } catch (err) { types = []; }
+      if (types.indexOf("Files") < 0) return false;
+      if (types.indexOf("text/uri-list") >= 0 || types.indexOf("text/html") >= 0) return false;
+      return true;
+    }
+
     function onBodyDrop(e) {
       e.preventDefault();
+      if (!isExternalFileDrop(e)) return;   // 拖页面里的图不算"上传一张新图"
       if (e.dataTransfer.files && e.dataTransfer.files[0]) uploadImage(e.dataTransfer.files[0], "body");
     }
     // 粘贴上传（2026-10-02 加）：截图之后 Ctrl+V 直接传进正文。
