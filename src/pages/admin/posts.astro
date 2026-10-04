@@ -21,12 +21,39 @@ const postsConfig = JSON.stringify(externalPostsConfig);
   {/* 样式、字体、主题色都来自这里，页面自己的样式放在它后面 */}
   <AdminTheme />
   <AdminAuthGate />
+  {/* 版面状态（列表收没收起、窗格是编辑/分栏/预览）存在本机，
+      在样式生效**之前**就打到 <html> 上 —— 否则会先按默认的"分栏 + 有列表"画一遍再跳，闪一下。 */}
+  <script is:inline>
+    (function () {
+      try {
+        var m = localStorage.getItem("wb-posts-pane-mode");
+        var c = localStorage.getItem("wb-posts-list-collapsed");
+        if (m === "edit" || m === "preview" || m === "split") document.documentElement.setAttribute("data-posts-pane", m);
+        if (c === "1") document.documentElement.setAttribute("data-posts-list", "collapsed");
+      } catch (e) {}
+    })();
+  </script>
   <style is:inline>
     /* ===== 只放这一页特有的排版，通用部分在 src/styles/admin.css ===== */
 
     /* 这一页是「列表 + 编辑器」两栏，内容区比别的页宽一些。
-       2026-10-04：1100 → 1320。原来它比全局那档还窄，站长在宽屏上看着就是「右边空一截」。 */
-    #admin-main { --admin-content-max: 1320px; }
+       2026-10-04：1100 → 1320。原来它比全局那档还窄，站长在宽屏上看着就是「右边空一截」。
+       2026-10-05：1320 → 1600，≥1800px 的屏再放到 1760。
+         实测过：1320 那档在 2560 屏上只占屏 50%（左右共空 1280px）；
+         这一页是**干活的编辑区**，不是读文章的窄栏，宽屏就该把屏占满。
+         只留一档 1760：再分两档没有意义 —— 内容区实际宽度是「视口 − 侧栏 216px」，
+         要到 1976px 以上的屏才会顶到上限，中间那些屏本来就用不满。
+
+       ⚠️⚠️ 这里必须写 `#admin-main > .container`，**不能**写 `#admin-main`：
+         后台的 admin.css 是被 import 后打包成外链 <link> 的，而 Astro 把它放在
+         <head> 的**最后**（所有内联 <style> 之后）—— 同特异性下"后写者胜"，
+         于是页面里任何 `#admin-main { --admin-content-max: … }` 都被
+         admin.css 末尾那条 `#admin-main { --admin-content-max: 1280px }` 压掉，
+         一行不差地变成死代码。实测：1920 与 2560 屏上容器都**停在 1280**，
+         这一页写了两年"1320"从来没生效过（其它 6 个后台页同理）。
+         把变量直接声明在 .container 自己身上（多一个类 = 特异性更高），
+         就不再看谁先谁后 —— 元素上声明的值本来就压过继承来的值。 */
+    #admin-main > .container { --admin-content-max: 1760px; }
 
     .layout-grid {
       display: grid;
@@ -41,6 +68,31 @@ const postsConfig = JSON.stringify(externalPostsConfig);
        右栏还剩 820px 以上，编辑器不受影响（实测 1366 屏也不挤）。 */
     @media (min-width: 980px) {
       .layout-grid { grid-template-columns: 480px minmax(0, 1fr); }
+      /* 收起左侧列表：整行都给编辑器（2026-10-05）
+         480px 列表 + 两个窗格各占一半 = 正文输入区只剩 292～322px（一行 20 个字）。
+         列表是"找文章用的"，真开始写就该让位 —— 状态记在本机，下次进来还是这样。 */
+      html[data-posts-list="collapsed"] .layout-grid { grid-template-columns: minmax(0, 1fr); }
+      html[data-posts-list="collapsed"] .post-list-card { display: none; }
+    }
+
+    /* ≥980px：编辑 / 分栏 / 预览 三态（原来写死"左右各一半"一档）
+       分栏 ≈ 一行 50 字；写长文切「编辑」，整条内容区都给 Markdown。
+       状态打在 <html> 上（见 <head> 里那段提前恢复的脚本），这里只管画。 */
+    @media (min-width: 980px) {
+      html[data-posts-pane="edit"] #editor-container { grid-template-columns: minmax(0, 1fr); }
+      html[data-posts-pane="edit"] #editor-container .editor-pane[data-pane="preview"] { display: none; }
+      html[data-posts-pane="preview"] #editor-container { grid-template-columns: minmax(0, 1fr); }
+      html[data-posts-pane="preview"] #editor-container .editor-pane[data-pane="edit"] { display: none; }
+    }
+    /* 「分栏」在窄屏没有意义（那边本来就只有一个窗格），别让它占地方 */
+    @media (max-width: 979px) {
+      .seg-btn[data-mode-btn="split"] { display: none; }
+    }
+
+    /* 页头右侧放"只影响版面"的开关（隐藏列表） */
+    .editor-head-actions { display: flex; align-items: center; gap: 0.5rem; margin-left: auto; }
+    @media (max-width: 979px) {
+      .editor-head-actions { display: none; }
     }
 
     /* 文章列表：跟随页面滚动，长列表不会把编辑器顶下去 */
@@ -211,6 +263,11 @@ const postsConfig = JSON.stringify(externalPostsConfig);
         <div class="editor-body">
           <div class="editor-head">
             <div class="field-label"><span class="icon" set:html={uiIcon("fluent-color:clipboard-text-edit-24")} /> <span id="editor-title">写文章</span></div>
+            {/* 2026-10-05：写文章时左边那栏列表用不上，收起来把整行让给正文。
+                状态记在本机，下次进来保持；窄屏本来就是单栏，那边不显示这个开关。 */}
+            <div class="editor-head-actions">
+              <button type="button" class="btn btn-sm btn-ghost" id="list-toggle" aria-pressed="false" onclick="togglePostList()">隐藏列表</button>
+            </div>
           </div>
 
           <div class="form-grid">
@@ -271,9 +328,12 @@ const postsConfig = JSON.stringify(externalPostsConfig);
               <div class="editor-pane" data-pane="edit">
                 <div class="editor-pane-header">
                   <span>Markdown</span>
-                  <div class="seg mobile-only">
-                    <button type="button" class="seg-btn active" data-pane-btn="edit">编辑</button>
-                    <button type="button" class="seg-btn" data-pane-btn="preview">预览</button>
+                  {/* 三态分段（2026-10-05）：原来只在大屏写死"左右各一半"，
+                      窄屏才有二选一。现在宽窄都能选，"分栏"那颗在窄屏自己隐掉。 */}
+                  <div class="seg">
+                    <button type="button" class="seg-btn active" data-mode-btn="edit">编辑</button>
+                    <button type="button" class="seg-btn" data-mode-btn="split">分栏</button>
+                    <button type="button" class="seg-btn" data-mode-btn="preview">预览</button>
                   </div>
                   <div class="editor-toolbar">
                     <button type="button" class="toolbar-btn" onclick="insertMd('## ','')" title="二级标题">H2</button>
@@ -306,9 +366,12 @@ const postsConfig = JSON.stringify(externalPostsConfig);
               <div class="editor-pane" data-pane="preview">
                 <div class="editor-pane-header">
                   <span>预览</span>
-                  <div class="seg mobile-only">
-                    <button type="button" class="seg-btn" data-pane-btn="edit">编辑</button>
-                    <button type="button" class="seg-btn active" data-pane-btn="preview">预览</button>
+                  {/* 与编辑窗格同一组三态：切到「预览」后编辑窗格会整格藏起来，
+                      那时候只能靠这一排切回去，所以两边都放一份。 */}
+                  <div class="seg">
+                    <button type="button" class="seg-btn active" data-mode-btn="edit">编辑</button>
+                    <button type="button" class="seg-btn" data-mode-btn="split">分栏</button>
+                    <button type="button" class="seg-btn" data-mode-btn="preview">预览</button>
                   </div>
                 </div>
                 <div class="preview-pane" id="preview-pane">
@@ -1256,20 +1319,59 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       WBEditor.replaceSelection(ta, prefix + text + suffix);
     }
 
-    // ===== 小屏：编辑 / 预览 二选一 =====
-    (function() {
+    // ===== 窗格布局：编辑 / 分栏 / 预览 =====
+    // 2026-10-05：原来 ≥980px 写死"左右各一半"，正文输入区只有 ~300px（一行 20 个字）。
+    // 现在三态都受控。状态打在 <html> 上 —— <head> 里那段脚本已经先按本机存的值
+    // 设好属性，所以进来就是最终版面，不会先画一遍再跳。
+    // data-mobile-pane 一并保留：<980px 那条"一次只显示一个窗格"的老规则还认它。
+    var PANE_MODE_KEY = "wb-posts-pane-mode";
+    function setPaneMode(mode, remember) {
+      if (mode !== "edit" && mode !== "preview" && mode !== "split") mode = "split";
+      // 窄屏没有"分栏"（那边本来就只有一个窗格），落到单窗格
+      if (window.innerWidth < 980 && mode === "split") mode = "edit";
       var box = $("editor-container");
-      var btns = box.querySelectorAll("[data-pane-btn]");
-      Array.prototype.forEach.call(btns, function(btn) {
+      if (!box) return;
+      box.setAttribute("data-mobile-pane", mode === "preview" ? "preview" : "edit");
+      document.documentElement.setAttribute("data-posts-pane", mode);
+      Array.prototype.forEach.call(document.querySelectorAll("[data-mode-btn]"), function (b) {
+        b.classList.toggle("active", b.getAttribute("data-mode-btn") === mode);
+      });
+      if (remember !== false) {
+        try { localStorage.setItem(PANE_MODE_KEY, mode); } catch (e) {}
+      }
+    }
+    (function() {
+      var saved = null;
+      try { saved = localStorage.getItem(PANE_MODE_KEY); } catch (e) {}
+      // 默认给「编辑」：整行都归 Markdown（实测 1440 屏一行 20 字 → 45 字）。
+      // 想边写边看就点「分栏」，点过就记在本机，以后都听用户的。
+      setPaneMode(saved || "edit", false);
+      Array.prototype.forEach.call(document.querySelectorAll("[data-mode-btn]"), function(btn) {
         btn.addEventListener("click", function() {
-          var pane = btn.getAttribute("data-pane-btn");
-          box.setAttribute("data-mobile-pane", pane);
-          Array.prototype.forEach.call(btns, function(b) {
-            b.classList.toggle("active", b.getAttribute("data-pane-btn") === pane);
-          });
+          setPaneMode(btn.getAttribute("data-mode-btn"), true);
         });
       });
     })();
+
+    // ===== 左侧列表：收起 / 展开 =====
+    // 收起后整行都给编辑器（正文一行从 20 个字变成 70+ 个字）。
+    // 开关按钮一直在页头右侧，收起了也能一键放回来，不会把"找文章"的路堵死。
+    var LIST_COLLAPSED_KEY = "wb-posts-list-collapsed";
+    function setPostListCollapsed(collapsed) {
+      if (collapsed) document.documentElement.setAttribute("data-posts-list", "collapsed");
+      else document.documentElement.removeAttribute("data-posts-list");
+      var btn = $("list-toggle");
+      if (btn) {
+        btn.textContent = collapsed ? "显示列表" : "隐藏列表";
+        btn.setAttribute("aria-pressed", collapsed ? "true" : "false");
+        btn.title = collapsed ? "把左侧文章列表放出来" : "收起左侧列表，整行都留给正文";
+      }
+      try { localStorage.setItem(LIST_COLLAPSED_KEY, collapsed ? "1" : "0"); } catch (e) {}
+    }
+    function togglePostList() {
+      setPostListCollapsed(document.documentElement.getAttribute("data-posts-list") !== "collapsed");
+    }
+    setPostListCollapsed(document.documentElement.getAttribute("data-posts-list") === "collapsed");
 
     // ===== 图片上传 =====
     function pickCover() { $("cover-file").click(); }
