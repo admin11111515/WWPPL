@@ -1172,6 +1172,41 @@ textarea { border-radius: 0.75rem; }
 .field-label { font-size: 0.75rem; letter-spacing: 0.02em; text-transform: none; }
 .field-hint { color: var(--text-3); }
 
+/* ── 批量操作条（文章列表 / 图片库共用，2026-10-04 加）────────────
+   平时 hidden；勾了才出现（不占地方）。删除键用危险色。
+   `.post-row.picked` 是文章列表被勾中的行，给一层淡底。 */
+/* ⚠️ 显隐**不要用 Tailwind 的 `.hidden`**：admin.css 是**未分层**样式，
+   优先级高于 Tailwind 分层里的 utilities，`.bulk-bar{display:flex}` 会把
+   `.hidden{display:none}` 直接压过去 —— 批量条会一直显在页面上
+   （2026-10-04 实测踩到：class 上有 hidden，浏览器算出来的 display 还是 flex）。
+   所以这里自己定：默认 display:none，加 `.on` 才是 flex。 */
+.bulk-bar {
+	display: none;
+	align-items: center;
+	gap: 0.5rem;
+	margin-bottom: 0.5rem;
+	padding: 0.375rem 0.5rem;
+	border: 1px solid var(--line-soft);
+	border-radius: var(--radius-md, 0.5rem);
+	background: var(--card-bg-soft);
+}
+.bulk-bar.on { display: flex; }
+.bulk-bar .spacer { flex: 1; }
+.bulk-count { font-size: 0.75rem; color: var(--text-3); }
+.bulk-danger { color: var(--danger, #d33); border-color: color-mix(in oklab, var(--danger, #d33) 40%, transparent); }
+.post-row .row-check {
+	flex: none;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	margin-right: -0.25rem;
+	cursor: pointer;
+}
+.post-row .row-check input { width: 0.9375rem; height: 0.9375rem; accent-color: var(--primary); }
+.post-row.picked { background: color-mix(in oklab, var(--primary) 8%, transparent); }
+
 /* ── 5. 列表：行悬停、分隔线、按钮不再挤成一团 ───────────────── */
 .post-row {
 	align-items: center;

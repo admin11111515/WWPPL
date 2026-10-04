@@ -148,7 +148,7 @@ const quickAdd = [
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>导航菜单</title>
+  <title>导航菜单 · 后台</title>
   {/* 后台是站长自用界面，不该出现在搜索结果里（sitemap 中同样已剔除） */}
   <meta name="robots" content="noindex, nofollow" />
   <AdminTheme />
@@ -202,13 +202,29 @@ const quickAdd = [
     .nav-row {
       display: grid;
       /* 图标下拉里的名字比较长（"主页 · home"），给宽一点别一进来就截断 */
-      grid-template-columns: minmax(0, 10.5rem) minmax(0, 8rem) minmax(0, 1fr) auto;
+      grid-template-columns: auto minmax(0, 10.5rem) minmax(0, 8rem) minmax(0, 1fr) auto;
       gap: 0.5rem;
       align-items: center;
     }
     .nav-row select,
     .nav-row input { width: 100%; min-width: 0; }
     .nav-ops { display: flex; align-items: center; gap: 0.25rem; flex-shrink: 0; }
+
+    /* ===== 拖拽排序（2026-10-04）=====
+       抓手单独放一列：行里有输入框，整行 draggable 会跟选中文字打架。
+       ↑↓ 按钮保留 —— 那是键盘用户的路子，拖拽是给鼠标的。 */
+    .nav-grip {
+      cursor: grab;
+      color: var(--text-4);
+      font-size: 0.875rem;
+      line-height: 1;
+      padding: 0 0.125rem;
+      user-select: none;
+    }
+    .nav-grip:active { cursor: grabbing; }
+    .nav-row.dragging, .nav-child-row.dragging { opacity: 0.45; }
+    .nav-row.drop-before, .nav-child-row.drop-before { box-shadow: inset 0 2px 0 var(--primary); }
+    .nav-row.drop-after, .nav-child-row.drop-after { box-shadow: inset 0 -2px 0 var(--primary); }
 
     /* 子菜单：缩进一条竖线，视觉上"挂在"父级下面 */
     .nav-children {
@@ -218,7 +234,7 @@ const quickAdd = [
     }
     .nav-child-row {
       display: grid;
-      grid-template-columns: minmax(0, 10.5rem) minmax(0, 8rem) minmax(0, 1fr) auto;
+      grid-template-columns: auto minmax(0, 10.5rem) minmax(0, 8rem) minmax(0, 1fr) auto;
       gap: 0.5rem;
       align-items: center;
       margin-bottom: 0.375rem;
@@ -388,7 +404,9 @@ const quickAdd = [
         "</div>";
 
       var html =
-        '<div class="' + (isChild ? "nav-child-row" : "nav-row") + '">' +
+        '<div class="' + (isChild ? "nav-child-row" : "nav-row") + '" data-row-path="' + path + '">' +
+        // 拖拽把手：按住它拖到同层的另一行上/下半格，就能换位置
+        '<span class="nav-grip" draggable="true" data-drag="' + path + '" title="按住拖动可以换位置（也可以继续用 ↑↓）" aria-hidden="true">⠿</span>' +
         // 图标下拉与菜单名在视觉上靠列位置区分，但都没有和标签关联 —— 补 aria-label
         '<select class="input-single nav-icon" id="' + iconId + '" data-kind="icon" data-path="' + path + '" aria-label="菜单图标">' + iconOptionsHtml(item.icon || "") + "</select>" +
         '<input type="text" class="input-single nav-name" id="' + nameId + '" data-kind="name" data-path="' + path + '" value="' + esc(item.name) + '" placeholder="菜单名" maxlength="20" aria-label="菜单名" />' +
@@ -445,6 +463,84 @@ const quickAdd = [
       return p && p.children ? p.children : null;
     }
 
+    // ===== 拖拽排序 =====
+    // 只允许**同一层**里换位置（跟 ↑↓ 的能力一致）。跨层拖不做 ——
+    // 拖进/拖出某组会把菜单结构搞乱，而这个页面还没有"移动到某组"的明确表达。
+    var dragPath = null;
+
+    function parentKeyOf(path) {
+      return String(path).split(".").slice(0, -1).join(".");
+    }
+    function sameParent(a, b) { return parentKeyOf(a) === parentKeyOf(b); }
+
+    function clearDropMarks() {
+      Array.prototype.forEach.call(document.querySelectorAll(".drop-before, .drop-after"), function (el) {
+        el.classList.remove("drop-before", "drop-after");
+      });
+    }
+
+    /** 把 from 挪到 to 的前面/后面（同一层内） */
+    function moveTo(from, to, after) {
+      var list = parentList(from);
+      if (!list) return;
+      var fi = Number(String(from).split(".").pop());
+      var ti = Number(String(to).split(".").pop());
+      var item = list.splice(fi, 1)[0];
+      var insertAt = after ? ti + 1 : ti;
+      if (fi < insertAt) insertAt -= 1;   // 自己已经被抽走了，下标要往前挪一格
+      list.splice(insertAt, 0, item);
+      render();
+    }
+
+    function bindDrag() {
+      Array.prototype.forEach.call(document.querySelectorAll("[data-drag]"), function (grip) {
+        grip.addEventListener("dragstart", function (e) {
+          dragPath = grip.getAttribute("data-drag");
+          if (e.dataTransfer) {
+            e.dataTransfer.effectAllowed = "move";
+            e.dataTransfer.setData("text/plain", dragPath);
+          }
+          var row = grip.closest(".nav-row, .nav-child-row");
+          if (row) row.classList.add("dragging");
+        });
+        grip.addEventListener("dragend", function () {
+          dragPath = null;
+          clearDropMarks();
+          Array.prototype.forEach.call(document.querySelectorAll(".dragging"), function (el) {
+            el.classList.remove("dragging");
+          });
+        });
+      });
+
+      Array.prototype.forEach.call(document.querySelectorAll("[data-row-path]"), function (row) {
+        function targetInfo(e) {
+          if (dragPath === null) return null;
+          var target = row.getAttribute("data-row-path");
+          if (!target || target === dragPath || !sameParent(dragPath, target)) return null;
+          var r = row.getBoundingClientRect();
+          return { target: target, after: (e.clientY - r.top) > r.height / 2 };
+        }
+        row.addEventListener("dragover", function (e) {
+          var info = targetInfo(e);
+          if (!info) return;
+          e.preventDefault();
+          if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+          clearDropMarks();
+          row.classList.add(info.after ? "drop-after" : "drop-before");
+        });
+        row.addEventListener("dragleave", function () {
+          row.classList.remove("drop-before", "drop-after");
+        });
+        row.addEventListener("drop", function (e) {
+          var info = targetInfo(e);
+          if (!info) return;
+          e.preventDefault();
+          clearDropMarks();
+          moveTo(dragPath, info.target, info.after);
+        });
+      });
+    }
+
     function bind() {
       // 输入：直接写回数据，不重渲染（重渲染会让输入框失焦）
       Array.prototype.forEach.call(document.querySelectorAll("[data-kind]"), function (el) {
@@ -490,6 +586,8 @@ const quickAdd = [
           render();
         });
       });
+
+      bindDrag();
 
       Array.prototype.forEach.call(document.querySelectorAll("[data-addchild]"), function (btn) {
         btn.addEventListener("click", function () {

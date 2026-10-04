@@ -51,7 +51,7 @@ const ICONS = {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>图片库</title>
+  <title>图片库 · 后台</title>
   <meta name="robots" content="noindex, nofollow" />
   <AdminTheme />
   <AdminAuthGate />
@@ -107,6 +107,23 @@ const ICONS = {
       flex-direction: column;
       transition: border-color 0.15s, transform 0.15s;
     }
+    /* 缩略图左上角的勾选框：24px 的点击范围，视觉上不抢图片 */
+    .media-thumb .pick {
+      position: absolute;
+      top: 0.25rem;
+      left: 0.25rem;
+      z-index: 2;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 0.375rem;
+      background: color-mix(in oklab, var(--page-bg) 75%, transparent);
+    }
+    .media-thumb .pick input { width: 0.9375rem; height: 0.9375rem; accent-color: var(--primary); }
+    .media-item.picked { border-color: var(--primary); background: color-mix(in oklab, var(--primary) 6%, var(--card-bg)); }
+
     .media-item:hover {
       border-color: color-mix(in oklab, var(--primary) 35%, var(--line-soft));
       transform: translateY(-2px);
@@ -231,6 +248,19 @@ const ICONS = {
           <input type="search" class="input-single search" id="media-search" placeholder="搜文件名…" oninput="renderMedia()" />
         </div>
 
+        {/* 批量条（2026-10-04 加）：58 张图要清几张时不用一张张点删除。
+            样式与文章列表共用（admin.css 的 .bulk-bar），平时 hidden。 */}
+        <div class="bulk-bar" id="media-bulk">
+          <label class="checkbox-row compact">
+            <input type="checkbox" id="media-all" onchange="mediaToggleAll(this.checked)" />
+            全选
+          </label>
+          <span class="bulk-count" id="media-bulk-count"></span>
+          <span class="spacer"></span>
+          <button type="button" class="btn btn-sm bulk-danger" id="media-bulk-del" onclick="mediaBulkDelete()">删除所选</button>
+          <button type="button" class="btn btn-sm btn-ghost" onclick="mediaClear()">取消</button>
+        </div>
+
         <div class="media-drop" id="media-drop">
           <div id="media-list"></div>
         </div>
@@ -333,17 +363,23 @@ const ICONS = {
       var box = $("media-list");
       if (!all.length) {
         box.innerHTML = '<div class="empty-state"><div class="icon">' + IC.empty + '</div><p>这个目录里还没有图片，先传一张</p></div>';
+        mediaSyncBulk();
         return;
       }
       if (!list.length) {
         box.innerHTML = '<div class="empty-state"><div class="icon">' + IC.search + '</div><p>没找到名字里含「' + esc(kw) + '」的图片</p></div>';
+        mediaSyncBulk();
         return;
       }
       box.innerHTML = '<div class="media-grid">' + list.map(function (it) {
         var url = it.blobUrl || it.url;
         return '' +
-          '<div class="media-item">' +
+          '<div class="media-item' + (pickedM[it.path] ? ' picked' : '') + '">' +
             '<div class="media-thumb" onclick="openLightbox(\'' + esc(it.path) + '\')">' +
+              // 勾选框：批量用。stopPropagation 免得点它顺手把大图也打开了。
+              '<label class="pick" title="选中这张" onclick="event.stopPropagation()">' +
+                '<input type="checkbox" data-pick="' + esc(it.path) + '"' + (pickedM[it.path] ? ' checked' : '') + ' />' +
+              '</label>' +
               '<img src="' + esc(url) + '" alt="' + esc(it.name) + '" loading="lazy" />' +
               (it.fresh ? '<span class="media-flag">刚上传，重建后站上生效</span>' : '') +
             '</div>' +
@@ -360,7 +396,83 @@ const ICONS = {
             '</div>' +
           '</div>';
       }).join("") + '</div>';
+      mediaSyncBulk();
     }
+
+    // ===== 批量选择 / 批量删除（2026-10-04）=====
+    // pickedM[path]=true 表示勾上了；搜索/刷新后仍保留。
+    var pickedM = {};
+
+    function mediaSyncBulk() {
+      var bar = $("media-bulk");
+      if (!bar) return;
+      var n = Object.keys(pickedM).length;
+      bar.classList.toggle("on", n > 0);
+      if (n) $("media-bulk-count").textContent = "已选 " + n + " 张";
+      var boxes = [].slice.call(document.querySelectorAll("#media-list input[data-pick]"));
+      var allChecked = boxes.length > 0 && boxes.every(function (b) { return b.checked; });
+      var all = $("media-all");
+      if (all) {
+        all.checked = allChecked;
+        all.indeterminate = !allChecked && boxes.some(function (b) { return b.checked; });
+      }
+    }
+
+    window.mediaToggleAll = function (checked) {
+      visible().forEach(function (it) {
+        if (checked) pickedM[it.path] = true; else delete pickedM[it.path];
+      });
+      renderMedia();
+    };
+    window.mediaClear = function () { pickedM = {}; renderMedia(); };
+
+    /** 当前可见（搜索过滤后的）那些 */
+    function visible() {
+      var kw = ($("media-search").value || "").trim().toLowerCase();
+      return kw ? all.filter(function (it) { return it.path.toLowerCase().indexOf(kw) >= 0; }) : all;
+    }
+
+    window.mediaBulkDelete = function () {
+      var paths = Object.keys(pickedM);
+      if (!paths.length) return;
+      var names = paths.map(function (p) { var it = find(p); return it ? it.name : p; });
+      var head = names.slice(0, 5).join("\n");
+      if (!window.confirm(
+        "确定删除这 " + paths.length + " 张图？\n\n" + head +
+        (names.length > 5 ? "\n…（共 " + names.length + " 张）" : "") +
+        "\n\n删掉就找不回来了（正文里引用它们的地方会变成裂图）。"
+      )) return;
+      var btn = $("media-bulk-del");
+      if (btn) { btn.disabled = true; btn.textContent = "删除中…"; }
+      var failed = [];
+      var chain = Promise.resolve();
+      paths.forEach(function (path) {
+        chain = chain.then(function () {
+          var it = find(path);
+          if (!it) throw new Error("列表里找不到 " + path);
+          return WBGitHub.deleteFile({ owner: T.owner, repo: T.repo, branch: T.branch, path: it.path, sha: it.sha, message: "删除图片：" + it.name });
+        }).catch(function (e) { failed.push(path + "：" + (e && e.message ? e.message : e)); });
+      });
+      chain.then(function () {
+        if (btn) { btn.disabled = false; btn.textContent = "删除所选"; }
+        var okCount = paths.length - failed.length;
+        pickedM = {};
+        toast(failed.length ? "删了 " + okCount + " 张，" + failed.length + " 张失败" : "已删除 " + okCount + " 张 ✓（重建后生效）", failed.length ? "err" : "ok");
+        if (failed.length) console.warn("批量删除没成功的：", failed);
+        loadAll();
+      });
+    };
+
+    // 勾选：事件委托（列表每次重绘都会换 DOM）
+    $("media-list").addEventListener("change", function (e) {
+      var t = e.target;
+      if (!t || !t.getAttribute || !t.getAttribute("data-pick")) return;
+      var path = t.getAttribute("data-pick");
+      if (t.checked) pickedM[path] = true; else delete pickedM[path];
+      var card = t.closest(".media-item");
+      if (card) card.classList.toggle("picked", t.checked);
+      mediaSyncBulk();
+    });
 
     function find(path) {
       for (var i = 0; i < all.length; i++) if (all[i].path === path) return all[i];

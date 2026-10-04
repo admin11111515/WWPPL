@@ -15,7 +15,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>文章管理</title>
+  <title>文章 · 后台</title>
   {/* 后台是站长自用界面，不该出现在搜索结果里（sitemap 中同样已剔除） */}
   <meta name="robots" content="noindex, nofollow" />
   {/* 样式、字体、主题色都来自这里，页面自己的样式放在它后面 */}
@@ -52,6 +52,8 @@ const postsConfig = JSON.stringify(externalPostsConfig);
     }
 
     .list-filter { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.75rem; }
+
+    /* 批量条的样式在 admin.css（图片库页也用同一套） */
 
     /* ===== 编辑器卡片 ===== */
     /* 卡片自身不留内边距，好让底部操作条能贴齐整条边 */
@@ -135,7 +137,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
        2026-10-03 发现这一页整段 git 历史里都没有它 —— 结果是这页不受后台外壳约束
        （宽度跟着 --page-width 走，比别的页宽出一大截），而核验在它上面是"空过"的。 */}
   <div id="admin-main">
-    <AdminTopBar title="文章管理" />
+    <AdminTopBar title="文章" />
 
   <div class="container">
     {/* 上次没有保存就离开时，把本地留存的草稿提示出来 */}
@@ -164,6 +166,18 @@ const postsConfig = JSON.stringify(externalPostsConfig);
             <input type="checkbox" id="list-draft-only" />
             只看草稿
           </label>
+        </div>
+        {/* 批量条（2026-10-04 加）：58 篇文章要删其中几篇时，一条条点删除太费事。
+            默认藏着，勾了才出现 —— 不占平时的地方。 */}
+        <div class="bulk-bar" id="bulk-bar">
+          <label class="checkbox-row compact">
+            <input type="checkbox" id="bulk-all" onchange="bulkToggleAll(this.checked)" />
+            全选
+          </label>
+          <span class="bulk-count" id="bulk-count"></span>
+          <span class="spacer"></span>
+          <button type="button" class="btn btn-sm bulk-danger" id="bulk-delete" onclick="bulkDelete()">删除所选</button>
+          <button type="button" class="btn btn-sm btn-ghost" onclick="bulkClear()">取消</button>
         </div>
         <div class="post-list-scroll">
           <div id="post-list">
@@ -517,6 +531,72 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       }
     }
 
+    // ===== 批量选择 / 批量删除（2026-10-04 加）=====
+    // 58 篇文章删其中几篇时，一条条点太费事。picked[path]=true 表示勾上了，
+    // 列表重绘（搜索、刷新）后仍然保留 —— 否则一搜就白勾。
+    var picked = {};
+
+    function pickedCount() { return Object.keys(picked).length; }
+
+    function syncBulkBar() {
+      var bar = $("bulk-bar");
+      if (!bar) return;
+      var n = pickedCount();
+      bar.classList.toggle("on", n > 0);
+      if (n) $("bulk-count").textContent = "已选 " + n + " 篇";
+      // 全选框反映"当前可见的那些"是否都勾上了；勾一部分时显示半选
+      var boxes = [].slice.call(document.querySelectorAll("#post-list input[data-pick]"));
+      var allChecked = boxes.length > 0 && boxes.every(function (b) { return b.checked; });
+      var all = $("bulk-all");
+      if (all) {
+        all.checked = allChecked;
+        all.indeterminate = !allChecked && boxes.some(function (b) { return b.checked; });
+      }
+    }
+
+    function bulkToggleAll(checked) {
+      posts.filter(matchesFilter).forEach(function (p) {
+        if (checked) picked[p.path] = true; else delete picked[p.path];
+      });
+      renderList();
+    }
+
+    function bulkClear() { picked = {}; renderList(); }
+
+    function bulkDelete() {
+      var paths = Object.keys(picked);
+      if (!paths.length) return;
+      var titles = paths.map(function (p) {
+        var hit = posts.filter(function (x) { return x.path === p; })[0];
+        return hit ? hit.title : p;
+      });
+      var head = titles.slice(0, 5).join("\n");
+      if (!confirm(
+        "确定删除这 " + paths.length + " 篇文章？\n\n" + head +
+        (titles.length > 5 ? "\n…（共 " + titles.length + " 篇）" : "") +
+        "\n\n文章图片也会一并删除，删掉找不回来。"
+      )) return;
+      var btn = $("bulk-delete");
+      if (btn) { btn.disabled = true; btn.textContent = "删除中…"; }
+      var failed = [];
+      // 一篇一篇顺序删：GitHub 接口并发写容易撞限流
+      var chain = Promise.resolve();
+      paths.forEach(function (p) {
+        chain = chain
+          .then(function () { return deletePostFile(p); })
+          .catch(function (e) { failed.push(p + "：" + e.message); });
+      });
+      chain.then(function () {
+        if (btn) { btn.disabled = false; btn.textContent = "删除所选"; }
+        var okCount = paths.length - failed.length;
+        if (editingPath && paths.indexOf(editingPath) >= 0) newPost();
+        picked = {};
+        toast(failed.length ? "删了 " + okCount + " 篇，" + failed.length + " 篇失败" : "已删除 " + okCount + " 篇", failed.length ? "err" : "ok");
+        if (failed.length) console.warn("批量删除没成功的：", failed);
+        loadPosts();
+      });
+    }
+
     function matchesFilter(post) {
       if (listDraftOnly && !post.draft) return false;
       if (!listKeyword) return true;
@@ -533,18 +613,21 @@ const postsConfig = JSON.stringify(externalPostsConfig);
         : shown.length + " / " + posts.length + " 篇";
       if (!posts.length) {
         $("post-list").innerHTML = '<div class="empty-state"><div class="icon">' + ICONS.note + '</div><p>还没有文章，点「新建文章」开始</p></div>';
+        syncBulkBar();
         return;
       }
       if (!shown.length) {
         $("post-list").innerHTML = '<div class="empty-state"><div class="icon">' + ICONS.filterOff + '</div><p>没有符合条件的文章</p></div>';
+        syncBulkBar();
         return;
       }
       $("post-list").innerHTML = "";
       shown.forEach(function(post) {
         var row = document.createElement("div");
-        row.className = "post-row";
+        row.className = "post-row" + (picked[post.path] ? " picked" : "");
         row.innerHTML =
-          // 行首一枚图标：内容类用彩色（.post-icon 在 admin.css 里定尺寸）
+          // 行首勾选框（批量用）＋ 一枚内容图标：内容类用彩色（.post-icon 在 admin.css 里定尺寸）
+          '<label class="row-check" title="选中这篇"><input type="checkbox" data-pick="' + escapeAttr(post.path) + '"' + (picked[post.path] ? " checked" : "") + " /></label>" +
           '<span class="admin-i post-icon">' + (post.draft ? ICONS.draftNote : ICONS.note) + '</span>' +
           '<div class="post-info">' +
           '<div class="post-title">' + esc(post.title) + '</div>' +
@@ -564,7 +647,19 @@ const postsConfig = JSON.stringify(externalPostsConfig);
           '</div>';
         $("post-list").appendChild(row);
       });
+      syncBulkBar();
     }
+
+    // 勾选用事件委托：列表每次重绘都会换掉 DOM，逐个绑监听会漏。
+    $("post-list").addEventListener("change", function (e) {
+      var t = e.target;
+      if (!t || !t.getAttribute || !t.getAttribute("data-pick")) return;
+      var path = t.getAttribute("data-pick");
+      if (t.checked) picked[path] = true; else delete picked[path];
+      var row = t.closest(".post-row");
+      if (row) row.classList.toggle("picked", t.checked);
+      syncBulkBar();
+    });
     // 文章在站上的地址：src/content/posts/life/xxx.md → /posts/life/xxx/
     function postUrl(p) {
       return "/posts/" + String(p).replace(/^src\/content\/posts\//, "").replace(/\.md$/, "") + "/";
@@ -865,9 +960,9 @@ const postsConfig = JSON.stringify(externalPostsConfig);
     }
 
     // ===== 删除 =====
-    function deletePost(path) {
-      if (!confirm("确定删除这篇文章？文章图片也会一并删除。")) return;
-      getFileMeta(path).then(function(file) {
+    /** 删一篇文章的仓库文件（连它的图片一起）。不弹确认、不刷列表 —— 单条与批量共用。 */
+    function deletePostFile(path) {
+      return getFileMeta(path).then(function(file) {
         if (!file || !file.sha) throw new Error("仓库里找不到这个文件，可能已经被删掉了");
         var slug = slugFromPath(path);
         return deleteFile(path, file.sha, "删除文章: " + path)
@@ -877,7 +972,12 @@ const postsConfig = JSON.stringify(externalPostsConfig);
               return null;
             });
           });
-      }).then(function() {
+      });
+    }
+
+    function deletePost(path) {
+      if (!confirm("确定删除这篇文章？文章图片也会一并删除。")) return;
+      deletePostFile(path).then(function() {
         toast("已删除", "ok");
         if (editingPath === path) newPost();
         loadPosts();
