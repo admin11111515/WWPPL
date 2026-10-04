@@ -400,7 +400,8 @@ const quickAdd = [
         '<div class="nav-ops">' +
         '<button class="btn-icon" type="button" title="上移" data-move="-1" data-path="' + path + '">↑</button>' +
         '<button class="btn-icon" type="button" title="下移" data-move="1" data-path="' + path + '">↓</button>' +
-        '<button class="btn-icon" type="button" title="删除" data-del="1" data-path="' + path + '">✕</button>' +
+        // 删除那枚标 is-danger：三个都是纯图标按钮，只有它是"会删东西"的，配色要分开
+        '<button class="btn-icon is-danger" type="button" title="删除" data-del="1" data-path="' + path + '">✕</button>' +
         "</div>";
 
       var html =

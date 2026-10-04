@@ -118,8 +118,9 @@ const ICONS = {
       justify-content: center;
       width: 24px;
       height: 24px;
-      border-radius: 0.375rem;
-      background: color-mix(in oklab, var(--page-bg) 75%, transparent);
+      /* ⚠️ 这里**不放浅色底**（站长 2026-10-04）：只留勾选框本身，
+         压在照片上怕看不见就给一点投影（投影不是"容器"）。 */
+      filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.35));
     }
     .media-thumb .pick input { width: 0.9375rem; height: 0.9375rem; accent-color: var(--primary); }
     .media-item.picked { border-color: var(--primary); background: color-mix(in oklab, var(--primary) 6%, var(--card-bg)); }
@@ -174,15 +175,22 @@ const ICONS = {
       gap: 0.25rem;
       margin-top: 0.5rem;
     }
-    .media-ops .btn-icon-only {
+    /* ── 图片库的操作图标 ────────────────────────────────────────
+       "不要浅色容器、颜色交给图标"是**全局**规矩，写在 admin.css 的
+       「纯图标按钮不要浅色容器」那一节（编辑器工具栏、导航 ↑↓✕、说说的定位
+       按钮全部一起生效）。这里只留这一页特有的尺寸：28px 见方、图标 1rem。 */
+    .media-ops .btn-icon-only,
+    .media-ops .btn-danger-sm.btn-icon-only {
       padding: 0;
       width: 1.75rem;
       height: 1.75rem;
-      min-height: 0;
+      min-height: 24px; /* 触控下限 */
       border-radius: 0.5rem;
     }
-    .media-ops .btn-icon-only svg { width: 1rem; height: 1rem; }
-    .media-ops .btn-danger-sm.btn-icon-only { width: 1.75rem; height: 1.75rem; }
+    .media-ops .btn-icon-only svg {
+      width: 1rem;
+      height: 1rem;
+    }
 
     /* ===== 预览浮层 ===== */
     .media-lightbox {
