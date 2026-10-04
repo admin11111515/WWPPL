@@ -1366,6 +1366,10 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       return "png";
     }
     function compressImage(file, maxSide, quality) {
+      // ⚠️ 已经压过的小 webp **不再压第二次**（2026-10-05，与图片库同一条）：
+      //    二次有损压缩会改掉字节，于是"同一张图再传一次"算出的校验值和仓库里
+      //    那份对不上，按内容去重就永远命中不了 —— 还是多一份。顺带也别再削一刀画质。
+      if (/webp/.test(file.type) && file.size <= 500 * 1024) return Promise.resolve(file);
       return loadImage(file).then(function(img) {
         var scale = Math.min(1, maxSide / Math.max(img.width, img.height));
         var canvas = document.createElement("canvas");
@@ -1405,21 +1409,40 @@ const postsConfig = JSON.stringify(externalPostsConfig);
 
       compressImage(file, 1600, 0.82)
         .then(function(blob) {
-          // 文件名按压缩后的真实格式取，不能写死 .webp（见 imageExtOf 的注释）
-          var fileName = Date.now() + "." + imageExtOf(blob);
-          var imagePath = CONFIG.imagesPath + "/" + slug + "/" + fileName;
-          var imageUrl = "/images/posts/" + slug + "/" + fileName;
-          // 本地留一份副本：正文里写正式地址，但预览先显示本地这张
-          // （否则重建前预览是裂图，看着像"预览不支持图片"）
-          try { freshImages[imageUrl] = URL.createObjectURL(blob); } catch (e) { /* 记不住也不影响上传 */ }
-          return blobToBase64(blob).then(function(base64) {
-            return WBGitHub.putFile({
-              owner: CONFIG.owner, repo: CONFIG.repo, path: imagePath, branch: CONFIG.branch,
-              content: base64, message: "上传文章图片: " + slug
-            }).then(function() { return imageUrl; });
+          // ⚠️ 按内容去重（2026-10-05，与图片库同一套）：这篇已经传过的图里，
+          //    有没有跟眼前这张**字节一模一样**的？有就直接用原来那份，不再传第二份。
+          //    改一篇文章来回拖同一张封面最容易攒这种重复。
+          //    目录还不存在（第一次传）或接口不给力 → 一律按"没撞上"处理，照常上传。
+          return WBGitHub.blobShaOf(blob).then(function(sha) {
+            if (!sha) return null;
+            return WBGitHub.listDir({
+              owner: CONFIG.owner, repo: CONFIG.repo, branch: CONFIG.branch,
+              path: CONFIG.imagesPath + "/" + slug,
+            }).then(function(items) {
+              for (var i = 0; i < items.length; i++) {
+                if (items[i].type === "file" && items[i].sha === sha) return items[i];
+              }
+              return null;
+            }).catch(function() { return null; });
+          }).then(function(dup) {
+            if (dup) return { url: "/images/posts/" + slug + "/" + dup.name, dup: true };
+            // 文件名按压缩后的真实格式取，不能写死 .webp（见 imageExtOf 的注释）
+            var fileName = Date.now() + "." + imageExtOf(blob);
+            var imagePath = CONFIG.imagesPath + "/" + slug + "/" + fileName;
+            var imageUrl = "/images/posts/" + slug + "/" + fileName;
+            // 本地留一份副本：正文里写正式地址，但预览先显示本地这张
+            // （否则重建前预览是裂图，看着像"预览不支持图片"）
+            try { freshImages[imageUrl] = URL.createObjectURL(blob); } catch (e) { /* 记不住也不影响上传 */ }
+            return blobToBase64(blob).then(function(base64) {
+              return WBGitHub.putFile({
+                owner: CONFIG.owner, repo: CONFIG.repo, path: imagePath, branch: CONFIG.branch,
+                content: base64, message: "上传文章图片: " + slug
+              }).then(function() { return { url: imageUrl, dup: false }; });
+            });
           });
         })
-        .then(function(imageUrl) {
+        .then(function(r) {
+          var imageUrl = r.url;
           if (purpose === "cover") {
             $("cover-input").value = imageUrl;
             updateCoverPreview();
@@ -1427,7 +1450,12 @@ const postsConfig = JSON.stringify(externalPostsConfig);
             insertBlock("![](" + imageUrl + ")");
             updatePreview(); // 立刻用本地副本渲染，不等重建
           }
-          toast("图片已上传 ✓ 预览里已经能看到了（重新构建后站上生效）", "ok");
+          toast(
+            r.dup
+              ? "这张图这篇里已经传过，直接用原来那份（没有再传第二份）"
+              : "图片已上传 ✓ 预览里已经能看到了（重新构建后站上生效）",
+            "ok",
+          );
         })
         .catch(function(e) {
           toast("上传失败：" + e.message, "err");

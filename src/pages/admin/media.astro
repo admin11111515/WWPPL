@@ -124,6 +124,13 @@ const ICONS = {
     }
     .media-thumb .pick input { width: 0.9375rem; height: 0.9375rem; accent-color: var(--primary); }
     .media-item.picked { border-color: var(--primary); background: color-mix(in oklab, var(--primary) 6%, var(--card-bg)); }
+    /* 拖进来的图仓库里已经有了一模一样的一份时，把那一张闪一下指给你看
+       （不传第二份，但得让你知道"它在哪儿"） */
+    .media-item.dup-flash { animation: dup-flash 1.6s ease; }
+    @keyframes dup-flash {
+      0%, 100% { box-shadow: none; }
+      15%, 55% { box-shadow: 0 0 0 2px var(--primary); }
+    }
 
     .media-item:hover {
       border-color: color-mix(in oklab, var(--primary) 35%, var(--line-soft));
@@ -533,7 +540,10 @@ const ICONS = {
             '<button class="btn btn-sm" onclick="event.stopPropagation();copyMd(\'' + esc(it.path) + '\')">复制 Markdown</button>' +
             '<button class="btn btn-sm" onclick="event.stopPropagation();closeLightbox()">' + IC.close + '</button>' +
           '</div>' +
-          '<img src="' + esc(url) + '" alt="' + esc(it.name) + '" onclick="event.stopPropagation()" />' +
+          // ⚠️ 大图也要 draggable="false"：这一张是**动态插进来的**，不在 #media-list 里，
+          //    只在那一片上禁拖管不到它 —— 2026-10-05 站长第二次报"拖一下就多传一份"，
+          //    就是从这个浮层里把图拖了出去。
+          '<img src="' + esc(url) + '" alt="' + esc(it.name) + '" draggable="false" onclick="event.stopPropagation()" />' +
           '<div class="lb-info">' + esc(publicUrl(it.path)) + (kb(it.size) ? ' · ' + kb(it.size) : '') +
             ' · <a href="' + esc(url) + '" target="_blank" rel="noopener" style="color:inherit">新标签打开</a></div>' +
         '</div>';
@@ -609,6 +619,10 @@ const ICONS = {
     /** 压到最长边 1600、质量 0.82；压不动（比如 gif/svg）就原样传 */
     function compressImage(file) {
       if (!/^image\//.test(file.type) || /svg|gif/.test(file.type)) return Promise.resolve(file);
+      // ⚠️ 已经是我们压过的 webp（小图）就**不再压第二次**（2026-10-05）：
+      //    二次有损压缩会改掉字节，于是"同一张图再拖一次"算出的校验值和仓库里那份
+      //    对不上，去重永远命中不了 —— 还是多一份。压一次就够，也别把画质再削一刀。
+      if (/webp/.test(file.type) && file.size <= 500 * 1024) return Promise.resolve(file);
       return new Promise(function (resolve) {
         var img = new Image();
         var url = URL.createObjectURL(file);
@@ -626,21 +640,68 @@ const ICONS = {
       });
     }
 
+    /**
+     * 按内容找"仓库里已经有一模一样的这张"。
+     *
+     * 校验值的算法在 `public/js/admin-github.js` 的 `WBGitHub.blobShaOf`（共用，
+     * 文章编辑器那一页也要用同一把尺子）—— 它算的是 **git blob 校验值**，
+     * 和仓库里每张图的 `it.sha` 同一种值，两边才能直接比。
+     * 拿不到 crypto.subtle 时会返回 null，这里就当"没撞上"，退回按文件名判重。
+     */
+    function shaOfBlob(blob) {
+      return WBGitHub.blobShaOf(blob);
+    }
+    function findBySha(sha) {
+      if (!sha) return null;
+      for (var i = 0; i < all.length; i++) if (all[i].sha === sha) return all[i];
+      return null;
+    }
+    /** 把列表里那一张闪一下，顺带复制它的 Markdown —— 既然已经有，就用现成的 */
+    function flashItem(it) {
+      var box = document.querySelector('[data-pick="' + it.path.replace(/"/g, "") + '"]');
+      var card = box && box.closest ? box.closest(".media-item") : null;
+      if (!card) return;
+      card.classList.remove("dup-flash");
+      // 读一次布局再挂类，动画才会重新跑（连着两次拖同一张也能各闪一次）
+      void card.offsetWidth;
+      card.classList.add("dup-flash");
+      card.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+
     function uploadOne(file, quiet) {
       if (!/^image\//.test(file.type)) { toast("「" + file.name + "」不是图片，跳过", "err"); return; }
-      // 同名已经在仓库里 → 先问一句。上传会生成带时间戳的新名字（不会覆盖），
-      // 也就是说会**多出一份** —— 这种"以为在替换、其实多了一份"最容易攒垃圾。
-      var dup = all.filter(function (it) { return it.name === file.name; })[0];
-      if (dup && !quiet) {
-        if (!window.confirm("仓库里已经有同名的《" + file.name + "》。\n\n再传一次不会覆盖它，会多出一份新的（文件名带时间戳）。继续？")) return;
-      }
-      toast("正在上传 " + file.name + " …", "");
-      compressImage(file)
-        .then(function (blob) {
-          var ext = extOf(blob, file.name);
+      toast("正在检查 " + file.name + " …", "");
+      // ⚠️ 2026-10-05 改：**按内容**判重，不再只比文件名。
+      //    仓库里的图都是上传时生成的时间戳名（20261005-…webp），你本地那张叫
+      //    「封面.jpg」—— 名字永远对不上，于是"拖一张已经传过的图"就又多一份。
+      //    现在量两份校验值：原始文件一份、压缩后的字节一份，任一份和仓库里已有的
+      //    某张相同，就认定"这张已经有了"，直接不传。
+      var rawP = shaOfBlob(file);
+      var compP = compressImage(file);
+      Promise.all([rawP, compP])
+        .then(function (r) {
+          var blob = r[1];
+          return shaOfBlob(blob).then(function (compSha) {
+            return { blob: blob, dup: findBySha(r[0]) || findBySha(compSha) };
+          });
+        })
+        .then(function (r) {
+          if (r.dup) {
+            toast("这张图仓库里已经有了（" + publicUrl(r.dup.path) + "）—— 没有再传第二份，Markdown 已复制", "ok");
+            flashItem(r.dup);
+            copyText("![](" + publicUrl(r.dup.path) + ")", "它自己的 Markdown");
+            return;
+          }
+          // 内容没撞上，但**同名**的有一张 —— 那多半是"想替换"的误操作，问一句
+          var nameDup = all.filter(function (it) { return it.name === file.name; })[0];
+          if (nameDup && !quiet) {
+            if (!window.confirm("仓库里已经有同名的《" + file.name + "》。\n\n再传一次不会覆盖它，会多出一份新的（文件名带时间戳）。继续？")) return;
+          }
+          toast("正在上传 " + file.name + " …", "");
+          var ext = extOf(r.blob, file.name);
           var name = stampName(ext);
           var path = T.uploadDir + "/" + name;
-          return blob.arrayBuffer().then(function (buf) {
+          return r.blob.arrayBuffer().then(function (buf) {
             return WBGitHub.putFile({
               owner: T.owner, repo: T.repo, branch: T.branch,
               path: path, content: b64FromBytes(new Uint8Array(buf)),
@@ -648,8 +709,8 @@ const ICONS = {
             }).then(function () {
               // 刚传的这张站上还没有，用本地 blob 先顶上，标一句等重建
               all.unshift({
-                name: name, path: path, sha: "", size: blob.size,
-                url: publicUrl(path), fresh: true, blobUrl: URL.createObjectURL(blob)
+                name: name, path: path, sha: "", size: r.blob.size,
+                url: publicUrl(path), fresh: true, blobUrl: URL.createObjectURL(r.blob)
               });
               setStatus(true, "已连接 · " + all.length + " 张");
               renderMedia();
@@ -673,10 +734,20 @@ const ICONS = {
     //    浏览器对内拖的 dataTransfer 里也可能带 Files（拖一张 <img> 就是），
     //    不设这道闸门的话，拖一下自己的图 = 又传一份（2026-10-04 站长报的问题）。
     var internalDrag = false;
-    document.addEventListener("dragstart", function () { internalDrag = true; });
+    // ⚠️ 2026-10-05 改：禁拖从"缩略图那一片"提到**整个文档**。
+    //    漏网的就是预览浮层里那张大图 —— 它是点开预览时才插进 DOM 的，
+    //    不在 #media-list 里，上一轮那条监听根本管不到（实测：draggable 是空的、
+    //    dragstart 也没人拦，一拖就起来）。现在凡是**页面里的图片或链接**一律不让起拖，
+    //    以后新加的图也自动跟着走。
+    //    ⚠️ 另一半同样要紧：被这里拦下的 dragstart **不能**置 internalDrag ——
+    //    拖既然没真启动，就永远等不到 dragend，那个标志会一直卡在 true，
+    //    之后从系统拖文件进来就传不进去了（"该传的传不了"）。
+    document.addEventListener("dragstart", function (e) {
+      var t = e.target;
+      if (t && t.closest && t.closest("img, a")) { e.preventDefault(); return; }
+      internalDrag = true;
+    });
     document.addEventListener("dragend", function () { internalDrag = false; dragDepth = 0; if (drop) drop.classList.remove("over"); });
-    // 缩略图这一片干脆不让起拖：少一个误触入口（真要拖出去复制图片，用右键另存）
-    $("media-list").addEventListener("dragstart", function (e) { e.preventDefault(); });
 
     function dragHasFiles(e) {
       if (internalDrag) return false;

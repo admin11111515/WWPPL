@@ -77,10 +77,37 @@ const DIST_INFO = `${DIST.dir}（构建于 ${DIST.at.toLocaleString()}）`;
 const POSTS_PATH = "src/content/posts";
 const IMAGES_PATH = "public/images/posts";
 
-/** GitHub 的 blob sha 算法，前端用它判断缓存是否还有效 */
+/**
+ * GitHub 的 blob sha 算法。
+ * ⚠️ 传 Buffer 时别再 Buffer.from(x, "utf8") 转一次字符串 —— 二进制会被当成
+ *    utf8 解码、字节全变（图片尤其明显）。这里按传入的东西原样取字节：
+ *    字符串按 utf8 编，Buffer / Uint8Array 直接用。
+ * ⚠️ 这个值和**线上 GitHub 返回的一致**，后台「按内容去重」就是拿它跟仓库里
+ *    已有图片比的（2026-10-05）—— 预览器给错值，本地就永远测不出"重复"。
+ */
 function gitBlobSha(content) {
-	const buf = Buffer.from(content, "utf8");
+	const buf = Buffer.isBuffer(content)
+		? content
+		: content instanceof Uint8Array
+			? Buffer.from(content)
+			: Buffer.from(String(content), "utf8");
 	return crypto.createHash("sha1").update(`blob ${buf.length}\0`).update(buf).digest("hex");
+}
+
+/**
+ * 读仓库里的**任意**文件（按字节）。
+ * ⚠️ `readRepoFile` 只认 `src/` 下的文本文件，图片（public/images/**）一律读不到 ——
+ *    目录清单里那些图的 sha 就成了"空内容"的值（e69de29…），去重自然命中不了。
+ */
+function readRepoBytes(rel) {
+	if (rel.startsWith("..") || path.isAbsolute(rel)) return null;
+	const full = path.join(WWPPL, rel);
+	try {
+		if (!fs.statSync(full).isFile()) return null;
+		return fs.readFileSync(full);
+	} catch {
+		return null;
+	}
 }
 
 /** 递归收集文章文件：相对仓库根的路径 -> 内容 */
@@ -368,9 +395,10 @@ async function handleApi(req, res, url) {
 			const outPath = path.join(DIST.dir, rel.replace(/^public\//, ""));
 			fs.mkdirSync(path.dirname(outPath), { recursive: true });
 			fs.writeFileSync(outPath, buf);
-			uploadedImages.set(rel, buf.length);
+			// 存字节本身，目录清单里要按**内容**算 sha（跟线上一致）
+			uploadedImages.set(rel, buf);
 			console.log(`  [预览] 上传图片 → ${rel}（${buf.length} 字节）`);
-			return json(res, { content: { path: rel, sha: gitBlobSha(rel + buf.length), name: path.basename(rel) } }, 201);
+			return json(res, { content: { path: rel, sha: gitBlobSha(buf), name: path.basename(rel) } }, 201);
 		}
 		if (req.method === "DELETE") {
 			const outPath = path.join(DIST.dir, rel.replace(/^public\//, ""));
@@ -414,11 +442,22 @@ async function handleApi(req, res, url) {
 		// 列目录的请求全落到 404 → 后台概览的「篇文章」在本地永远是 0（线上是 58）。
 		// 2026-10-01 补上：真目录就读真实目录，顺带让任何"列目录"的请求都跟线上一致。
 		const full = path.join(WWPPL, file);
+		let isRealDir = false;
 		try {
-			if (fs.statSync(full).isDirectory()) {
-				const entries = fs
-					.readdirSync(full, { withFileTypes: true })
-					.filter(function (d) { return !d.name.startsWith("."); })
+			isRealDir = fs.statSync(full).isDirectory();
+		} catch {
+			isRealDir = false;
+		}
+		// ⚠️ 仓库里**根本没有**这个目录、但预览里刚往这儿传过图，也要能列出来
+		//    （新建一篇文章 → 传第一张图 → 再传同一张，去重要靠这次列目录）。
+		//    不认这种情况的话，本地永远是 404，编辑器那条去重压根验不到。
+		const hasUploaded = [...uploadedImages.keys()].some((rel) => path.dirname(rel) === file);
+		try {
+			if (isRealDir || hasUploaded) {
+				const entries = (isRealDir
+					? fs.readdirSync(full, { withFileTypes: true }).filter(function (d) { return !d.name.startsWith("."); })
+					: []
+				)
 					.map(function (d) {
 						const rel = file + "/" + d.name;
 						return {
@@ -426,19 +465,21 @@ async function handleApi(req, res, url) {
 							path: rel,
 							type: d.isDirectory() ? "dir" : "file",
 							size: d.isDirectory() ? 0 : fs.statSync(path.join(WWPPL, rel)).size,
-							sha: d.isDirectory() ? gitBlobSha(rel) : gitBlobSha(readRepoFile(rel) ?? ""),
+							// ⚠️ 图片的 sha 必须用**真实字节**算（`readRepoFile` 读不到 public/**），
+						//    否则后台按内容去重在本地永远命中不了，看着像"去重没做"。
+						sha: d.isDirectory() ? gitBlobSha(rel) : gitBlobSha(readRepoBytes(rel) ?? Buffer.alloc(0)),
 						};
 					});
 				// 预览里刚上传的图：仓库源码里没有，只有 dist 里有 —— 合并进清单，
 				// 否则传完在图片库里看不到，会被当成"上传没生效"
-				for (const [rel, size] of uploadedImages) {
+				for (const [rel, buf] of uploadedImages) {
 					if (path.dirname(rel) === file) {
 						entries.push({
 							name: path.basename(rel),
 							path: rel,
 							type: "file",
-							size,
-							sha: gitBlobSha(rel + size),
+							size: buf.length,
+							sha: gitBlobSha(buf),
 						});
 					}
 				}

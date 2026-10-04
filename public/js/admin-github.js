@@ -213,6 +213,43 @@
 		});
 	}
 
+	/**
+	 * 一份字节的 **git blob 校验值**（SHA-1）。
+	 *
+	 * 为什么不是直接 SHA-1(bytes)：仓库里每个文件的 `sha` 是 git 的 blob 校验值，
+	 * 它等于 SHA1("blob " + 字节数 + "\0" + 字节)。用同一把尺子量，才能拿本地
+	 * 拖进来的图和仓库里已有的图直接比 —— 这是「按内容去重」的依据（2026-10-05）。
+	 *
+	 * 拿不到 crypto.subtle（不是 https / localhost 这类安全上下文）时返回 null，
+	 * 让调用方退回原来的判据，不去赌一个错的结论。
+	 */
+	function blobSha(bytes) {
+		if (!global.crypto || !global.crypto.subtle || !global.crypto.subtle.digest) {
+			return Promise.resolve(null);
+		}
+		try {
+			var head = new TextEncoder().encode("blob " + bytes.length + "\0");
+			var all = new Uint8Array(head.length + bytes.length);
+			all.set(head, 0);
+			all.set(bytes, head.length);
+			return global.crypto.subtle.digest("SHA-1", all).then(function (d) {
+				var u8 = new Uint8Array(d);
+				var out = "";
+				for (var i = 0; i < u8.length; i++) out += ("0" + u8[i].toString(16)).slice(-2);
+				return out;
+			}).catch(function () { return null; });
+		} catch (e) {
+			return Promise.resolve(null);
+		}
+	}
+
+	/** Blob / File 版的 blobSha（先读成字节再算） */
+	function blobShaOf(blob) {
+		return blob.arrayBuffer().then(function (b) {
+			return blobSha(new Uint8Array(b));
+		}).catch(function () { return null; });
+	}
+
 	global.WBGitHub = {
 		API: API,
 		explain: explain,
@@ -227,5 +264,7 @@
 		patchGist: patchGist,
 		createGist: createGist,
 		graphql: graphql,
+		blobSha: blobSha,
+		blobShaOf: blobShaOf,
 	};
 })(window);
