@@ -182,3 +182,94 @@ const pageWidth = `${siteConfig.pageWidth ?? PAGE_WIDTH}rem`;
     dedupeSvgIds();
   }
 </script>
+
+{/* ── 保存这件事，不该靠"滚到底" ────────────────────────────────
+   后台的设置类页面（站点信息 / 站点外观 / 导航菜单 / 页面）表单都很长，
+   而「保存并生效」原本只长在卡片最末尾 —— 改一个顶部字段要滚到底才存得上，
+   中途关标签页还会丢掉。这里补两件都在**一处**做的事，各页不用各写一遍：
+
+     ① Ctrl / ⌘ + S 直接保存（按的还是页面里那个按钮，不复制一份保存逻辑）
+     ② 有改动没保存、而卡片底部那条保存行又滚出了视野时，右下角浮一个小条
+        「有改动还没保存 · 保存并生效」，点它等于点页面里的保存按钮
+
+   判据全部来自页面上已有的东西：`#save-btn` 是保存入口，`#dirty-hint`
+   是各页自己维护的"有改动"提示（见 site.astro 的 updateDirty）——
+   于是这里不需要知道任何一页的业务，也不用改它们的代码。 */}
+<script is:inline>
+  (function () {
+    function start() {
+      var saveBtn = document.getElementById("save-btn");
+      if (!saveBtn) return;
+
+      // ① Ctrl / ⌘ + S
+      document.addEventListener("keydown", function (e) {
+        if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return;
+        var k = e.key ? String(e.key).toLowerCase() : "";
+        if (k !== "s") return;
+        // 有保存按钮就吃掉这次按键：否则浏览器会弹出"保存网页"，
+        // 而用户想要的是"保存到仓库"。
+        e.preventDefault();
+        var b = document.getElementById("save-btn");
+        if (b && !b.disabled) b.click();
+      });
+
+      // ② 悬浮保存条
+      var hint = document.getElementById("dirty-hint");
+      var row = saveBtn.closest(".save-row");
+      if (!hint || !row) return;
+
+      var dock = document.createElement("div");
+      dock.className = "save-dock";
+      dock.hidden = true;
+      dock.setAttribute("role", "status");
+      var text = document.createElement("span");
+      text.textContent = "有改动还没保存";
+      var go = document.createElement("button");
+      go.type = "button";
+      go.className = "btn btn-sm btn-primary";
+      go.textContent = "保存并生效";
+      go.title = "快捷键：Ctrl / ⌘ + S";
+      go.addEventListener("click", function () {
+        var b = document.getElementById("save-btn");
+        if (b && !b.disabled) b.click();
+      });
+      dock.appendChild(text);
+      dock.appendChild(go);
+      document.body.appendChild(dock);
+
+      var rowOnScreen = true;
+      function isDirty() {
+        return !!String(hint.textContent || "").replace(/\s+/g, "");
+      }
+      function sync() {
+        // 保存行就在眼前（或按钮被禁用、根本没得存）时不要浮出来添乱
+        var show = isDirty() && !rowOnScreen && !saveBtn.disabled;
+        dock.hidden = !show;
+        go.disabled = saveBtn.disabled;
+      }
+
+      if (window.MutationObserver) {
+        new MutationObserver(sync).observe(hint, {
+          childList: true,
+          characterData: true,
+          subtree: true,
+        });
+        // 页面自己也会改 #save-btn 的 disabled（比如"没选页面"时不能存）
+        new MutationObserver(sync).observe(saveBtn, { attributes: true, attributeFilter: ["disabled"] });
+      }
+      if (window.IntersectionObserver) {
+        new IntersectionObserver(function (es) {
+          rowOnScreen = !!(es[0] && es[0].isIntersecting);
+          sync();
+        }).observe(row);
+      }
+      sync();
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", start);
+    } else {
+      start();
+    }
+  })();
+</script>

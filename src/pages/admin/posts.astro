@@ -52,6 +52,16 @@ const postsConfig = JSON.stringify(externalPostsConfig);
     }
 
     .list-filter { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .list-filter-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+    /* 排序是一个下拉，别让它把整行撑满：只占右侧一小块 */
+    .list-filter-row .list-sort {
+      flex: none;
+      width: auto;
+      max-width: 46%;
+      height: 30px;
+      padding: 0 0.5rem;
+      font-size: 0.75rem;
+    }
 
     /* 批量条的样式在 admin.css（图片库页也用同一套） */
 
@@ -162,10 +172,20 @@ const postsConfig = JSON.stringify(externalPostsConfig);
         </button>
         <div class="list-filter">
           <input type="search" class="input-single" id="list-search" placeholder="搜标题 / 路径 / 标签" />
-          <label class="checkbox-row compact">
-            <input type="checkbox" id="list-draft-only" />
-            只看草稿
-          </label>
+          {/* 「只看草稿」与排序并排一行：58 篇默认按发布时间倒着排，想找某一类
+              的时候能换成标题/分类的顺序 —— 排序只影响**列表显示**，不动仓库。 */}
+          <div class="list-filter-row">
+            <label class="checkbox-row compact">
+              <input type="checkbox" id="list-draft-only" />
+              只看草稿
+            </label>
+            <select class="input-single list-sort" id="list-sort" aria-label="列表排序方式">
+              <option value="date-desc">最新在前</option>
+              <option value="date-asc">最早在前</option>
+              <option value="title-asc">按标题</option>
+              <option value="category-asc">按分类</option>
+            </select>
+          </div>
         </div>
         {/* 批量条（2026-10-04 加）：58 篇文章要删其中几篇时，一条条点删除太费事。
             默认藏着，勾了才出现 —— 不占平时的地方。 */}
@@ -353,9 +373,10 @@ const postsConfig = JSON.stringify(externalPostsConfig);
     var editingSha = "";
     var slugAutoMode = true;
     var editingFm = {};
-    // 当前列表的搜索词与"只看草稿"开关，供 renderList 过滤
+    // 当前列表的搜索词、"只看草稿"开关与排序方式，供 renderList 过滤与排序
     var listKeyword = "";
     var listDraftOnly = false;
+    var listSort = "date-desc"; // date-desc | date-asc | title-asc | category-asc
     // 本地草稿与"是否有未保存改动"的判定基线
     var draftStore = WBEditor.createDraftStore("post");
     var cleanSnapshot = "";
@@ -606,8 +627,27 @@ const postsConfig = JSON.stringify(externalPostsConfig);
         .toLowerCase();
       return hay.indexOf(listKeyword) !== -1;
     }
+    /* 列表排序：只改**显示顺序**，不改 posts 本身、更不写回仓库。
+       默认「最新在前」＝按发布时间倒排（原来就这一种）；其余三种是给"想按
+       标题或分类找某一篇"用的。同分类内仍按发布时间倒排，免得顺序看着随机。 */
+    function sortedShown(list) {
+      var out = list.slice();
+      var byDateDesc = function(a, b) { return new Date(b.published || 0) - new Date(a.published || 0); };
+      if (listSort === "date-asc") {
+        out.sort(function(a, b) { return new Date(a.published || 0) - new Date(b.published || 0); });
+      } else if (listSort === "title-asc") {
+        out.sort(function(a, b) { return String(a.title || "").localeCompare(String(b.title || ""), "zh-Hans-CN") || byDateDesc(a, b); });
+      } else if (listSort === "category-asc") {
+        out.sort(function(a, b) {
+          return String(a.category || "").localeCompare(String(b.category || ""), "zh-Hans-CN") || byDateDesc(a, b);
+        });
+      } else {
+        out.sort(byDateDesc);
+      }
+      return out;
+    }
     function renderList() {
-      var shown = posts.filter(matchesFilter);
+      var shown = sortedShown(posts.filter(matchesFilter));
       $("list-count").textContent = shown.length === posts.length
         ? posts.length + " 篇"
         : shown.length + " / " + posts.length + " 篇";
@@ -1584,6 +1624,10 @@ const postsConfig = JSON.stringify(externalPostsConfig);
     });
     $("list-draft-only").addEventListener("change", function() {
       listDraftOnly = this.checked;
+      renderList();
+    });
+    $("list-sort").addEventListener("change", function() {
+      listSort = this.value;
       renderList();
     });
 

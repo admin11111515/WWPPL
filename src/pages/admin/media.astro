@@ -265,6 +265,9 @@ const ICONS = {
           </label>
           <span class="bulk-count" id="media-bulk-count"></span>
           <span class="spacer"></span>
+          {/* 批量复制（2026-10-04 加）：写一篇要用三五张图的文章时，一张张点
+              「复制 Markdown」再拼起来太费事 —— 勾完一次复制，一行一张。 */}
+          <button type="button" class="btn btn-sm" id="media-bulk-copy" onclick="mediaBulkCopy()">复制 Markdown</button>
           <button type="button" class="btn btn-sm bulk-danger" id="media-bulk-del" onclick="mediaBulkDelete()">删除所选</button>
           <button type="button" class="btn btn-sm btn-ghost" onclick="mediaClear()">取消</button>
         </div>
@@ -489,6 +492,28 @@ const ICONS = {
       for (var i = 0; i < all.length; i++) if (all[i].path === path) return all[i];
       return null;
     }
+
+    /**
+     * 批量复制 Markdown：一行一张图。
+     * 顺序按**屏幕上看到的**来（visible() 是过滤+排序后的那份），
+     * 不按对象键的顺序 —— 否则贴进正文的图和勾选时的顺序对不上。
+     * 只复制当前还看得见的勾选项：被搜索词筛掉的勾选不该混进来。
+     */
+    window.mediaBulkCopy = function () {
+      if (!Object.keys(pickedM).length) return;
+      var ordered = visible().filter(function (it) { return !!pickedM[it.path]; });
+      if (!ordered.length) return;
+      var md = ordered.map(function (it) { return "![](" + publicUrl(it.path) + ")"; }).join("\n");
+      var what = ordered.length + " 张图的 Markdown（一行一张，直接贴进正文）";
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(md).then(
+          function () { toast("已复制 " + what, "ok"); },
+          function () { window.prompt("复制这段：", md); },
+        );
+      } else {
+        window.prompt("复制这段：", md);
+      }
+    };
 
     // ===== 操作 =====
     window.copyMd = function (path) {

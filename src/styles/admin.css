@@ -1882,6 +1882,35 @@ textarea { border-radius: 0.75rem; }
 	outline-offset: 2px;
 }
 
+/* ── 悬浮保存条（"有改动还没保存"+一键保存）─────────────────────
+   设置类页面的表单很长，保存按钮只长在卡片最末尾 —— 改个顶上的字段得滚到
+   底才存得上。这个小条只在「有改动没保存」且「底部保存行不在屏幕上」时才
+   浮出来（内容和判据都在 AdminTheme.astro 那段脚本里，一页也不用改）。
+   z-index 压在模态浮层（70）之下，别去盖选图/预览那些浮层。 */
+.save-dock {
+	position: fixed;
+	right: 1.25rem;
+	bottom: 1.25rem;
+	z-index: 50;
+	display: flex;
+	align-items: center;
+	gap: 0.625rem;
+	max-width: calc(100vw - 2.5rem);
+	padding: 0.4375rem 0.4375rem 0.4375rem 0.875rem;
+	border: 1px solid var(--line);
+	border-radius: 999px;
+	background: var(--card-bg);
+	box-shadow: 0 10px 30px -12px rgb(0 0 0 / 0.35);
+	font-size: 0.75rem;
+	color: var(--text-2);
+}
+.save-dock[hidden] {
+	display: none;
+}
+.save-dock .btn {
+	flex: none;
+}
+
 /* ── 文章列表左栏偏窄时，行里的按钮只剩图标 ──────────────────────
    `.post-actions .btn-t` 在容器 <520px 时会被藏起来（见上面那段），
    此时「查看 / 编辑 / 删除」在屏幕上就是三个纯图标 —— 那就按纯图标的
