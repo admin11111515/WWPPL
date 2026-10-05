@@ -64,7 +64,7 @@ import { uiIcon } from "@/constants/ui-icons";
       text-decoration: none;
       transition: color 0.15s;
     }
-    .ov-more:hover { color: var(--primary); }
+    .ov-more:hover { color: var(--accent-ink); }
     /* ⚠️ 它是要点的链接，得给到 24px 的触控高度（体检里 63×18 被判"目标太小"） */
     .ov-more { display: inline-flex; align-items: center; min-height: 24px; }
     .ov-recent { display: flex; flex-direction: column; gap: 0.375rem; }
@@ -332,17 +332,15 @@ import { uiIcon } from "@/constants/ui-icons";
     .login-back:hover { color: var(--btn-content); }
 
     /* ===== 后台主页 ===== */
-    /* 这一页内容窄，标题条与内容区一起收窄。
-       .container-narrow 这个类保留，下面那条垂直居中还用得到 */
-    #admin-main { --admin-content-max: 720px; }
-    /* 登录后这里只有几个入口，内容不多，让它落在视口中段而不是贴着顶，
-       否则下面空一大片，看着像没加载完 */
-    body.authed #admin-main .container-narrow {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      min-height: calc(100vh - 8rem);
-    }
+    /* 720 → 900（2026-10-06 美化）。这一页是「概览」，比编辑器窄是对的，
+       但 720px 在 1440 屏上左右各空 360px，最近那几条也不算窄 —— 放到 900
+       既不挤，也不至于像"内容没铺开"。
+       ⚠️ 原来下面还有一条 `justify-content: center` + `min-height: calc(100vh - 8rem)`，
+          本意是"内容少，别贴着顶"。但内容比容器矮时，居中会把空白**上下对半分**：
+          实测首屏顶部空了 **186px** 才看到第一块内容 —— 那比贴顶更像"没加载完"。
+          已删。这一页是一份**列表**（接着写的几条 + 三个动作），列表该从顶部往下长，
+          短一点就短一点，留白在底部是正常的。 */
+    #admin-main { --admin-content-max: 900px; }
     /* .admin-welcome / .admin-overview / .admin-stat* / .admin-overview-foot
        的样式已随那两块 UI 一起删掉（站长 2026-10-03：这一整块不需要）。
        现在首页就是页头 + 九张入口卡。 */

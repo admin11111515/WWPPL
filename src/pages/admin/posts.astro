@@ -111,8 +111,11 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       width: auto;
       max-width: 46%;
       height: 30px;
-      padding: 0 0.5rem;
+      /* 右侧留出下拉箭头的宽度（箭头由 admin.css 的 select 规则画），
+         只写 `padding: 0 0.5rem` 的话箭头会压在文字上 */
+      padding: 0 1.75rem 0 0.625rem;
       font-size: 0.75rem;
+      background-position: right 0.5rem center;
     }
 
     /* 批量条的样式在 admin.css（图片库页也用同一套） */

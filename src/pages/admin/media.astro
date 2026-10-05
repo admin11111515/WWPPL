@@ -39,6 +39,9 @@ const ICONS = {
 	search: uiIcon("fluent-color:search-visual-24"),
 	zoom: uiIcon("material-symbols:zoom-in"),
 	copy: uiIcon("material-symbols:content-copy"),
+	// 「复制站上地址」单独一个图标：原来和上面那个共用 content-copy，
+	// 同一个图标表示两件事，一排按钮看下来分不清哪个是哪个
+	link: uiIcon("material-symbols:link"),
 	rename: uiIcon("material-symbols:drive-file-rename-outline"),
 	del: uiIcon("material-symbols:delete"),
 	upload: uiIcon("material-symbols:upload"),
@@ -88,14 +91,16 @@ const ICONS = {
       transition: border-color 0.15s, background-color 0.15s;
     }
     .media-drop.over {
-      border-color: var(--primary);
+      border-color: var(--accent-ink);
       background: color-mix(in oklab, var(--primary) 8%, transparent);
     }
 
     /* ===== 缩略图网格 ===== */
     .media-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      /* 150 → 180：150px 一列连一个文件名都放不下，才逼得下面用 break-all 硬断
+         （实测断成 3 行）。列宽给够，文字就不需要「逐字断行」这种下策。 */
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
       gap: 0.75rem;
     }
     /* 分批加载的那条：一次只渲染 24 张，多的按按钮加
@@ -134,8 +139,8 @@ const ICONS = {
          压在照片上怕看不见就给一点投影（投影不是"容器"）。 */
       filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.35));
     }
-    .media-thumb .pick input { width: 0.9375rem; height: 0.9375rem; accent-color: var(--primary); }
-    .media-item.picked { border-color: var(--primary); background: color-mix(in oklab, var(--primary) 6%, var(--card-bg)); }
+    .media-thumb .pick input { width: 0.9375rem; height: 0.9375rem; accent-color: var(--accent-ink); }
+    .media-item.picked { border-color: var(--accent-ink); background: color-mix(in oklab, var(--primary) 6%, var(--card-bg)); }
     /* 拖进来的图仓库里已经有了一模一样的一份时，把那一张闪一下指给你看
        （不传第二份，但得让你知道"它在哪儿"） */
     .media-item.dup-flash { animation: dup-flash 1.6s ease; }
@@ -176,17 +181,34 @@ const ICONS = {
       padding: 0.625rem 0.75rem 0.75rem;
       min-width: 0;
     }
+    /* ⚠️ 原来这两行都是 word-break: break-all —— 文件名/路径被逐字切开、
+       断成 3 行（普查里唯一一条「异常断行」就是它）。文件名不是长单词，
+       该**单行省略**；完整值放 title 里，悬停能看全。
+       路径也不再整条铺开：卡片只需要知道「在哪个目录、多大」，
+       完整路径同样进 title。 */
     .media-name {
       font-size: 0.75rem;
       font-weight: 600;
       line-height: 1.4;
-      word-break: break-all;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .media-meta {
       margin-top: 0.125rem;
       font-size: 0.6875rem;
       color: var(--text-3);
-      word-break: break-all;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    /* 一条细分隔线：把「只看/复制」和「改名/删除」分开 —— 五个同权重图标一排，
+       不知道哪个会改仓库 */
+    .media-ops-sep {
+      width: 1px;
+      align-self: stretch;
+      margin: 0.25rem 0.125rem;
+      background: var(--line-soft);
     }
     .media-ops {
       display: flex;
@@ -324,6 +346,8 @@ const ICONS = {
       $("status-text").textContent = text;
     }
     function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+    /** /images/covers/x.jpg → covers（卡片副行只显示所在目录，不铺整条路径） */
+    function dirOf(path) { var a = String(path || "").split("/"); return a.length > 2 ? a[a.length - 2] : "images"; }
     function copyText(text, what) {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(function () {
@@ -431,12 +455,16 @@ const ICONS = {
               (it.fresh ? '<span class="media-flag">刚上传，重建后站上生效</span>' : '') +
             '</div>' +
             '<div class="media-body">' +
-              '<div class="media-name">' + esc(it.name) + '</div>' +
-              '<div class="media-meta">' + esc(publicUrl(it.path)) + (kb(it.size) ? ' · ' + kb(it.size) : '') + '</div>' +
+              '<div class="media-name" title="' + esc(it.name) + '">' + esc(it.name) + '</div>' +
+              // 副行给「在哪个目录 + 多大」，不是整条 /images/... 路径 —— 卡片宽度有限，
+              // 铺整条路径只会被截断；完整路径放 title，想核对悬停即可
+              '<div class="media-meta" title="' + esc(publicUrl(it.path)) + '">' + esc(dirOf(it.path)) + (kb(it.size) ? ' · ' + kb(it.size) : '') + '</div>' +
               '<div class="media-ops">' +
                 '<button class="btn btn-sm btn-icon-only" title="预览大图" onclick="openLightbox(\'' + esc(it.path) + '\')">' + IC.zoom + '</button>' +
                 '<button class="btn btn-sm btn-icon-only" title="复制 Markdown（可直接贴进正文）" onclick="copyMd(\'' + esc(it.path) + '\')">' + IC.copy + '</button>' +
-                '<button class="btn btn-sm btn-icon-only" title="复制站上地址" onclick="copyPath(\'' + esc(it.path) + '\')">' + IC.copy + '</button>' +
+                '<button class="btn btn-sm btn-icon-only" title="复制站上地址" onclick="copyPath(\'' + esc(it.path) + '\')">' + IC.link + '</button>' +
+                // 分隔线：前三个是「看一眼 / 复制 Markdown / 拿地址」，后两个会改仓库内容
+                '<span class="media-ops-sep" aria-hidden="true"></span>' +
                 '<button class="btn btn-sm btn-icon-only" title="改名" onclick="renameItem(\'' + esc(it.path) + '\')">' + IC.rename + '</button>' +
                 '<button class="btn-danger-sm btn-icon-only" title="删除" onclick="deleteItem(\'' + esc(it.path) + '\')">' + IC.del + '</button>' +
               '</div>' +
