@@ -34,11 +34,39 @@ const templatesForAdmin = (externalNotebooksConfig.templates || []).map(
   {/* 样式、字体、主题色都来自这里，页面自己的样式放在它后面 */}
   <AdminTheme />
   <AdminAuthGate />
+  {/* 窗格布局记在本机；要在样式生效**之前**打到 <html> 上，
+      否则会先按默认画一遍"分栏"再跳到上次那档，闪一下。
+      同一套做法见 src/pages/admin/posts.astro（那边键名带 posts- 前缀，互不干扰）。 */}
+  <script is:inline>
+    (function () {
+      try {
+        var m = localStorage.getItem("wb-notebooks-pane-mode");
+        if (m === "edit" || m === "preview" || m === "split") document.documentElement.setAttribute("data-notebooks-pane", m);
+      } catch (e) {}
+    })();
+  </script>
   <style is:inline>
     /* ===== 只放这一页特有的排版，通用部分在 src/styles/admin.css ===== */
 
-    /* 这一页是窄栏内容，标题条与内容区一起收窄，免得四周太空 */
-    #admin-main { --admin-content-max: 760px; }
+    /* 原来这里写着 `#admin-main { --admin-content-max: 760px }`（"这一页是窄栏内容"）——
+       **它从来没生效过**：admin.css 打包成外链放在 <head> 最后，同特异性后写者胜，
+       页面里所有 `#admin-main { --admin-content-max }` 全是死代码（七页皆然）。
+       真按 760 收窄反而更糟：编辑器是左右两栏，每栏只剩 ~330px（一行 23 字）。
+       所以这里不写宽度 —— 现在走全局那档 1280，靠下面的窗格三态把宽度让给正文。
+       要改宽度得写 `#admin-main > .container`，原因见 admin.css「3. 宽度容器」。 */
+
+    /* 窗格三态（2026-10-05，与文章页同一套做法）：默认「编辑」把整行给 Markdown，
+       原来只有"左右各一半"一栏，正文只有 ~560px（一行 40 字）。 */
+    @media (min-width: 980px) {
+      html[data-notebooks-pane="edit"] #editor-container { grid-template-columns: minmax(0, 1fr); }
+      html[data-notebooks-pane="edit"] #editor-container .editor-pane[data-pane="preview"] { display: none; }
+      html[data-notebooks-pane="preview"] #editor-container { grid-template-columns: minmax(0, 1fr); }
+      html[data-notebooks-pane="preview"] #editor-container .editor-pane[data-pane="edit"] { display: none; }
+    }
+    /* 「分栏」在窄屏没有意义（那边本来就只有一个窗格） */
+    @media (max-width: 979px) {
+      .seg-btn[data-mode-btn="split"] { display: none; }
+    }
 
     /* ⚠️ .status-bar / .submit-row / .save-row / .draft-hint 已提到
           admin.css 共享层（第三遍：状态条统一成小药丸、操作区收进卡片底栏），
@@ -160,10 +188,16 @@ const templatesForAdmin = (externalNotebooksConfig.templates || []).map(
         </div>
         <div class="field">
           <div class="field-label">内容（Markdown）</div>
-          <div class="editor-container">
-            <div class="editor-pane">
+          <div class="editor-container" id="editor-container" data-mobile-pane="edit">
+            <div class="editor-pane" data-pane="edit">
               <div class="editor-pane-header">
                 <span>编辑</span>
+                {/* 三态分段：默认「编辑」整行给正文；「分栏」两边都要看时再切回来 */}
+                <div class="seg">
+                  <button type="button" class="seg-btn active" data-mode-btn="edit">编辑</button>
+                  <button type="button" class="seg-btn" data-mode-btn="split">分栏</button>
+                  <button type="button" class="seg-btn" data-mode-btn="preview">预览</button>
+                </div>
                 <div class="editor-toolbar">
                   <button class="toolbar-btn" onclick="insertMd('**','**')" title="加粗">B</button>
                   <button class="toolbar-btn" onclick="insertMd('*','*')" title="斜体">I</button>
@@ -185,8 +219,17 @@ const templatesForAdmin = (externalNotebooksConfig.templates || []).map(
                 <span class="editor-hint">Ctrl+B 加粗 · Ctrl+S 保存 · Tab 缩进 · <b>图片可直接拖进来或 Ctrl+V</b> · <b>从 Word／网页复制的内容粘进来自动转格式</b></span>
               </div>
             </div>
-            <div class="editor-pane">
-              <div class="editor-pane-header"><span>预览</span></div>
+            <div class="editor-pane" data-pane="preview">
+              <div class="editor-pane-header">
+                <span>预览</span>
+                {/* 与编辑窗格同一组三态：切到「预览」后编辑窗格会整格藏起来，
+                    那时候只能靠这一排切回去，所以两边都放一份。 */}
+                <div class="seg">
+                  <button type="button" class="seg-btn" data-mode-btn="edit">编辑</button>
+                  <button type="button" class="seg-btn" data-mode-btn="split">分栏</button>
+                  <button type="button" class="seg-btn active" data-mode-btn="preview">预览</button>
+                </div>
+              </div>
               <div class="preview-pane" id="preview-pane">
                 <div class="empty-state" style="padding:2rem;"><p>开始编辑后预览内容</p></div>
               </div>
@@ -434,6 +477,35 @@ const templatesForAdmin = (externalNotebooksConfig.templates || []).map(
       $("content-input").value = tpl.content || "";
       updatePreview();
     }
+
+    // ===== 窗格布局：编辑 / 分栏 / 预览 =====
+    // 2026-10-05：与文章页同一套做法（那边有完整说明，这里不重复）。
+    // 状态打在 <html> 上，<head> 里那段脚本已提前按本机存的值设好，不会闪。
+    var PANE_MODE_KEY = "wb-notebooks-pane-mode";
+    function setPaneMode(mode, remember) {
+      if (mode !== "edit" && mode !== "preview" && mode !== "split") mode = "split";
+      if (window.innerWidth < 980 && mode === "split") mode = "edit";
+      var box = $("editor-container");
+      if (!box) return;
+      box.setAttribute("data-mobile-pane", mode === "preview" ? "preview" : "edit");
+      document.documentElement.setAttribute("data-notebooks-pane", mode);
+      Array.prototype.forEach.call(document.querySelectorAll("[data-mode-btn]"), function (b) {
+        b.classList.toggle("active", b.getAttribute("data-mode-btn") === mode);
+      });
+      if (remember !== false) {
+        try { localStorage.setItem(PANE_MODE_KEY, mode); } catch (e) {}
+      }
+    }
+    (function() {
+      var saved = null;
+      try { saved = localStorage.getItem(PANE_MODE_KEY); } catch (e) {}
+      setPaneMode(saved || "edit", false);
+      Array.prototype.forEach.call(document.querySelectorAll("[data-mode-btn]"), function(btn) {
+        btn.addEventListener("click", function() {
+          setPaneMode(btn.getAttribute("data-mode-btn"), true);
+        });
+      });
+    })();
 
     // ===== 编辑器工具栏 =====
     function insertMd(before, after) {
