@@ -253,7 +253,9 @@ const postsConfig = JSON.stringify(externalPostsConfig);
         </div>
         <div class="post-list-scroll">
           <div id="post-list">
-            <div class="empty-state"><span class="spinner"></span><p>正在加载…</p></div>
+            {/* 首屏那一下（脚本还没跑）先摆三行骨架：比转圈更像"这里会有东西"，
+                样式在 admin.css 的 .skeleton-*，生成 markup 的在 public/js/admin-ui.js */}
+            <div class="skeleton-list" aria-hidden="true"><div class="skeleton-row"><i class="sk-thumb"></i><i class="sk-lines"><i class="sk-line"></i><i class="sk-line short"></i></i></div><div class="skeleton-row"><i class="sk-thumb"></i><i class="sk-lines"><i class="sk-line"></i><i class="sk-line short"></i></i></div><div class="skeleton-row"><i class="sk-thumb"></i><i class="sk-lines"><i class="sk-line"></i><i class="sk-line short"></i></i></div></div>
           </div>
         </div>
       </aside>
@@ -400,6 +402,8 @@ const postsConfig = JSON.stringify(externalPostsConfig);
   <div class="toast" id="toast"></div>
 
   <script is:inline src="/js/editor-commons.js"></script>
+  {/* 骨架屏等后台共用的小工具（WBUI.skeleton）—— 必须在用它的脚本之前加载 */}
+  <script is:inline src="/js/admin-ui.js"></script>
   <script is:inline src="/js/admin-github.js"></script>
   <script is:inline src="/js/admin-media.js"></script>
   <script is:inline data-config={postsConfig}
@@ -514,7 +518,8 @@ const postsConfig = JSON.stringify(externalPostsConfig);
     }
 
     function loadPosts() {
-      $("post-list").innerHTML = '<div class="empty-state"><span class="spinner"></span><p>正在加载…</p></div>';
+      // 骨架屏代替转圈（2026-10-05）：行数给 6，接近 58 篇里的首屏观感
+      $("post-list").innerHTML = WBUI.skeleton(6);
       WBGitHub.request("/repos/" + CONFIG.owner + "/" + CONFIG.repo + "/git/trees/" + CONFIG.branch + "?recursive=1")
         .then(function(tree) {
           var blobs = (tree.tree || []).filter(function(item) {

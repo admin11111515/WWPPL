@@ -294,7 +294,8 @@ import { uiIcon } from "@/constants/ui-icons";
           </div>
         </div>
         <div id="moments-list">
-          <div class="empty-state"><span class="spinner"></span></div>
+          {/* 首屏那一下先摆三行骨架（样式在 admin.css .skeleton-*，生成在 public/js/admin-ui.js） */}
+          <div class="skeleton-list" aria-hidden="true"><div class="skeleton-row"><i class="sk-thumb"></i><i class="sk-lines"><i class="sk-line"></i><i class="sk-line short"></i></i></div><div class="skeleton-row"><i class="sk-thumb"></i><i class="sk-lines"><i class="sk-line"></i><i class="sk-line short"></i></i></div><div class="skeleton-row"><i class="sk-thumb"></i><i class="sk-lines"><i class="sk-line"></i><i class="sk-line short"></i></i></div></div>
         </div>
       </div>
     </div>
@@ -304,6 +305,8 @@ import { uiIcon } from "@/constants/ui-icons";
   <div class="toast" id="toast"></div>
 
   <script is:inline src="/js/editor-commons.js"></script>
+  {/* 骨架屏等后台共用的小工具（WBUI.skeleton）—— 必须在用它的脚本之前加载 */}
+  <script is:inline src="/js/admin-ui.js"></script>
   <script is:inline src="/js/admin-github.js"></script>
   <script is:inline src="/js/admin-media.js"></script>
   <script is:inline
@@ -532,7 +535,7 @@ import { uiIcon } from "@/constants/ui-icons";
 
     function loadMoments() {
       var list = $("moments-list");
-      list.innerHTML = '<div class="empty-state"><span class="spinner"></span></div>';
+      list.innerHTML = WBUI.skeleton(5);
 
       WBGitHub.readGist(GIST_ID).then(function(gist) {
         var text = WBGitHub.gistText(gist, FILE_NAME);

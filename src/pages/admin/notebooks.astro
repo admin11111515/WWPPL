@@ -274,6 +274,8 @@ const templatesForAdmin = (externalNotebooksConfig.templates || []).map(
   <div class="toast" id="toast"></div>
 
   <script is:inline src="/js/editor-commons.js"></script>
+  {/* 骨架屏等后台共用的小工具（WBUI.skeleton）—— 必须在用它的脚本之前加载 */}
+  <script is:inline src="/js/admin-ui.js"></script>
   <script is:inline src="/js/admin-github.js"></script>
   <script is:inline src="/js/admin-media.js"></script>
   <script is:inline
@@ -396,7 +398,7 @@ const templatesForAdmin = (externalNotebooksConfig.templates || []).map(
         return;
       }
 
-      $("entries-list").innerHTML = '<div class="empty-state"><span class="spinner"></span></div>';
+      $("entries-list").innerHTML = WBUI.skeleton(5);
       WBGitHub.readGist(gistId)
         .then(function(gist) {
           allEntries = [];

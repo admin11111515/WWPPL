@@ -502,7 +502,8 @@ import { uiIcon } from "@/constants/ui-icons";
           <a class="ov-more" href="/admin/posts/">全部文章 →</a>
         </div>
         <div class="ov-recent" id="recent-posts">
-          <div class="empty-state"><span class="spinner"></span><p>正在读最近更新…</p></div>
+          {/* 首屏那一下先摆三行骨架（样式在 admin.css .skeleton-*，生成在 public/js/admin-ui.js） */}
+          <div class="skeleton-list" aria-hidden="true"><div class="skeleton-row"><i class="sk-thumb"></i><i class="sk-lines"><i class="sk-line"></i><i class="sk-line short"></i></i></div><div class="skeleton-row"><i class="sk-thumb"></i><i class="sk-lines"><i class="sk-line"></i><i class="sk-line short"></i></i></div><div class="skeleton-row"><i class="sk-thumb"></i><i class="sk-lines"><i class="sk-line"></i><i class="sk-line short"></i></i></div></div>
         </div>
 
         <div class="ov-actions">
@@ -561,6 +562,8 @@ import { uiIcon } from "@/constants/ui-icons";
   <script is:inline data-swup-ignore-script>
     window.__AVATAR_TARGET__ = {"owner":"admin11111515","repo":"WWPPL","branch":"main","path":"public/assets/avatar.png"};
   </script>
+  {/* 骨架屏等后台共用的小工具（WBUI.skeleton）—— 必须在用它的脚本之前加载 */}
+  <script is:inline src="/js/admin-ui.js"></script>
   <script is:inline src="/js/admin-github.js"></script>
   <script is:inline>
     // ===== 工具 =====
