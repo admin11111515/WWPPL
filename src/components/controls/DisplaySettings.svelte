@@ -53,7 +53,10 @@ $: if (hue || hue === 0) {
     #display-setting
       input[type="range"]
         -webkit-appearance none
-        height 1.5rem
+        /* 2026-10-05：原来写 1.5rem —— 根字号 <768px 是 14px，
+           1.5rem 只有 **21px**，低于 24px 的触控下限（每页都中招，量到的就是它）。
+           换成 px：不管根字号是多少都稳在 24px。视觉上正好填满外面那层 h-6 的轨道。 */
+        height 24px
         background-image var(--color-selection-bar)
         transition background-image 0.15s ease-in-out
 

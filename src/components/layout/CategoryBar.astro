@@ -156,6 +156,13 @@ const categoriesUrl = getCategoryPageUrl();
     border-radius: 9999px;
     background: color-mix(in srgb, var(--btn-content) 8%, transparent);
   }
+  /* 2026-10-05：手机上 0.7rem = 9.8px（根字号 14px），分类栏里那些数字小得看不清。
+     桌面不动（那里 0.7rem × 16 = 11.2px 是刻意的紧凑），手机上给到 12px。 */
+  @media (max-width: 767px) {
+    .category-pill .pill-count {
+      font-size: 12px;
+    }
+  }
   .category-pill[data-category-name=""] {
     color: var(--primary);
     background: color-mix(in srgb, var(--primary) 8%, transparent);

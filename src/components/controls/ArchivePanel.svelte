@@ -274,10 +274,15 @@ onMount(async () => {
 						</div>
 
 						<!-- post title -->
+						<!-- 2026-10-05：原来是 `whitespace-nowrap text-ellipsis overflow-hidden` 配
+						     内层 span 的 `truncate` —— 标题一律**单行硬切**（「把博客的性能问题
+						     清了一遍」这类长标题在手机上只剩前半截）。
+						     改成**最多两行**：容器去掉 nowrap/ellipsis、换成 items-start，
+						     标题本身用 line-clamp-2（后台文章列表早就是这么处理的，两边口径一致）。 -->
 						<div
 								class="w-[70%] md:max-w-[65%] md:w-[65%] text-left font-bold
                      group-hover:translate-x-1 transition-all group-hover:text-(--primary)
-                     text-75 pr-8 whitespace-nowrap text-ellipsis overflow-hidden flex items-center gap-2"
+                     text-75 pr-8 min-w-0 flex items-start gap-2"
 						>
 							{#if post.type === 'post'}
 								<span class="px-1.5 py-0.5 text-[10px] bg-amber-500 text-white rounded-md shrink-0 uppercase tracking-wider opacity-80 font-normal">
@@ -305,13 +310,16 @@ onMount(async () => {
 									{post.data.category}
 								</span> -->
 							{/if}
-							<span class="truncate">{post.data.title}</span>
+							<span class="line-clamp-2 min-w-0 flex-1">{post.data.title}</span>
 						</div>
 
 						<!-- tag list -->
+						<!-- 2026-10-05：原来是 `whitespace-nowrap text-ellipsis overflow-hidden`
+						     —— 标签串（「#生活 #月度总结」）被切掉后半截。
+						     标签本来就短，改成正常换行；`hidden md:block` 保持不变（窄屏不显示）。 -->
 						<div
 								class="hidden md:block md:w-[15%] text-left text-sm transition
-                     whitespace-nowrap text-ellipsis overflow-hidden text-30"
+                     break-words text-30"
 						>
 							{formatTag(post.data.tags)}
 						</div>

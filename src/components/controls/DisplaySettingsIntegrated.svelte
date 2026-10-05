@@ -900,7 +900,12 @@ $effect(() => {
     #display-setting
         input[type="range"]
             -webkit-appearance none
-            height 1.5rem
+            /* 2026-10-05：原来 1.5rem —— 根字号 <768px 是 14px，1.5rem 只有 **21px**，
+               低于 24px 触控下限（全站每页都中招，量到的就是这个 #colorSlider）。
+               换成 px：不管根字号多少都稳在 24px，正好等于外面那层 h-6 的轨道。
+               ⚠️ 真正渲染前台的是**这个**组件（Navbar 引的是 Integrated 版），
+                  另一个 DisplaySettings.svelte 里也有一份同样的规则，两处都要改。 */
+            height 24px
             border-radius 999px
             background-image unquote("linear-gradient(90deg, var(--primary) 0 var(--range-progress, 50%), hsla(var(--hue), 22%, 28%, 0.18) var(--range-progress, 50%) 100%)")
             transition background-image 0.15s ease-in-out

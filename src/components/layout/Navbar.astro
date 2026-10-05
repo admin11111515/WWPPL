@@ -147,7 +147,10 @@ if (isLocalSrcLogo) {
                     return <DropdownMenu link={l} />;
                 })}
             </div>
-            <div class="flex col-start-3 justify-self-end">
+            {/* 2026-10-05 加了 id：窄屏下这一区要塞进 375px 的可用宽度，
+                规则写在 main.css（按钮来自 Svelte 子组件，scoped 样式够不着），
+                选择器锚在这个 id 上，别改。 */}
+            <div class="flex col-start-3 justify-self-end" id="navbar-actions">
                 <!--<SearchPanel client:load>-->
                 <Search
                     client:load

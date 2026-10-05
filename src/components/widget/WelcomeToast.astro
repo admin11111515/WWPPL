@@ -16,10 +16,17 @@
         // 挥手图标在这一处直接内联 SVG，不走 src/constants/ui-icons.ts ——
         // 本组件由 MainGridLayout 渲染，是全站级别的，引用图标表会把整张表
         // 拖进每个页面的 chunk；而这里只用得上这一个图标。下面关闭按钮同理。
-        // 注意：这段说明只能写成 JS 注释。模板字符串里的东西是**运行时的
-        // 真字符串**，写成 {/* */} 会被原样插进 DOM、当正文显示出来
-        //（2026-09-28 就是这样把整个弹窗撑爆的）。
-        toast.innerHTML = `
+    // 注意：这段说明只能写成 JS 注释。模板字符串里的东西是**运行时的
+    // 真字符串**，写成 {/* */} 会被原样插进 DOM、当正文显示出来
+    //（2026-09-28 就是这样把整个弹窗撑爆的）。
+    // 2026-10-05 又踩了一次：给下面那个关闭按钮加说明时又写成了 {/* */}，
+    // 这次更早炸 —— esbuild 直接报 `Expected ";" but found "flex"`，
+    // 构建在 32 秒就挂了。**要说明就写在上面这段注释里，别往模板字符串里塞。**
+    //
+    // 关闭按钮原来只有 `flex-shrink-0`，按钮本体就 svg 那么大（14×14），
+    // 远低于 24px 触控下限（体检报告里每页都中招）。现在给它
+    // `p-2 -m-2`：点开范围撑到 32px，负 margin 抵掉 padding，版面一点不变。
+    toast.innerHTML = `
             <div class="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg shadow-lg p-4 max-w-xs">
                 <div class="flex items-start gap-3">
                     <div class="flex-shrink-0 text-2xl">
@@ -35,7 +42,7 @@
                     </div>
                     <button 
                         onclick="closeWelcomeToast()"
-                        class="flex-shrink-0 text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                        class="flex-shrink-0 inline-flex items-center justify-center min-h-[24px] min-w-[24px] p-2 -m-2 text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
                         aria-label="关闭"
                     >
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

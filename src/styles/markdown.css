@@ -1,6 +1,22 @@
 @reference "tailwindcss";
 
 .custom-md {
+  /* ── 阅读行长（2026-10-05）─────────────────────────────────────
+     中文一行 **30~45 个字**最好读，超过 45 眼睛要往回扫。
+     Tailwind typography 默认给的是 `65ch` —— 那是**拉丁字母**的量法，
+     换到中文大约只有 32 个字（太窄）；而 Markdown.astro 里又用
+     `max-w-none!` 把它整个撤掉了，于是 1920 屏上实测一行能塞 **66 个汉字**
+     （列宽 1056px / 字号 16px），长文读起来很别扭。
+
+     这里改成 `42em`（16px 下 = 672px ≈ 42 字）并居中：
+     比 65ch 宽、比整列窄，两头都不极端。
+     ⚠️ 写在这里而不是组件的 class 上：`prose` 的 max-width 在 typography
+        层里，**无分层**的 markdown.css 稳赢；而且规则只留一处。
+     ⚠️ 别为了"让代码块/表格用满宽度"再把 max-width 撤掉 —— 表格和横向滚动
+        容器自己在 `.custom-md` 里有处理（见文件后半段）。 */
+  max-width: 42em;
+  margin-inline: auto;
+
   overflow-wrap: break-word;
 
   body.sticky-navbar & {
