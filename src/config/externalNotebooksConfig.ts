@@ -2,21 +2,32 @@
 // 每个笔记本有独立的 Gist 仓库，避免单个 Gist 空间不足
 // 与说说后端共用同一套认证机制
 
+import notebookGistsJson from "@/data/notebooks.json";
+
+/**
+ * 笔记本清单 = `笔记本名 → Gist ID` 的映射。
+ *
+ * ⚠️ 2026-10-06：这份数据**搬到了 `src/data/notebooks.json`**，因为
+ * 站长问「这个笔记本不能自己创建或编辑吗」—— 原来它写在这个 .ts 里，
+ * 增删改一本笔记本就得改代码 + 提交 + 等构建，后台里做不了。
+ * 抽成 JSON 之后，后台 `/admin/notebooks/` 的「笔记本管理」能直接读写它
+ * （走 GitHub Contents API，和「站点信息」那套完全一样）。
+ * 搬动时少了「我和宝宝的日常」那一本（站长 2026-10-06 说不需要）。
+ *
+ * 新建一本笔记本的流程（后台会自动走完，不用手做）：
+ *   后台填名字 → 写进这个 JSON（值留空）→ 保存并首次写笔记时
+ *   自动建一个 Secret Gist 并把 ID 回填进这里。
+ *   手工建的话：在 https://gist.github.com 建 Secret Gist，
+ *   文件名 notebooks-entries.json、内容 []，再把 Gist ID 填到对应名字后面。
+ */
+const notebookGists = notebookGistsJson as Record<string, string>;
+
 export const externalNotebooksConfig = {
 	// 是否启用外部笔记数据源
 	enable: true,
 
-	// 每个笔记本对应的 Gist ID
-	// 在 https://gist.github.com 创建 Secret Gist，文件名 notebooks-entries.json，内容 []
-	// 创建后把 Gist ID 填在对应笔记本名后面
-	notebookGists: {
-		每日总结: "85e22c520b3ea86d80d0a2f7f5154a67",
-		日记本: "04da78da60cd6363041605ee65f56bdb",
-		日常随笔: "a3707e728f5797612a0b8a9560035686",
-		喜马拉雅: "f189e7928f9d5e98700eb17c0b5853fa",
-		我和宝宝的日常: "5cabb89043f03efa0099f828505fd9ea",
-		记录100件事: "05da9de9c20e47f14849a4937b715d65",
-	} as Record<string, string>,
+	// 每个笔记本对应的 Gist ID（数据源：src/data/notebooks.json，后台可改）
+	notebookGists: notebookGists,
 
 	// 笔记模板（Admin 页面快速选择）
 	// {name} 会被替换为今天的日期，如 2026-06-11

@@ -154,7 +154,13 @@ const templatesForAdmin = (externalNotebooksConfig.templates || []).map(
 
       <!-- 选择笔记本 -->
       <div class="card">
-        <div class="field-label"><span class="icon" set:html={uiIcon("fluent-color:book-open-24")} /> 选择笔记本</div>
+        <div class="list-header">
+          <div class="field-label" style="margin:0"><span class="icon" set:html={uiIcon("fluent-color:book-open-24")} /> 选择笔记本</div>
+          {/* 2026-10-06 站长问「这个笔记本不能自己创建或编辑吗」——
+              原来名字写死在 src/config 的 .ts 里，增删改一本都要改代码 + 提交 + 等构建。
+              现在清单搬到了 src/data/notebooks.json，这里直接读写它（和「站点信息」同一套）。 */}
+          <button type="button" class="btn btn-sm" id="nb-manage-toggle" aria-expanded="false" onclick="toggleNotebookManage()">管理清单</button>
+        </div>
         <div class="notebook-tabs" id="notebook-tabs">
           {notebookList.map((name) => {
             const hasGist = externalNotebooksConfig.notebookGists?.[name];
@@ -167,6 +173,33 @@ const templatesForAdmin = (externalNotebooksConfig.templates || []).map(
         </div>
         <div style="margin-top:0.5rem;font-size:0.75rem;color:var(--text-3);">
           <span class="admin-i" set:html={uiIcon("fluent-color:warning-24")} /> = 未配置 Gist（首次保存自动创建，需手动填回配置） <span class="admin-i" set:html={uiIcon("fluent-color:checkmark-circle-24")} /> = 已配置
+        </div>
+
+        <!-- 清单管理：默认收起。本地改完点「保存到仓库」一次提交（连续改两本只推一次）。
+             ⚠️ 这里保存按钮的 id 特意**不叫** save-btn：全局的 Ctrl/⌘+S 与悬浮保存条
+             按那个 id 找按钮（本页真正的保存笔记按钮叫 submit-btn）。跟它重名的话，
+             笔记本的保存会抢走「保存当前笔记」的快捷键。 -->
+        <div class="hidden" id="nb-manage" style="margin-top:0.875rem;padding-top:0.875rem;border-top:1px dashed var(--line-soft);">
+          <div class="field">
+            <div class="field-label">新建一本</div>
+            <div class="cover-row">
+              <input type="text" class="input-single" id="nb-new-name" placeholder="笔记本名字，例如：读书笔记" onkeydown="if (event.key === 'Enter') { event.preventDefault(); nbAdd(); }" />
+              <button type="button" class="btn btn-sm" onclick="nbAdd()">添加</button>
+            </div>
+            {/* 视觉上旁边那几个字不是 label，读屏与自动化都认不出这个框是干嘛的 */}
+            <div class="field-hint">新加的这本先不用配 Gist —— 往它写第一篇笔记时会自动建一个，并把地址填回清单。</div>
+          </div>
+
+          <div class="list-header" style="margin-top:0.5rem;">
+            <div class="field-label" style="margin:0">已有笔记本</div>
+            <span class="count" id="nb-count"></span>
+          </div>
+          <div id="nb-manage-list"></div>
+
+          <div class="save-row">
+            <button type="button" class="btn btn-primary" id="nb-save" onclick="nbSave()">保存清单到仓库</button>
+            <span class="draft-hint" id="nb-dirty"></span>
+          </div>
         </div>
       </div>
 
@@ -334,11 +367,14 @@ const templatesForAdmin = (externalNotebooksConfig.templates || []).map(
     }
 
     // ===== 笔记本标签切换 =====
-    var tabs = document.querySelectorAll(".notebook-tab");
-    /** 选中某个笔记本；恢复草稿时也要走这里，不然写的东西不知道该进哪一本 */
+    /**
+     * 选中某个笔记本；恢复草稿时也要走这里，不然写的东西不知道该进哪一本。
+     * ⚠️ 每次现查 DOM，不用构建期那个静态 NodeList —— 清单保存后标签会重绘，
+     *    拿着旧引用会选不中（第一次就踩了：改名后点标签没反应）。
+     */
     function activateNotebook(name) {
       var wanted = null;
-      tabs.forEach(function(t) {
+      document.querySelectorAll(".notebook-tab").forEach(function(t) {
         var on = t.getAttribute("data-notebook") === name;
         t.classList.toggle("active", on);
         if (on) wanted = t;
@@ -349,13 +385,235 @@ const templatesForAdmin = (externalNotebooksConfig.templates || []).map(
       $("list-title").textContent = currentNotebook + " 的笔记";
       return true;
     }
-    tabs.forEach(function(tab) {
-      tab.addEventListener("click", function() {
-        if (!confirmDiscardIfDirty("切换到另一个笔记本")) return;
-        if (!activateNotebook(tab.getAttribute("data-notebook"))) return;
-        loadEntries();
+
+    /**
+     * 按当前清单重画标签并重新绑事件（清单改动后调用）。
+     *
+     * ⚠️ 读的是 `nbDraft || NOTEBOOK_GISTS`，不是直接读 NOTEBOOK_GISTS：
+     *    清单编辑期间改的一直是 nbDraft（保存失败要能原样退回），
+     *    这里跟着读草稿，标签行才会立刻反映"新建/改名/删除"，不用等构建。
+     *    第一版写成只读 NOTEBOOK_GISTS → 管理列表变了、标签行没变（两处对不上）。
+     *    nbDraft 还没建出来时是 undefined，|| 会自然落到 NOTEBOOK_GISTS。
+     */
+    function renderNotebookTabs() {
+      var box = $("notebook-tabs");
+      if (!box) return;
+      var src = nbDraft || NOTEBOOK_GISTS;
+      box.innerHTML = "";
+      Object.keys(src).sort().forEach(function(name) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "notebook-tab";
+        b.setAttribute("data-notebook", name);
+        var ic = document.createElement("span");
+        ic.className = "admin-i";
+        // 图标只能走构建期内联 SVG（后台没有 iconify 运行时），从页面上的 data-icons 取
+        ic.innerHTML = src[name] ? ICONS.check : ICONS.warning;
+        b.appendChild(ic);
+        b.appendChild(document.createTextNode(name));
+        box.appendChild(b);
       });
-    });
+      box.querySelectorAll(".notebook-tab").forEach(function(tab) {
+        tab.addEventListener("click", function() {
+          if (!confirmDiscardIfDirty("切换到另一个笔记本")) return;
+          if (!activateNotebook(tab.getAttribute("data-notebook"))) return;
+          loadEntries();
+        });
+      });
+      activateNotebook(currentNotebook);
+    }
+    renderNotebookTabs();
+
+    // ===== 笔记本清单管理（2026-10-06）=====
+    // 站长问「这个笔记本不能自己创建或编辑吗」。原来名字写死在 src/config 的 .ts 里，
+    // 增删改一本都要改代码 + 提交 + 等构建。现在清单是 src/data/notebooks.json，
+    // 这里直接读写（和「站点信息」同一套：读一次拿 sha → 改 → 带 sha 写回，
+    // sha 不匹配会被 GitHub 用 409 挡下，不会把别处的改动覆盖掉）。
+    //
+    // ⚠️ 本地编辑期间用 nbDraft，不直接动 NOTEBOOK_GISTS：
+    //    标签行要跟着一起变，但保存失败时得能原样退回去。
+    var NB_FILE = "src/data/notebooks.json";
+    var nbFileSha = null;   // 仓库里当前那版的 sha
+    var nbDraft = null;     // 本地编辑副本：名字 → gistId
+    var nbDirty = false;
+
+    function b64EncodeUnicode(str) {
+      var bytes = new TextEncoder().encode(str);
+      var bin = "";
+      bytes.forEach(function(b) { bin += String.fromCharCode(b); });
+      return btoa(bin);
+    }
+    function b64DecodeUnicode(str) {
+      var bin = atob(str);
+      var bytes = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return new TextDecoder().decode(bytes);
+    }
+
+    function nbMarkDirty(on) {
+      nbDirty = on;
+      var hint = $("nb-dirty");
+      if (hint) hint.textContent = on ? "有改动还没保存" : "";
+      var btn = $("nb-save");
+      if (btn) btn.disabled = !on;
+    }
+
+    function toggleNotebookManage() {
+      var box = $("nb-manage");
+      if (!box) return;
+      var btn = $("nb-manage-toggle");
+      var open = box.classList.contains("hidden");
+      box.classList.toggle("hidden", !open);
+      if (btn) btn.setAttribute("aria-expanded", open ? "true" : "false");
+      if (!open) return;
+      // 打开时先拉一次仓库里的最新版本：别拿构建时的快照去覆盖别人刚提交的内容
+      setStatus(true, "正在读取清单…");
+      WBGitHub.getFile({ owner: REPO.owner, repo: REPO.repo, branch: REPO.branch, path: NB_FILE })
+        .then(function(res) {
+          var remote = {};
+          if (res && res.content) {
+            nbFileSha = res.sha || null;
+            try { remote = JSON.parse(b64DecodeUnicode(res.content.replace(/\n/g, ""))) || {}; }
+            catch (e) { remote = {}; }
+          }
+          nbDraft = remote;
+          nbRender();
+          nbMarkDirty(false);
+          setStatus(true, "清单已读取（" + Object.keys(nbDraft).length + " 本）");
+        })
+        .catch(function(e) {
+          // 文件读不到就退回构建时的快照，仍然可以增删，只是不能保存
+          nbDraft = JSON.parse(JSON.stringify(NOTEBOOK_GISTS));
+          nbRender();
+          nbMarkDirty(false);
+          setStatus(false, "清单读取失败：" + (e && e.message ? e.message : e));
+        });
+    }
+
+    /** 管理面板里的列表：每行一个可改名输入框 + 状态 + 删除 */
+    function nbRender() {
+      var box = $("nb-manage-list");
+      if (!box || !nbDraft) return;
+      var names = Object.keys(nbDraft).sort();
+      $("nb-count").textContent = names.length + " 本";
+      box.innerHTML = "";
+      names.forEach(function(name) {
+        var row = document.createElement("div");
+        row.className = "form-row";
+        row.style.cssText = "display:flex;gap:0.5rem;align-items:center;padding:0.375rem 0;";
+
+        var input = document.createElement("input");
+        input.type = "text";
+        input.className = "input-single";
+        input.value = name;
+        input.setAttribute("aria-label", "笔记本名字");
+        input.style.flex = "1";
+        input.style.minWidth = "0";
+        // 改名：改的是**键**，Gist 地址跟着键走，笔记内容不丢
+        input.addEventListener("input", function() {
+          var next = input.value.trim();
+          if (!next || next === name) return;
+          if (Object.prototype.hasOwnProperty.call(nbDraft, next)) {
+            toast("已经有一本叫「" + next + "」了", "err");
+            input.value = name;
+            return;
+          }
+          var val = nbDraft[name];
+          delete nbDraft[name];
+          // 重建对象保证改名后仍排在原位（直接改键会跑到末尾）
+          var rebuilt = {};
+          Object.keys(nbDraft).forEach(function(k) { rebuilt[k] = nbDraft[k]; });
+          rebuilt[next] = val;
+          nbDraft = rebuilt;
+          if (currentNotebook === name) currentNotebook = "";
+          nbMarkDirty(true);
+          renderNotebookTabs();
+          nbRender();
+        });
+
+        var state = document.createElement("span");
+        state.className = "count";
+        state.textContent = nbDraft[name] ? "已配置" : "未配置";
+        state.title = nbDraft[name] ? nbDraft[name] : "首次保存笔记时自动创建 Gist";
+        state.style.flex = "none";
+
+        var del = document.createElement("button");
+        del.type = "button";
+        del.className = "btn btn-sm btn-danger-sm";
+        del.textContent = "删除";
+        del.style.flex = "none";
+        del.addEventListener("click", function() {
+          if (!window.confirm(
+            "从清单里删掉「" + name + "」？\n\n" +
+            "前台与后台的标签都会消失，**Gist 里的笔记不会被删**，\n" +
+            "想恢复只要把这一本加回来（Gist 地址还在）。"
+          )) return;
+          delete nbDraft[name];
+          if (currentNotebook === name) currentNotebook = "";
+          nbMarkDirty(true);
+          renderNotebookTabs();
+          nbRender();
+        });
+
+        row.appendChild(input);
+        row.appendChild(state);
+        row.appendChild(del);
+        box.appendChild(row);
+      });
+    }
+
+    function nbAdd() {
+      var input = $("nb-new-name");
+      var name = (input.value || "").trim();
+      if (!name) { toast("先给笔记本起个名字", "err"); return; }
+      if (Object.prototype.hasOwnProperty.call(nbDraft, name)) {
+        toast("已经有一本叫「" + name + "」了", "err");
+        return;
+      }
+      // 值留空：往这本写第一篇笔记时，保存逻辑会自动建 Gist 并把地址填回来
+      nbDraft[name] = "";
+      input.value = "";
+      nbMarkDirty(true);
+      renderNotebookTabs();
+      nbRender();
+      toast("已加入清单，保存后生效", "ok");
+    }
+
+    function nbSave() {
+      if (!nbDirty || !nbDraft) return;
+      var names = Object.keys(nbDraft);
+      for (var i = 0; i < names.length; i++) {
+        if (!String(names[i]).trim()) { toast("有笔记本名字是空的", "err"); return; }
+      }
+      var ordered = {};
+      names.sort().forEach(function(k) { ordered[k] = nbDraft[k]; });
+      var text = JSON.stringify(ordered, null, "\t") + "\n";
+      var btn = $("nb-save");
+      btn.disabled = true; btn.textContent = "保存中…";
+      setStatus(false, "正在提交到仓库…");
+      WBGitHub.putFile({
+        owner: REPO.owner, repo: REPO.repo, branch: REPO.branch, path: NB_FILE,
+        content: b64EncodeUnicode(text),
+        message: "chore: 更新笔记本清单",
+        sha: nbFileSha || undefined
+      }).then(function(res) {
+        nbFileSha = (res && res.content && res.content.sha) || nbFileSha;
+        // 提交成功才同步到页面用的那份，失败时保持原样以便重试
+        NOTEBOOK_GISTS = ordered;
+        nbDraft = JSON.parse(JSON.stringify(ordered));
+        renderNotebookTabs();
+        nbMarkDirty(false);
+        btn.textContent = "保存清单到仓库";
+        setStatus(true, "已提交，等 Cloudflare 重新构建");
+        toast("已保存。Cloudflare 重新构建后前台笔记本页同步（约一两分钟）", "ok");
+      }).catch(function(e) {
+        setStatus(false, e.message);
+        toast(e.message, "err");
+      }).then(function() {
+        btn.disabled = !nbDirty;
+        btn.textContent = "保存清单到仓库";
+      });
+    }
 
     function checkAuth() {
       return fetch("/api/auth/status")
