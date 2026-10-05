@@ -98,6 +98,18 @@ const ICONS = {
       grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
       gap: 0.75rem;
     }
+    /* 分批加载的那条：一次只渲染 24 张，多的按按钮加
+       （2026-10-05：原来 58 张一次性铺开，缩略图一多首屏就卡） */
+    .media-more {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-top: 0.875rem;
+      font-size: 0.75rem;
+      color: var(--text-3);
+    }
     .media-item {
       border: 1px solid var(--line-soft);
       border-radius: var(--radius-large);
@@ -363,6 +375,9 @@ const ICONS = {
           // 新传的排前面，其余按路径倒序（日期戳文件名，倒序≈新的在前）
           list.sort(function (a, b) { return b.path < a.path ? -1 : b.path > a.path ? 1 : 0; });
           all = list;
+          // 数据重读了：搜索词可能已经变了，所以分页从头开始（下面 renderMedia 靠这个判断）
+          shown = PAGE;
+          lastKw = null;
           setStatus(true, "已连接 · " + all.length + " 张");
           renderMedia();
           if (announce) toast("已刷新，共 " + all.length + " 张", "ok");
@@ -375,8 +390,18 @@ const ICONS = {
         });
     }
 
+    // ===== 分批渲染（2026-10-05）=====
+    // 原来 58 张（以后更多）一次性 innerHTML 铺开：DOM 一多，选中态、缩略图
+    // 一次性解码，首屏明显卡。改成一次渲染 PAGE 张，底下给一条"再加载"。
+    // 搜索词一变就退回第一页；数据重读也一样。
+    var PAGE = 24;
+    var shown = PAGE;
+    var lastKw = null;
+
     function renderMedia() {
       var kw = ($("media-search").value || "").trim().toLowerCase();
+      // 换了个搜索词 = 换了一批图，分页从头开始
+      if (kw !== lastKw) { lastKw = kw; shown = PAGE; }
       var list = kw ? all.filter(function (it) { return it.path.toLowerCase().indexOf(kw) >= 0; }) : all;
       var box = $("media-list");
       if (!all.length) {
@@ -389,7 +414,8 @@ const ICONS = {
         mediaSyncBulk();
         return;
       }
-      box.innerHTML = '<div class="media-grid">' + list.map(function (it) {
+      var slice = list.slice(0, shown);
+      box.innerHTML = '<div class="media-grid">' + slice.map(function (it) {
         var url = it.blobUrl || it.url;
         return '' +
           '<div class="media-item' + (pickedM[it.path] ? ' picked' : '') + '">' +
@@ -417,8 +443,24 @@ const ICONS = {
             '</div>' +
           '</div>';
       }).join("") + '</div>';
+      // 底下一条：已显示多少 / 共多少，多的给个按钮
+      if (list.length > PAGE) {
+        box.innerHTML +=
+          '<div class="media-more">' +
+            '<span>已显示 ' + slice.length + ' / ' + list.length + ' 张</span>' +
+            (shown < list.length
+              ? '<button type="button" class="btn btn-sm" onclick="mediaMore()">再加载 ' +
+                Math.min(PAGE, list.length - shown) + ' 张</button>'
+              : '') +
+          '</div>';
+      }
       mediaSyncBulk();
     }
+
+    window.mediaMore = function () {
+      shown += PAGE;
+      renderMedia();
+    };
 
     // ===== 批量选择 / 批量删除（2026-10-04）=====
     // pickedM[path]=true 表示勾上了；搜索/刷新后仍保留。
@@ -430,12 +472,15 @@ const ICONS = {
       var n = Object.keys(pickedM).length;
       bar.classList.toggle("on", n > 0);
       if (n) $("media-bulk-count").textContent = "已选 " + n + " 张";
-      var boxes = [].slice.call(document.querySelectorAll("#media-list input[data-pick]"));
-      var allChecked = boxes.length > 0 && boxes.every(function (b) { return b.checked; });
-      var all = $("media-all");
-      if (all) {
-        all.checked = allChecked;
-        all.indeterminate = !allChecked && boxes.some(function (b) { return b.checked; });
+      // ⚠️ 「全选」的判定必须按**过滤后的全部**算，不能只数已渲染的那几张：
+      //    分批渲染之后屏幕上只有 24 张，剩下的还没进 DOM，按 DOM 数会得出
+      //    "全选上了"（其实后面的没勾）——「全选」的作用对象一直是整个结果集。
+      var vis = visible();
+      var allChecked = vis.length > 0 && vis.every(function (it) { return !!pickedM[it.path]; });
+      var box = $("media-all");
+      if (box) {
+        box.checked = allChecked;
+        box.indeterminate = !allChecked && vis.some(function (it) { return !!pickedM[it.path]; });
       }
     }
 
