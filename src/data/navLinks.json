@@ -49,8 +49,8 @@
 				"pageKey": "guestbook"
 			},
 			{
-				"name": "日记",
-				"url": "/diary/",
+				"name": "笔记",
+				"url": "/life/notebooks/",
 				"icon": "material-symbols:book"
 			}
 		]

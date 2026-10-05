@@ -42,7 +42,9 @@ const FALLBACK_PAGES = {
 	guestbook: true,
 	anime: true,
 	gallery: true,
-	diary: true,
+	// 2026-10-06：/diary/ 页面已删除（模板自带的示例数据），日记内容并入「笔记本」。
+	// 开关保持 false：留着键位以防别处读到 pages.diary，但页面已经不存在了。
+	diary: false,
 	projects: true,
 	skills: true,
 } as const;

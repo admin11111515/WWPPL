@@ -45,3 +45,6 @@ scripts/fill-descriptions.ts
 
 # wrangler
 .wrangler/
+
+# 本地备份目录（不入库）：删代码前先备份到这里，仓库外留一份更保险
+.backup/

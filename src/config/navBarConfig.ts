@@ -102,9 +102,13 @@ export const LinkPresets: Record<string, NavBarLink> = {
 		icon: "material-symbols:photo-album",
 		pageKey: "gallery",
 	},
-	Diary: {
-		name: "日记",
-		url: "/diary/",
+
+	// 2026-10-06：原来的「日记」条目指向 /diary/（模板自带的示例数据页），
+	// 已与「笔记本」合并 —— 那个页面删掉了，入口改指真正在写的笔记本页。
+	// 去掉 pageKey：笔记本页没有页面开关，挂了会被当成"开关是 false"而整条消失。
+	Notebooks: {
+		name: "笔记",
+		url: "/life/notebooks/",
 		icon: "material-symbols:book",
 	},
 	Projects: {

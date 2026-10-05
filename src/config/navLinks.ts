@@ -55,7 +55,8 @@ const FALLBACK_LINKS: NavBarLink[] = [
 				icon: "material-symbols:chat",
 				pageKey: "guestbook",
 			},
-			{ name: "日记", url: "/diary/", icon: "material-symbols:book" },
+			// 2026-10-06：日记页已与笔记本合并，入口指向笔记本（原来那个页面是模板示例数据）
+			{ name: "笔记", url: "/life/notebooks/", icon: "material-symbols:book" },
 		],
 	},
 	{
