@@ -1127,18 +1127,28 @@ input[type="time"],
 }
 
 .editor-pane-header {
-	display: flex;
+	/* 2026-10-06：从 flex + space-between 改成**两行网格**。
+	   原因是同一个「编辑 / 分栏 / 预览」开关在两个页面里位置不一样：
+	   文章页工具栏换到了第二行，开关就落在右侧；笔记页三样挤得下，
+	   space-between 把开关摆到了正中间 —— 同一个控件两种位置，反直觉。
+	   现在固定成：第 1 行 = 标题（左）+ 视图开关（右），第 2 行 = 工具栏独占整行。
+	   不管页面多宽、工具栏有几个按钮，位置都一样。 */
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
 	align-items: center;
-	justify-content: space-between;
-	gap: 0.5rem;
-	flex-wrap: wrap;
+	gap: 0.375rem 0.5rem;
 	padding: 0.5rem 0.625rem;
 	background: var(--card-bg-soft);
 	border-bottom: 1px solid var(--line-soft);
 	font-size: 0.75rem;
 	font-weight: 700;
 	color: var(--text-3);
-	min-height: 44px;
+}
+.editor-pane-header > .seg {
+	justify-self: end;
+}
+.editor-pane-header > .editor-toolbar {
+	grid-column: 1 / -1;
 }
 
 .editor-textarea {
@@ -1213,6 +1223,8 @@ input[type="time"],
 	display: flex;
 	gap: 0.125rem;
 	flex-wrap: wrap;
+	align-items: center;
+	min-height: 28px;
 }
 
 /* 工具栏按钮：与博客导航栏上的图标按钮同一形态（.btn-plain） */
@@ -1905,10 +1917,23 @@ textarea { border-radius: 0.75rem; }
 	background: color-mix(in oklab, var(--card-bg-soft) 55%, transparent);
 }
 
+/* ⚠️ 这里原来是 `flex: 1` —— 意思是"主按钮撑满整条保存行"。
+   在小屏上那是对的（拇指够得着），但在桌面上就成了 **961px 宽的一条横幅**
+   （说说的「发布」实测 1118px）—— 站长说的"有些按钮太大"就是它。
+   改成：桌面按内容宽度（min 9rem / max 14rem），**只有窄屏才整宽**。
+   一句话：整宽是移动端的可点性补偿，不是桌面上的版式。 */
 .card > .save-row .btn-primary,
 .card > .submit-row .btn-primary {
-	flex: 1;
+	flex: 0 1 auto;
 	min-width: 9rem;
+	max-width: 14rem;
+}
+@media (max-width: 640px) {
+	.card > .save-row .btn-primary,
+	.card > .submit-row .btn-primary {
+		flex: 1 1 auto;
+		max-width: none;
+	}
 }
 .card > .save-row .btn-ghost,
 .card > .submit-row .btn-ghost {

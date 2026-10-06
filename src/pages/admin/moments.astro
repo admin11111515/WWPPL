@@ -438,9 +438,11 @@ import { uiIcon } from "@/constants/ui-icons";
       var imgs = getImages(), c = $("img-preview"); c.innerHTML = "";
       imgs.forEach(function(url, i) {
         var d = document.createElement("div"); d.className = "img-thumb";
-        d.innerHTML = '<img src="' + url + '" alt="" onerror="this.style.opacity=\'0.3\'"><button class="remove" onclick="removeImage(' + i + ')">×</button>';
+        d.innerHTML = '<img src="' + url + '" alt="" onerror="this.style.opacity=\'0.3\'"><button class="remove" onclick="removeImage(' + i + ')" aria-label="移除这张图">' + (ICONS.close || "×") + '</button>';
         c.appendChild(d);
       });
+      // 图片是"能不能发布"的另一个条件 —— 图中增删也要让按钮状态跟着走
+      if (typeof syncSubmitState === "function") syncSubmitState();
     }
 
     $("image-input").addEventListener("keydown", function(e) {
@@ -650,6 +652,9 @@ import { uiIcon } from "@/constants/ui-icons";
         }
 
         $("submit-btn").textContent = "保存修改";
+        // 编辑态下内容一定是有的，把禁用判定让开（见 syncSubmitState）
+        $("submit-btn").setAttribute("data-editing", "1");
+        syncSubmitState();
         $("edit-bar").classList.remove("hidden");
         $("content-input").focus();
         $("content-input").scrollIntoView({ behavior: "smooth", block: "center" });
@@ -670,6 +675,8 @@ import { uiIcon } from "@/constants/ui-icons";
       $("custom-time-panel").classList.add("hidden");
       setImages([]); renderImgs();
       $("submit-btn").textContent = "发布";
+      $("submit-btn").removeAttribute("data-editing");
+      syncSubmitState();
       $("edit-bar").classList.add("hidden");
       updateCounter();
       markClean();
@@ -756,11 +763,30 @@ import { uiIcon } from "@/constants/ui-icons";
     }
 
     // ===== 字数 =====
+    /**
+     * 「发布」按钮的可用状态跟着内容走（2026-10-06）。
+     * 原来它一直可点：内容空着点下去才弹一句"请先写点什么" —— 反直觉。
+     * 空的时候直接禁用，并把原因写在 title 里（禁用要给得出理由，不能只是灰着）。
+     * ⚠️ 编辑已有说说的状态下不要禁用（这时按钮文案是"保存修改"，内容一定有）。
+     */
+    function syncSubmitState() {
+      var btn = $("submit-btn");
+      if (!btn || btn.getAttribute("data-editing") === "1") return;
+      var hasText = ($("content-input").value || "").trim().length > 0;
+      var imgs = (typeof getImages === "function" ? getImages() : []) || [];
+      var hasImgs = imgs.length > 0;
+      var ok = hasText || hasImgs;
+      btn.disabled = !ok;
+      btn.title = ok ? "" : "先写点什么（或加张图）才能发布";
+    }
+
     function updateCounter() {
       var s = WBEditor.summarize($("content-input").value);
       $("content-counter").textContent = "正文 " + s.chars + " 字 · 约 " + s.minutes + " 分钟读完";
     }
-    $("content-input").addEventListener("input", updateCounter);
+    $("content-input").addEventListener("input", function () { updateCounter(); syncSubmitState(); });
+    // 首屏也对一次：进来就是空的时候按钮该是灰的
+    syncSubmitState();
 
     // ===== 本地草稿：写到一半也不会丢 =====
     // 只存在这台浏览器里，不上传任何地方。正式内容仍然以发布出去的为准。

@@ -400,6 +400,23 @@ const pageSwitches = [
       var dirty = isDirty();
       el.textContent = dirty ? "有改动还没保存" : "";
       el.className = "dirty-hint" + (dirty ? " dirty" : "");
+      syncSaveBtn(dirty);
+    }
+
+    /**
+     * 「保存并生效」在没有改动时要**禁用**（2026-10-06）。
+     *
+     * 原来它一直可点：页面明明什么都没改，按钮却是实的，点一下会往仓库推一次
+     * **空提交**、再触发一次 Cloudflare 构建 —— 既是反直觉（按钮的可点性在撒谎），
+     * 也是白烧一次构建。现在跟着 dirty 走，并给出为什么点不动。
+     * ⚠️ 只在这条链路上设 disabled；页面别处若另有禁用理由（比如 pages.astro 的
+     *    "没选页面"），要在它自己的代码里一起算，别让这里覆盖掉。
+     */
+    function syncSaveBtn(dirty) {
+      var b = $("save-btn");
+      if (!b) return;
+      b.disabled = !dirty;
+      b.title = dirty ? "" : "还没有改动可保存";
     }
 
     function b64DecodeUnicode(str) {

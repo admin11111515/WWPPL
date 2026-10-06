@@ -1607,6 +1607,10 @@ const postsConfig = JSON.stringify(externalPostsConfig);
     }
     function markClean() {
       cleanSnapshot = JSON.stringify(snapshot());
+      // ⚠️ 必须在这里也同步一次按钮：初始化时 syncSaveBtn() 比 markClean() 先跑，
+      //    那一刻 cleanSnapshot 还是空的 → 判定成"有改动" → 按钮亮着。
+      //    接到 markClean 上就覆盖了全部路径（初始化完 / 存完 / 载入某篇）。
+      syncSaveBtn();
     }
     function applySnapshot(s) {
       $("title-input").value = s.title || "";
@@ -1643,7 +1647,26 @@ const postsConfig = JSON.stringify(externalPostsConfig);
     function scheduleDraftSave() {
       clearTimeout(autosaveTimer);
       autosaveTimer = setTimeout(saveDraftNow, 900);
+      syncSaveBtn();
     }
+
+    /**
+     * 「发布文章」在没有改动时禁用（2026-10-06）。
+     *
+     * 和设置类页面同一个毛病：按钮一直可点，哪怕表单是空的 / 什么都没改 ——
+     * 点下去要么报"标题不能为空"，要么推一次空提交再白烧一次 Cloudflare 构建。
+     * 按钮的可点性不该撒谎。
+     * ⚠️ 这里用页面自己的 isDirty()（它是整份表单快照的差），别用 #draft-hint ——
+     *    那个写的是"本地草稿 xx 时间"，跟"改了没改"不是一回事。
+     */
+    function syncSaveBtn() {
+      var b = $("save-btn");
+      if (!b) return;
+      var dirty = isDirty();
+      b.disabled = !dirty;
+      b.title = dirty ? "" : "还没有改动可保存";
+    }
+    syncSaveBtn();
     ["title-input", "slug-input", "category-input", "tags-input", "date-input",
      "description-input", "cover-input", "content-input"].forEach(function(id) {
       $(id).addEventListener("input", scheduleDraftSave);

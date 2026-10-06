@@ -27,6 +27,20 @@ const target = {
  *
  *    要加图标：确认 `material-symbols:<名字>` 在图标集里存在，再加进这里。
  */
+/**
+ * 每一行右侧那几个操作按钮的图标。
+ * ⚠️ 2026-10-06：原来这三个按钮里放的是 Unicode 字符「↑ ↓ ✕」，
+ *    拖拽手柄是个「⠿」盲文点阵 —— craft-floor 把「拿字符/emoji 当图标系统」
+ *    列为明确禁止项：字形随字体变、粗细不统一、和页面里其它 SVG 图标不是一套。
+ *    现在全部换成构建期内联的 SVG（和别处同一套图标集）。
+ */
+const rowIcons = {
+	up: uiIcon("material-symbols:arrow-upward"),
+	down: uiIcon("material-symbols:arrow-downward"),
+	del: uiIcon("material-symbols:close"),
+	grip: uiIcon("material-symbols:drag-indicator"),
+};
+
 const iconOptions = [
 	["mdi:wechat", "微信"],
 	["material-symbols:home", "主页"],
@@ -319,10 +333,12 @@ const quickAdd = [
 
   <script is:inline src="/js/editor-commons.js"></script>
   <script is:inline src="/js/admin-github.js"></script>
-  <script is:inline data-target={JSON.stringify(target)} data-icons={JSON.stringify(iconOptions)} data-quick={JSON.stringify(quickAdd)}>
+  <script is:inline data-target={JSON.stringify(target)} data-icons={JSON.stringify(iconOptions)} data-row-icons={JSON.stringify(rowIcons)} data-quick={JSON.stringify(quickAdd)}>
     var _script = document.currentScript;
     var TARGET = JSON.parse(_script.getAttribute("data-target") || "{}");
     var ICONS = JSON.parse(_script.getAttribute("data-icons") || "[]");
+    // 行内操作按钮的图标（上移/下移/删除/拖拽手柄），见文件头的 rowIcons 注释
+    var RIC = JSON.parse(_script.getAttribute("data-row-icons") || "{}");
     var QUICK = JSON.parse(_script.getAttribute("data-quick") || "[]");
 
     // ===== 工具 =====
@@ -398,16 +414,16 @@ const quickAdd = [
         : '<input type="text" class="input-single nav-url" data-kind="url" data-path="' + path + '" id="' + urlId + '" value="' + esc(item.url) + '" placeholder="/about/ 或 https://…" aria-label="菜单地址" />';
       var ops =
         '<div class="nav-ops">' +
-        '<button class="btn-icon" type="button" title="上移" data-move="-1" data-path="' + path + '">↑</button>' +
-        '<button class="btn-icon" type="button" title="下移" data-move="1" data-path="' + path + '">↓</button>' +
+        '<button class="btn-icon" type="button" title="上移" aria-label="上移" data-move="-1" data-path="' + path + '">' + RIC.up + '</button>' +
+        '<button class="btn-icon" type="button" title="下移" aria-label="下移" data-move="1" data-path="' + path + '">' + RIC.down + '</button>' +
         // 删除那枚标 is-danger：三个都是纯图标按钮，只有它是"会删东西"的，配色要分开
-        '<button class="btn-icon is-danger" type="button" title="删除" data-del="1" data-path="' + path + '">✕</button>' +
+        '<button class="btn-icon is-danger" type="button" title="删除" aria-label="删除这一项" data-del="1" data-path="' + path + '">' + RIC.del + '</button>' +
         "</div>";
 
       var html =
         '<div class="' + (isChild ? "nav-child-row" : "nav-row") + '" data-row-path="' + path + '">' +
         // 拖拽把手：按住它拖到同层的另一行上/下半格，就能换位置
-        '<span class="nav-grip" draggable="true" data-drag="' + path + '" title="按住拖动可以换位置（也可以继续用 ↑↓）" aria-hidden="true">⠿</span>' +
+        '<span class="nav-grip" draggable="true" data-drag="' + path + '" title="按住拖动可以换位置（也可以继续用上下箭头）" aria-hidden="true">' + RIC.grip + '</span>' +
         // 图标下拉与菜单名在视觉上靠列位置区分，但都没有和标签关联 —— 补 aria-label
         '<select class="input-single nav-icon" id="' + iconId + '" data-kind="icon" data-path="' + path + '" aria-label="菜单图标">' + iconOptionsHtml(item.icon || "") + "</select>" +
         '<input type="text" class="input-single nav-name" id="' + nameId + '" data-kind="name" data-path="' + path + '" value="' + esc(item.name) + '" placeholder="菜单名" maxlength="20" aria-label="菜单名" />' +
@@ -639,6 +655,18 @@ const quickAdd = [
       var dirty = isDirty();
       el.textContent = dirty ? "有改动还没保存" : "";
       el.className = "dirty-hint" + (dirty ? " dirty" : "");
+      syncSaveBtn(dirty);
+    }
+
+    /**
+     * 「保存并生效」在没有改动时禁用 —— 理由见前面「保存前的结构检查」那段同样的注释：
+     * 可点的按钮却在做空提交，既反直觉又白烧一次构建。
+     */
+    function syncSaveBtn(dirty) {
+      var b = $("save-btn");
+      if (!b) return;
+      b.disabled = !dirty;
+      b.title = dirty ? "" : "还没有改动可保存";
     }
 
     // ===== 保存前的结构检查 =====

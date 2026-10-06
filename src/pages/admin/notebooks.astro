@@ -383,6 +383,7 @@ const templatesForAdmin = (externalNotebooksConfig.templates || []).map(
       currentNotebook = name;
       $("target-notebook").textContent = currentNotebook;
       $("list-title").textContent = currentNotebook + " 的笔记";
+      if (typeof syncSaveBtn === "function") syncSaveBtn();
       return true;
     }
 
@@ -631,8 +632,21 @@ const templatesForAdmin = (externalNotebooksConfig.templates || []).map(
 
     // ===== 初始化 =====
     function initGist() {
-      var configured = Object.keys(NOTEBOOK_GISTS).filter(function(k) { return NOTEBOOK_GISTS[k]; });
+      var names = Object.keys(NOTEBOOK_GISTS);
+      var configured = names.filter(function(k) { return NOTEBOOK_GISTS[k]; });
       setStatus(true, "已连接（" + configured.length + " 个笔记本已配置 Gist）");
+
+      /* 2026-10-06：**默认选中第一本**。
+         原来进来是「写笔记 → 未选择」：标题/日期/正文全都能填、保存按钮也能点，
+         点下去才弹一句"请先选择笔记本" —— 典型反直觉（能做的就是错的）。
+         有小标题时优先选它，没有就按名字排序取第一本。
+         ⚠️ 只在"确实没有选中"时兜底，别覆盖草稿恢复出来的那一本（那条在后面会调 activateNotebook）。 */
+      if (!currentNotebook && names.length) {
+        var first = names.slice().sort()[0];
+        if (activateNotebook(first)) {
+          $("target-notebook").textContent = first;
+        }
+      }
     }
 
     /** 一条笔记里能被搜到的东西：标题、正文、日期、笔记本名 */
@@ -887,6 +901,20 @@ const templatesForAdmin = (externalNotebooksConfig.templates || []).map(
     }
 
     // ===== 提交 =====
+    /**
+     * 「保存笔记」在没内容时禁用（2026-10-06）。
+     * 和说说、设置类页面同一个毛病：按钮一直可点，空着点下去才弹"请输入内容"。
+     * 另：没选笔记本时也禁用 —— 但 initGist 现在会默认选中第一本，正常走不到那一步。
+     */
+    function syncSaveBtn() {
+      var b = $("submit-btn");
+      if (!b) return;
+      var hasText = ($("content-input").value || "").trim().length > 0;
+      var ok = !!currentNotebook && hasText;
+      b.disabled = !ok;
+      b.title = !currentNotebook ? "先选一个笔记本" : (hasText ? "" : "先写点内容才能保存");
+    }
+
     function submitEntry() {
       if (!currentNotebook) { toast("请先选择笔记本", "err"); return; }
       var content = $("content-input").value.trim();
@@ -1000,7 +1028,7 @@ const templatesForAdmin = (externalNotebooksConfig.templates || []).map(
       var s = WBEditor.summarize($("content-input").value);
       $("content-counter").textContent = "正文 " + s.chars + " 字 · 约 " + s.minutes + " 分钟读完";
     }
-    $("content-input").addEventListener("input", updateCounter);
+    $("content-input").addEventListener("input", function () { updateCounter(); syncSaveBtn(); });
 
     // ===== 本地草稿：写到一半也不会丢 =====
     // 只存在这台浏览器里，不上传任何地方。正式内容仍然以存进仓库的为准。

@@ -206,7 +206,9 @@ const pages = [
       flex-wrap: wrap;
       margin-top: 1rem;
     }
-    .save-row .btn-primary { flex: 1; min-width: 10rem; }
+    /* 主按钮的宽度统一由 admin.css 的 .card > .save-row 那条说了算
+       （原来这里另写了一条 flex:1，同一个东西两处定义，改一处忘一处）。
+       这一页的内容比别的页面宽，更需要"按内容宽度"而不是整宽。 */
     .dirty-hint {
       font-size: 0.6875rem;
       color: var(--text-3);
@@ -333,7 +335,11 @@ const pages = [
     }
     function setBusy(on) {
       loading = on;
-      $("save-btn").disabled = on || !current;
+      // ⚠️ 这里的禁用有两层理由，要**一起算**：
+      //   a) 这一页自己的：没选页面就不该存
+      //   b) 通用的：没有改动也没必要存（空提交会白烧一次 Cloudflare 构建）
+      $("save-btn").disabled = on || !current || !isDirty();
+      $("save-btn").title = (!current || on) ? "先选一个页面" : (isDirty() ? "" : "还没有改动可保存");
       $("page-text").disabled = on;
     }
 
@@ -519,7 +525,7 @@ const pages = [
         $("page-text").disabled = true;
       }).then(function() {
         loading = false;
-        $("save-btn").disabled = !current || $("page-text").disabled;
+        $("save-btn").disabled = !current || $("page-text").disabled || !isDirty();
       });
     }
 
