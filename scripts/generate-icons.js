@@ -43,6 +43,14 @@ const EXPLICIT_ICONS = [
 	"fluent-color:document-edit-24", // 页面内容（改页面正文）
 	"fluent-color:apps-list-detail-24", // 导航菜单（一条清单带详情，2026-10-02 加）
 	"fluent-color:paint-brush-24", // 站点外观（配色、壁纸，2026-10-02 加）
+	// 导航菜单每行的操作（2026-10-06 加）：
+	// 这三个原来是用 Unicode 字符 ↗ ↖ ⠿ 顶的，字形随字体变、粗细不统一，
+	// 跟页面里其它 SVG 图标不是一套 —— 换成图标集里的真图标。
+	// ⚠️ uiIcon() 只认这份白名单；不在名单里的会**静默返回空串**，
+	//    表现是"按钮渲染出来了但里面什么都没有"（改完务必看一眼截图）。
+	"material-symbols:arrow-upward", // 上移
+	"material-symbols:arrow-downward", // 下移
+	"material-symbols:drag-indicator", // 拖拽手柄
 	// 字段标签
 	"fluent-color:document-text-24", // 内容
 	"fluent-color:image-24", // 图片（带外框，用于字段标签）
