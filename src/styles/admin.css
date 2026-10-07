@@ -2420,3 +2420,203 @@ textarea { border-radius: 0.75rem; }
 		color: var(--danger);
 	}
 }
+
+/* ===== 命令面板（⌘K，2026-10-07）=====
+   形态：一个**浮层**，平时完全不可见。⚠️ 不是一条栏 —— 后台顶部的形态被站长
+   来回改过六版，最后定的是"一条顶栏都没有，只有一行页头"（见 AdminTopBar 的文件头），
+   别把它做成一搜一栏。页头右侧只多一个小按钮当入口（纯快捷键没人知道有这功能）。
+   颜色/圆角/间距全部走上面那套刻度，不写字面量。 */
+.cmdk[hidden] {
+	display: none;
+}
+
+/* 打开时锁住底下的滚动，否则浮层里滚轮会把页面也带着滚 */
+html.cmdk-open,
+html.cmdk-open body {
+	overflow: hidden;
+}
+
+.cmdk {
+	position: fixed;
+	inset: 0;
+	z-index: 90;
+	display: flex;
+	align-items: flex-start;
+	justify-content: center;
+	padding: 12vh var(--sp-4) var(--sp-4);
+}
+
+.cmdk-backdrop {
+	position: absolute;
+	inset: 0;
+	background: oklch(0.2 0.02 var(--hue) / 0.34);
+	-webkit-backdrop-filter: blur(2px);
+	backdrop-filter: blur(2px);
+}
+
+.cmdk-panel {
+	position: relative;
+	width: 100%;
+	max-width: 34rem;
+	max-height: 70vh;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	border: 1px solid var(--line);
+	border-radius: var(--r-xl);
+	background: var(--card-bg);
+	box-shadow: var(--ele-3);
+}
+
+.cmdk-head {
+	display: flex;
+	align-items: center;
+	gap: var(--sp-2);
+	padding: var(--sp-3) var(--sp-4);
+	border-bottom: 1px solid var(--line-soft);
+}
+
+/* 输入框在这一层里不需要边框和焦点圈：整条 head 就是它的"框" */
+.cmdk-input {
+	flex: 1;
+	min-width: 0;
+	border: 0;
+	outline: none;
+	background: transparent;
+	font: inherit;
+	font-size: 0.9375rem;
+	color: var(--text);
+}
+
+.cmdk-input::placeholder {
+	color: var(--text-3);
+}
+
+.cmdk-input:focus-visible {
+	outline: none;
+}
+
+.cmdk-kbd {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 1.5rem;
+	height: 1.25rem;
+	padding: 0 0.3125rem;
+	border: 1px solid var(--line);
+	border-radius: var(--r-sm);
+	background: var(--card-bg-soft);
+	color: var(--text-3);
+	font-size: 0.6875rem;
+	font-family: inherit;
+	line-height: 1;
+}
+
+.cmdk-list {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	padding: var(--sp-2);
+}
+
+.cmdk-group {
+	padding: var(--sp-2) var(--sp-2) 0.25rem;
+	font-size: 0.6875rem;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	color: var(--text-3);
+}
+
+.cmdk-item {
+	display: flex;
+	align-items: center;
+	gap: var(--sp-2);
+	width: 100%;
+	min-height: 2.125rem;
+	padding: 0.4375rem var(--sp-2);
+	border: 0;
+	border-radius: var(--r-md);
+	background: transparent;
+	font: inherit;
+	font-size: 0.8125rem;
+	color: var(--text-2);
+	text-align: left;
+	cursor: pointer;
+}
+
+/* 高亮态要能一眼看出来（键盘上下选的时候就靠它） */
+.cmdk-item.active {
+	background: color-mix(in oklab, var(--accent-fill) 12%, transparent);
+	color: var(--text);
+}
+
+.cmdk-item .cmdk-i {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.125rem;
+	flex: none;
+}
+
+.cmdk-item .cmdk-i svg {
+	width: 1rem;
+	height: 1rem;
+}
+
+.cmdk-label {
+	flex: none;
+	font-weight: 600;
+}
+
+.cmdk-hint {
+	margin-left: auto;
+	font-size: 0.6875rem;
+	color: var(--text-3);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.cmdk-none {
+	padding: var(--sp-6) var(--sp-4);
+	text-align: center;
+	font-size: 0.8125rem;
+	color: var(--text-3);
+}
+
+.cmdk-foot {
+	display: flex;
+	align-items: center;
+	gap: var(--sp-4);
+	padding: 0.5625rem var(--sp-4);
+	border-top: 1px solid var(--line-soft);
+	background: color-mix(in oklab, var(--card-bg-soft) 55%, transparent);
+	font-size: 0.6875rem;
+	color: var(--text-3);
+}
+
+.cmdk-foot span {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25rem;
+}
+
+.cmdk-empty-hint {
+	margin-left: auto;
+}
+
+/* 页头那个入口：键位提示给个等宽观感，别跟页面名混在一起 */
+.cmdk-trigger .cmdk-trigger-key {
+	font-size: 0.6875rem;
+	color: var(--text-3);
+}
+
+@media (max-width: 640px) {
+	/* 手机上键盘本来就少，把键位提示收掉，只留图标 */
+	.cmdk-trigger .cmdk-trigger-key {
+		display: none;
+	}
+	.cmdk {
+		padding: 6vh var(--sp-3) var(--sp-3);
+	}
+}

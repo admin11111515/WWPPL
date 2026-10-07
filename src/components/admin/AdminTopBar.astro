@@ -1,6 +1,8 @@
 ---
 import LightDarkSwitch from "@components/controls/LightDarkSwitch.svelte";
 import AdminSideNav from "@components/admin/AdminSideNav.astro";
+import AdminCommandPalette from "@components/admin/AdminCommandPalette.astro";
+import { uiIcon } from "@/constants/ui-icons";
 import { Icon } from "astro-icon/components";
 /**
  * 后台页面顶部：**只有一行页头**。
@@ -68,6 +70,23 @@ const isAdminHome = Astro.url.pathname.replace(/\/+$/, "") === "/admin";
       <span class="admin-head-title">{title}</span>
     </div>
     <div class="admin-head-right">
+      {/*
+        命令面板的入口（⌘K / Ctrl+K）。
+        ⚠️ 形态上只是一个按钮，加在**已有那一行页头**里 —— 别把它做成一搜一栏。
+           站长把后台顶部来回改过六版，最后定的是"一条顶栏都没有"（见文件头）。
+        按钮里那个键位由面板自己的脚本按平台填（Mac 显示 ⌘K，其它显示 Ctrl K）——
+           写死显示错键位比不显示更糟。
+      */}
+      <button
+        type="button"
+        class="btn btn-sm cmdk-trigger"
+        data-cmdk-open
+        title="搜索功能与操作（⌘K / Ctrl+K）"
+        aria-label="搜索功能与操作"
+      >
+        <span class="admin-i" set:html={uiIcon("fluent-color:search-visual-24")} />
+        <span class="cmdk-trigger-key" data-cmdk-key>Ctrl K</span>
+      </button>
       {
         withStatus && (
           <span class="status-bar" id="status-bar">
@@ -86,6 +105,8 @@ const isAdminHome = Astro.url.pathname.replace(/\/+$/, "") === "/admin";
     </div>
   </div>
 </div>
+
+<AdminCommandPalette />
 
 <style is:inline>
   /* 一行页头。⚠️ 刻意不写 background、不写 position —— 它就不是"一条栏" */

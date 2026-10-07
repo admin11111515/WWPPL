@@ -1,0 +1,342 @@
+---
+import { uiIcon } from "@/constants/ui-icons";
+import { ADMIN_NAV_GROUPS } from "@components/admin/adminNav";
+
+/**
+ * 后台命令面板（⌘K / Ctrl+K）。
+ *
+ * 为什么加它：后台有 9 个页面 + 3 个动作，切一下要「回首页 → 再点」或者
+ * 「眼睛去侧栏扫一遍」。命令面板把这件事变成"敲两个字回车" —— 键盘优先的
+ * 后台该有的东西（shadcn-admin 那套也有，backlog 第 5 条）。
+ *
+ * ⚠️ 形态上**不是一条栏**：站长把后台顶部形态来回改过六版，最后定成
+ *    "一条顶栏都没有，只有一行页头"（见 AdminTopBar.astro 的长注释）。
+ *    所以这里是一个**浮层**，平时完全不可见；页头右侧只多一个小按钮当入口
+ *    （可发现性要有个抓手，纯快捷键没人知道有这功能）。
+ *
+ * ⚠️ 数据源：跟侧栏同一份（`adminNav.ts`）。别在这儿另抄一份入口清单。
+ * ⚠️ 图标必须在 `EXPLICIT_ICONS` 白名单里，否则 uiIcon() 静默返回空串。
+ */
+
+interface Entry {
+	/** 唯一 id，给 aria-activedescendant 用 */
+	id: string;
+	label: string;
+	/** 右侧的灰字说明，帮人区分同名项 */
+	hint: string;
+	group: string;
+	/** 预渲染好的内联 SVG */
+	svg: string;
+	/** 有 href 就是跳转；否则执行 action */
+	href?: string;
+	action?: "logout";
+	/** 新标签打开 */
+	blank?: boolean;
+}
+
+const entries: Entry[] = [];
+
+// ① 九个功能页，按侧栏的分组来（顺序也一致，肌肉记忆对得上）
+for (const g of ADMIN_NAV_GROUPS) {
+	for (const it of g.items) {
+		entries.push({
+			id: `nav-${it.href}`,
+			label: it.name,
+			hint: it.href,
+			group: g.title,
+			svg: uiIcon(`material-symbols:${it.icon}`),
+			href: it.href,
+		});
+	}
+}
+
+// ② 几个不在侧栏里的动作
+entries.push(
+	{
+		id: "go-admin-home",
+		label: "后台首页",
+		hint: "概览与快捷入口",
+		group: "动作",
+		svg: uiIcon("material-symbols:explore"),
+		href: "/admin/",
+	},
+	{
+		id: "go-front",
+		label: "看前台",
+		hint: "新标签打开",
+		group: "动作",
+		svg: uiIcon("material-symbols:open-in-new"),
+		href: "/",
+		blank: true,
+	},
+	{
+		id: "logout",
+		label: "退出登录",
+		hint: "结束这次后台会话",
+		group: "动作",
+		svg: uiIcon("material-symbols:logout"),
+		action: "logout",
+	},
+);
+
+// ⚠️ 整包用属性传，不让页面脚本去读 DOM 里的中文文本 —— 那会把渲染细节和逻辑绑死。
+//    SVG 字符串里有引号，所以必须 JSON.stringify 后塞属性（不能直接写进脚本正文）。
+const payload = JSON.stringify(entries);
+---
+
+<div class="cmdk" id="cmdk" hidden role="dialog" aria-modal="true" aria-label="命令面板">
+  <div class="cmdk-backdrop" data-cmdk-close></div>
+  <div class="cmdk-panel" role="document">
+    <div class="cmdk-head">
+      <input
+        type="text"
+        id="cmdk-input"
+        class="cmdk-input"
+        placeholder="去哪个功能，或做什么…"
+        autocomplete="off"
+        spellcheck="false"
+        role="combobox"
+        aria-expanded="true"
+        aria-controls="cmdk-list"
+        aria-activedescendant=""
+        aria-label="搜索功能或操作"
+      />
+      <kbd class="cmdk-kbd">Esc</kbd>
+    </div>
+    <div class="cmdk-list" id="cmdk-list" role="listbox" aria-label="匹配到的功能与操作"></div>
+    <div class="cmdk-foot">
+      <span><kbd class="cmdk-kbd">↑</kbd><kbd class="cmdk-kbd">↓</kbd> 选择</span>
+      <span><kbd class="cmdk-kbd">Enter</kbd> 打开</span>
+      <span class="cmdk-empty-hint" id="cmdk-empty"></span>
+    </div>
+  </div>
+</div>
+
+<script is:inline data-entries={payload}>
+  (function () {
+    var _s = document.currentScript;
+    var ENTRIES = JSON.parse(_s.getAttribute("data-entries") || "[]");
+
+    var root = document.getElementById("cmdk");
+    var input = document.getElementById("cmdk-input");
+    var list = document.getElementById("cmdk-list");
+    var emptyHint = document.getElementById("cmdk-empty");
+    if (!root || !input || !list) return;
+
+    var active = 0;          // 当前高亮到第几条
+    var shown = [];          // 当前筛出来的条目
+    var lastFocus = null;    // 打开前焦点在哪，关掉要还回去
+    var isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+
+    /* ── 数据 ── */
+    function matches(e, q) {
+      if (!q) return true;
+      var hay = (e.label + " " + e.hint + " " + e.group).toLowerCase();
+      // 逐字包含即可：中文没有词边界，"包含"比"前缀"好用得多
+      return q
+        .toLowerCase()
+        .split(/\s+/)
+        .filter(Boolean)
+        .every(function (part) {
+          return hay.indexOf(part) >= 0;
+        });
+    }
+
+    function render() {
+      var q = input.value.trim();
+      shown = ENTRIES.filter(function (e) {
+        return matches(e, q);
+      });
+      if (active >= shown.length) active = Math.max(0, shown.length - 1);
+
+      list.innerHTML = "";
+      if (!shown.length) {
+        list.innerHTML =
+          '<div class="cmdk-none">没有匹配的。换个词试试 —— 也可以直接敲功能名，比如「文章」。</div>';
+        emptyHint.textContent = "";
+        input.setAttribute("aria-activedescendant", "");
+        return;
+      }
+
+      // 按分组分块渲染：同一组的连着，中间给个组标题
+      var lastGroup = null;
+      shown.forEach(function (e, i) {
+        if (e.group !== lastGroup) {
+          lastGroup = e.group;
+          var g = document.createElement("div");
+          g.className = "cmdk-group";
+          g.textContent = e.group;
+          list.appendChild(g);
+        }
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "cmdk-item" + (i === active ? " active" : "");
+        btn.id = "cmdk-opt-" + i;
+        btn.setAttribute("role", "option");
+        btn.setAttribute("aria-selected", i === active ? "true" : "false");
+        btn.dataset.idx = String(i);
+        btn.innerHTML =
+          '<span class="cmdk-i">' +
+          e.svg +
+          '</span><span class="cmdk-label">' +
+          esc(e.label) +
+          '</span><span class="cmdk-hint">' +
+          esc(e.hint) +
+          "</span>";
+        // 鼠标移到哪，高亮跟到哪（纯键盘用户不受影响）
+        btn.addEventListener("mousemove", function () {
+          if (active === i) return;
+          active = i;
+          paint();
+        });
+        btn.addEventListener("click", function () {
+          run(shown[i]);
+        });
+        list.appendChild(btn);
+      });
+      emptyHint.textContent = shown.length + " 项";
+      paint();
+    }
+
+    function esc(t) {
+      var d = document.createElement("div");
+      d.textContent = t == null ? "" : t;
+      return d.innerHTML;
+    }
+
+    /** 只改类名，不重建 DOM —— 重建会把鼠标位置弄丢 */
+    function paint() {
+      var items = list.querySelectorAll(".cmdk-item");
+      for (var i = 0; i < items.length; i++) {
+        var on = String(i) === String(active);
+        items[i].classList.toggle("active", on);
+        items[i].setAttribute("aria-selected", on ? "true" : "false");
+        if (on) {
+          input.setAttribute("aria-activedescendant", items[i].id);
+          // 高亮项必须在可视区内，否则键盘选着选着就"看不见了"
+          items[i].scrollIntoView({ block: "nearest" });
+        }
+      }
+      if (!items.length) input.setAttribute("aria-activedescendant", "");
+    }
+
+    function move(delta) {
+      if (!shown.length) return;
+      active = (active + delta + shown.length) % shown.length;
+      paint();
+    }
+
+    function run(e) {
+      if (!e) return;
+      close();
+      if (e.action === "logout") {
+        if (typeof doLogout === "function") doLogout();
+        return;
+      }
+      if (!e.href) return;
+      // 无 href 时（比如 # 锚点）用 location —— href 都是站内绝对路径
+      if (e.blank) window.open(e.href, "_blank", "noopener");
+      else window.location.href = e.href;
+    }
+
+    function open() {
+      if (!root.hidden) return;
+      lastFocus = document.activeElement;
+      // 记一个"回到哪儿"：正常情况下是打开前那个元素；
+      // ⚠️ 但用快捷键打开时，焦点往往在 body 上（页面刚加载完谁也没点过）——
+      //    那时候 focus(body) 等于没还原，键盘用户会觉得"焦点丢了"。
+      //    所以没有像样的落脚点时，退回入口按钮。
+      if (!lastFocus || lastFocus === document.body || lastFocus === document.documentElement) {
+        lastFocus = document.querySelector("[data-cmdk-open]");
+      }
+      root.hidden = false;
+      document.documentElement.classList.add("cmdk-open");
+      input.value = "";
+      active = 0;
+      render();
+      // 等一帧再聚焦：hidden 刚摘掉时直接 focus 有时不生效
+      requestAnimationFrame(function () {
+        input.focus();
+      });
+    }
+
+    function close() {
+      if (root.hidden) return;
+      root.hidden = true;
+      document.documentElement.classList.remove("cmdk-open");
+      // 焦点还回去，键盘用户不会"丢在这儿"
+      if (lastFocus && typeof lastFocus.focus === "function") lastFocus.focus();
+      lastFocus = null;
+    }
+
+    function toggle() {
+      if (root.hidden) open();
+      else close();
+    }
+
+    // 入口按钮（页头右侧那个），以及任何标了 data-cmdk-open 的东西
+    Array.prototype.forEach.call(document.querySelectorAll("[data-cmdk-open]"), function (b) {
+      b.addEventListener("click", function (ev) {
+        ev.preventDefault();
+        open();
+      });
+    });
+    Array.prototype.forEach.call(root.querySelectorAll("[data-cmdk-close]"), function (b) {
+      b.addEventListener("click", close);
+    });
+
+    input.addEventListener("input", function () {
+      active = 0;
+      render();
+    });
+
+    input.addEventListener("keydown", function (ev) {
+      if (ev.key === "ArrowDown") {
+        ev.preventDefault();
+        move(1);
+      } else if (ev.key === "ArrowUp") {
+        ev.preventDefault();
+        move(-1);
+      } else if (ev.key === "Home") {
+        ev.preventDefault();
+        active = 0;
+        paint();
+      } else if (ev.key === "End") {
+        ev.preventDefault();
+        if (shown.length) {
+          active = shown.length - 1;
+          paint();
+        }
+      } else if (ev.key === "Enter") {
+        ev.preventDefault();
+        run(shown[active]);
+      }
+      // Esc 交给 document 上那个统一处理
+    });
+
+    document.addEventListener("keydown", function (ev) {
+      // ⌘K / Ctrl+K 开关
+      if ((ev.metaKey || ev.ctrlKey) && (ev.key === "k" || ev.key === "K")) {
+        ev.preventDefault();
+        toggle();
+        return;
+      }
+      if (root.hidden) return;
+      if (ev.key === "Escape") {
+        ev.preventDefault();
+        close();
+        return;
+      }
+      // 浮层内的 Tab 不往外跑（外面还有一整个页面的可点元素）
+      if (ev.key === "Tab") {
+        ev.preventDefault();
+        input.focus();
+      }
+    });
+
+    // 页头那个入口按钮上显示的是哪个键，按平台来 —— 显示错了比不显示更糟
+    Array.prototype.forEach.call(document.querySelectorAll("[data-cmdk-key]"), function (el) {
+      el.textContent = isMac ? "⌘K" : "Ctrl K";
+    });
+  })();
+</script>
