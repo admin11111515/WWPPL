@@ -1,0 +1,467 @@
+---
+// 项目 —— 读写仓库里的 src/data/projects.json
+//
+// 为什么会有这一页：项目页（/projects/）**一直是空的**，因为它的数据原来写死在
+// `src/data/projects.ts` 里，而后台根本没有地方能填 —— 页面和后台是两套东西。
+// 数据搬到 `projects.json` 之后，这一页就是它唯一的编辑入口。
+//
+// 保存后提交进仓库，Cloudflare 重新构建，/projects/ 跟着变。
+import AdminTheme from "@/components/admin/AdminTheme.astro";
+import AdminAuthGate from "@/components/admin/AdminAuthGate.astro";
+import AdminTopBar from "@/components/admin/AdminTopBar.astro";
+import { adminBodyClass, adminHtmlClass } from "@/components/admin/adminShell";
+import { externalPostsConfig } from "@/config/externalPostsConfig";
+import { uiIcon } from "@/constants/ui-icons";
+
+/** 这个页面读写仓库里的哪个文件 */
+const target = {
+	owner: externalPostsConfig.owner,
+	repo: externalPostsConfig.repo,
+	branch: externalPostsConfig.branch,
+	path: "src/data/projects.json",
+};
+
+/** 分类与状态的可选值 —— 与 `src/data/projects.ts` 的接口、前端文案一一对应 */
+const categories = [
+	["web", "网页"],
+	["mobile", "移动端"],
+	["desktop", "桌面端"],
+	["other", "其它"],
+];
+const statuses = [
+	["completed", "已完成"],
+	["in-progress", "进行中"],
+	["planned", "计划中"],
+];
+
+/**
+ * 每块右上角那三个操作按钮的图标（上移/下移/删除）。
+ * ⚠️ 图标必须在 `scripts/generate-icons.js` 的 EXPLICIT_ICONS 白名单里 ——
+ *    `uiIcon()` 对不认识的名字是**静默返回空串**，表现就是"按钮在、里面什么都没有"。
+ * ⚠️ 后台页的脚本是 `is:inline`，不能用 import，所以构建期渲染好、用 data 属性传进去。
+ */
+const rowIcons = {
+	up: uiIcon("material-symbols:arrow-upward"),
+	down: uiIcon("material-symbols:arrow-downward"),
+	del: uiIcon("material-symbols:delete"),
+};
+---
+
+<html lang="zh-CN" class={adminHtmlClass}>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>项目 · 后台</title>
+  {/* 后台是站长自用界面，不该出现在搜索结果里（sitemap 中同样已剔除） */}
+  <meta name="robots" content="noindex, nofollow" />
+  <AdminTheme />
+  <AdminAuthGate />
+  <style is:inline>
+    /* ===== 只放这一页特有的排版，通用部分在 src/styles/admin.css ===== */
+
+    /* ⚠️ 宽度必须声明在 `.container` 自己身上；写 `#admin-main { --admin-content-max }`
+       是死代码（admin.css 那条 1280 会压掉它，实测过）。详见 admin.css「3. 宽度容器」。 */
+    #admin-main > .container {
+      --admin-content-max: 980px;
+    }
+
+    /* 一个项目 = 一块。字段多，用两列排，窄屏塌成一列 */
+    .pj-item {
+      border: 1px solid var(--line-soft);
+      border-radius: var(--r-lg);
+      padding: var(--sp-3) var(--sp-4) var(--sp-4);
+      margin-bottom: var(--sp-3);
+      background: var(--card-bg);
+    }
+    .pj-head {
+      display: flex; align-items: center; gap: var(--sp-2);
+      margin-bottom: var(--sp-3);
+      padding-bottom: var(--sp-2);
+      border-bottom: 1px solid var(--line-soft);
+    }
+    .pj-no {
+      font-size: 0.6875rem; font-weight: 700;
+      color: var(--text-3);
+      min-width: 1.5rem;
+    }
+    .pj-head .pj-title {
+      flex: 1; min-width: 0;
+      font-size: 0.8125rem; font-weight: 700;
+      color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .pj-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--sp-2) var(--sp-4);
+    }
+    .pj-grid .wide { grid-column: 1 / -1; }
+    @media (max-width: 720px) {
+      .pj-grid { grid-template-columns: 1fr; }
+    }
+    .pj-label {
+      display: block;
+      font-size: 0.6875rem; font-weight: 700;
+      color: var(--text-3);
+      margin-bottom: 0.25rem;
+    }
+    .pj-check {
+      display: flex; align-items: center; gap: 0.4375rem;
+      font-size: 0.75rem; color: var(--text-2);
+      min-height: 24px; cursor: pointer;
+    }
+    .pj-empty {
+      padding: var(--sp-8) var(--sp-4);
+      text-align: center;
+      font-size: 0.8125rem;
+      color: var(--text-3);
+    }
+  </style>
+</head>
+<body class={adminBodyClass}>
+
+  <div id="admin-main">
+    <AdminTopBar title="项目" />
+
+    <div class="container">
+      <div class="card">
+        <div class="page-lead">
+          <span class="lead-icon" set:html={uiIcon("fluent-color:document-folder-24")} />
+          <span>
+            这里改的是前台 <b>/projects/</b> 那页的项目清单。保存后提交到仓库，
+            Cloudflare 重新构建（约一两分钟）才生效。
+            <br />图片建议先在「图片库」上传，再用那边的「复制 Markdown」拿到路径粘过来 ——
+            路径形如 <code>/images/covers/xxx.jpg</code>。
+          </span>
+        </div>
+
+        <div id="pj-list"></div>
+
+        <div class="save-row" style="margin-top: 1rem;">
+          <button class="btn" type="button" onclick="addProject()">+ 添加一个项目</button>
+        </div>
+
+        {/* 保存行贴在卡片里、不是通栏（样式在 admin.css 的 .card > .save-row）。
+            ⚠️ 保存按钮的 id 必须是 save-btn、提示必须是 dirty-hint ——
+               全局 Ctrl/⌘+S 与"有改动没保存"悬浮条靠这两个 id 找（见 AdminTheme）。 */}
+        <div class="save-row">
+          {/* ⚠️ 一开始就带 disabled：数据还没读回来时不该能点。
+           不加这个的话，从打开到 loadFromRepo() 回来之间按钮是亮的 ——
+           读失败（或很慢）时它会一直亮着，而那时根本无从保存。
+           ⚠️ pages.astro 那边也是同样的写法 + 同样的理由。 */}
+          <button class="btn btn-primary" id="save-btn" onclick="saveProjects()" disabled>保存并生效</button>
+          <button class="btn btn-ghost" type="button" onclick="reloadFromRepo()">还原成仓库里的版本</button>
+          <span class="dirty-hint" id="dirty-hint"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  {/* ⚠️ admin-github.js 不能漏：WBGitHub 是它挂上去的。
+         漏了的表现是**点保存毫无反应、状态栏永远停在"正在读取…"** ——
+         因为 `WBGitHub.getFile(...)` 那一刻直接抛 TypeError，
+         而它在 .then() 链里，抛出去只变成一条没人接的 rejection（控制台才看得到）。
+         用 WBGitHub 的后台页都要引这一行（nav / site / appearance / moments / media 都有）。 */}
+  <script is:inline src="/js/admin-github.js"></script>
+  <script is:inline src="/js/editor-commons.js"></script>
+  <script is:inline data-target={JSON.stringify(target)} data-cats={JSON.stringify(categories)} data-stats={JSON.stringify(statuses)} data-row-icons={JSON.stringify(rowIcons)}>
+    var _script = document.currentScript;
+    var TARGET = JSON.parse(_script.getAttribute("data-target") || "{}");
+    var CATS = JSON.parse(_script.getAttribute("data-cats") || "[]");
+    var STATS = JSON.parse(_script.getAttribute("data-stats") || "[]");
+    var ICONS = JSON.parse(_script.getAttribute("data-row-icons") || "{}");
+
+    // ===== 工具 =====
+    function $(id) { return document.getElementById(id); }
+    function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+    function toast(msg, type) {
+      var el = $("toast"); el.textContent = msg; el.className = "toast " + type + " show";
+      clearTimeout(el._t); el._t = setTimeout(function () { el.className = "toast"; }, 3200);
+    }
+    function setStatus(ok, text) { $("status-dot").className = "status-dot " + (ok ? "ok" : "err"); $("status-text").textContent = text; }
+    function b64EncodeUnicode(str) {
+      return btoa(unescape(encodeURIComponent(str)));
+    }
+    function b64DecodeUnicode(str) {
+      return decodeURIComponent(escape(atob(str)));
+    }
+
+    // ===== 状态 =====
+    var data = [];        // 当前编辑中的项目数组
+    var fileSha = "";
+    var cleanSnapshot = "";
+
+    function snapshot() { return JSON.stringify(data); }
+    function isDirty() { return snapshot() !== cleanSnapshot; }
+    function markClean() {
+      cleanSnapshot = snapshot();
+      updateHint();
+      // ⚠️ 接在 markClean 上而不是只在初始化时调一次：初始化那一刻 cleanSnapshot 还是空的，
+      //    会被判成"有改动"，按钮就一直是亮的（这条在文章页踩过）。
+      syncSaveBtn();
+    }
+    function updateHint() {
+      var el = $("dirty-hint");
+      if (!el) return;
+      var dirty = isDirty();
+      el.textContent = dirty ? "有改动还没保存" : "";
+      el.className = "dirty-hint" + (dirty ? " dirty" : "");
+      syncSaveBtn();
+    }
+    /** 没改动就不该能点「保存并生效」—— 点了会推一次空提交、白烧一次构建 */
+    function syncSaveBtn() {
+      var b = $("save-btn");
+      if (!b) return;
+      var dirty = isDirty();
+      b.disabled = !dirty;
+      b.title = dirty ? "" : "还没有改动可保存";
+    }
+
+    // ===== 渲染 =====
+    function optionsOf(list, cur) {
+      return list.map(function (p) {
+        return '<option value="' + p[0] + '"' + (p[0] === cur ? " selected" : "") + ">" + p[1] + "</option>";
+      }).join("");
+    }
+
+    function render() {
+      var box = $("pj-list");
+      if (!data.length) {
+        box.innerHTML = '<div class="pj-empty">还没有项目。点下面的「+ 添加一个项目」开始。<br />' +
+          '（前台 /projects/ 现在显示的是空态，填上第一个之后就会变成卡片网格。）</div>';
+        updateHint();
+        return;
+      }
+      box.innerHTML = data.map(function (p, i) {
+        return '' +
+          '<div class="pj-item" data-i="' + i + '">' +
+            '<div class="pj-head">' +
+              '<span class="pj-no">#' + (i + 1) + '</span>' +
+              '<span class="pj-title">' + (esc(p.title) || "（还没填标题）") + '</span>' +
+              '<button class="btn-icon" type="button" title="上移" aria-label="上移" data-move="-1" data-i="' + i + '">' + ICONS.up + '</button>' +
+              '<button class="btn-icon" type="button" title="下移" aria-label="下移" data-move="1" data-i="' + i + '">' + ICONS.down + '</button>' +
+              '<button class="btn-icon is-danger" type="button" title="删除这个项目" aria-label="删除这个项目" data-del="1" data-i="' + i + '">' + ICONS.del + '</button>' +
+            '</div>' +
+            '<div class="pj-grid">' +
+              '<div class="wide"><label class="pj-label" for="t' + i + '">标题（必填）</label>' +
+                '<input type="text" class="input-single" id="t' + i + '" data-k="title" data-i="' + i + '" value="' + esc(p.title) + '" placeholder="例：北京赛卓数据协同系统" maxlength="60" /></div>' +
+              '<div><label class="pj-label" for="c' + i + '">分类</label>' +
+                '<select class="input-single" id="c' + i + '" data-k="category" data-i="' + i + '">' + optionsOf(CATS, p.category) + '</select></div>' +
+              '<div><label class="pj-label" for="s' + i + '">状态</label>' +
+                '<select class="input-single" id="s' + i + '" data-k="status" data-i="' + i + '">' + optionsOf(STATS, p.status) + '</select></div>' +
+              '<div><label class="pj-label" for="sd' + i + '">开始日期</label>' +
+                '<input type="date" class="input-single" id="sd' + i + '" data-k="startDate" data-i="' + i + '" value="' + esc(p.startDate || "") + '" /></div>' +
+              '<div><label class="pj-label" for="ed' + i + '">结束日期（没做完就留空）</label>' +
+                '<input type="date" class="input-single" id="ed' + i + '" data-k="endDate" data-i="' + i + '" value="' + esc(p.endDate || "") + '" /></div>' +
+              '<div class="wide"><label class="pj-label" for="d' + i + '">一句话说明</label>' +
+                '<textarea class="input-single" id="d' + i + '" data-k="description" data-i="' + i + '" rows="2" maxlength="200" placeholder="这项目是干什么的、你做了什么">' + esc(p.description) + '</textarea></div>' +
+              '<div class="wide"><label class="pj-label" for="ts' + i + '">技术栈（用逗号分隔）</label>' +
+                '<input type="text" class="input-single" id="ts' + i + '" data-k="techStack" data-i="' + i + '" value="' + esc((p.techStack || []).join("，")) + '" placeholder="TypeScript，Svelte，Cloudflare Workers" /></div>' +
+              '<div class="wide"><label class="pj-label" for="im' + i + '">封面图路径（可留空）</label>' +
+                '<input type="text" class="input-single" id="im' + i + '" data-k="image" data-i="' + i + '" value="' + esc(p.image) + '" placeholder="/images/covers/xxx.jpg" /></div>' +
+              '<div><label class="pj-label" for="ld' + i + '">在线地址</label>' +
+                '<input type="url" class="input-single" id="ld' + i + '" data-k="liveDemo" data-i="' + i + '" value="' + esc(p.liveDemo || "") + '" placeholder="https://" /></div>' +
+              '<div><label class="pj-label" for="sc' + i + '">源码地址</label>' +
+                '<input type="url" class="input-single" id="sc' + i + '" data-k="sourceCode" data-i="' + i + '" value="' + esc(p.sourceCode || "") + '" placeholder="https://" /></div>' +
+              '<div class="wide"><label class="pj-label" for="vu' + i + '">卡片上「去看看」指向哪（留空就用在线地址）</label>' +
+                '<input type="url" class="input-single" id="vu' + i + '" data-k="visitUrl" data-i="' + i + '" value="' + esc(p.visitUrl || "") + '" placeholder="https://" /></div>' +
+              '<div><label class="pj-check"><input type="checkbox" data-k="featured" data-i="' + i + '"' + (p.featured ? " checked" : "") + ' /> 标为精选</label></div>' +
+              '<div><label class="pj-check"><input type="checkbox" data-k="showImage" data-i="' + i + '"' + (p.showImage !== false ? " checked" : "") + ' /> 卡片上显示封面图</label></div>' +
+            '</div>' +
+          '</div>';
+      }).join("");
+      updateHint();
+    }
+
+    // ===== 编辑 =====
+    function readField(el) {
+      var k = el.getAttribute("data-k");
+      var i = Number(el.getAttribute("data-i"));
+      if (el.type === "checkbox") return { i: i, k: k, v: el.checked };
+      return { i: i, k: k, v: el.value };
+    }
+
+    document.addEventListener("input", function (e) {
+      var el = e.target;
+      if (!el || !el.getAttribute || !el.hasAttribute("data-k")) return;
+      var f = readField(el);
+      if (!data[f.i]) return;
+      data[f.i][f.k] = f.k === "techStack" ? splitTech(f.v) : f.v;
+      // 改标题时同步一下每块的小标题，不然列表顶上一直显示旧名字
+      if (f.k === "title") {
+        var box = $("pj-list").querySelector('.pj-item[data-i="' + f.i + '"] .pj-title');
+        if (box) box.textContent = f.v || "（还没填标题）";
+      }
+      updateHint();
+    });
+    document.addEventListener("change", function (e) {
+      var el = e.target;
+      if (!el || !el.getAttribute || !el.hasAttribute("data-k")) return;
+      if (el.type !== "checkbox") return;
+      var f = readField(el);
+      if (!data[f.i]) return;
+      data[f.i][f.k] = f.v;
+      updateHint();
+    });
+
+    /** 技术栈：中英文逗号、顿号都当分隔符，顺手去空白与去重 */
+    function splitTech(v) {
+      return String(v || "")
+        .split(/[,，、]/)
+        .map(function (s) { return s.trim(); })
+        .filter(function (s, i, a) { return s && a.indexOf(s) === i; });
+    }
+
+    document.addEventListener("click", function (e) {
+      var el = e.target.closest ? e.target.closest("[data-move],[data-del]") : null;
+      if (!el) return;
+      var i = Number(el.getAttribute("data-i"));
+      if (el.hasAttribute("data-del")) {
+        if (!confirm("删掉「" + (data[i].title || "这个项目") + "」？删完还要点保存才真的生效。")) return;
+        data.splice(i, 1);
+        render();
+        return;
+      }
+      var d = Number(el.getAttribute("data-move"));
+      var j = i + d;
+      if (j < 0 || j >= data.length) return;
+      var t = data[i]; data[i] = data[j]; data[j] = t;
+      render();
+    });
+
+    function addProject() {
+      data.push({
+        id: "p-" + Date.now(),
+        title: "", description: "", image: "",
+        category: "web", status: "planned",
+        techStack: [], startDate: "", endDate: "",
+        liveDemo: "", sourceCode: "", visitUrl: "",
+        featured: false, showImage: true,
+      });
+      render();
+      // 新加的滚到底，省得找不到
+      var items = $("pj-list").querySelectorAll(".pj-item");
+      if (items.length) items[items.length - 1].scrollIntoView({ block: "center" });
+      var last = items.length - 1;
+      var t = document.getElementById("t" + last);
+      if (t) t.focus();
+    }
+
+    // ===== 读 / 写仓库 =====
+    function normalize(parsed) {
+      if (!Array.isArray(parsed)) return [];
+      return parsed.map(function (p) {
+        return {
+          id: p.id || "p-" + Math.random().toString(36).slice(2, 9),
+          title: p.title || "",
+          description: p.description || "",
+          image: p.image || "",
+          category: p.category || "other",
+          status: p.status || "planned",
+          techStack: Array.isArray(p.techStack) ? p.techStack : [],
+          startDate: p.startDate || "",
+          endDate: p.endDate || "",
+          liveDemo: p.liveDemo || "",
+          sourceCode: p.sourceCode || "",
+          visitUrl: p.visitUrl || "",
+          featured: !!p.featured,
+          showImage: p.showImage !== false,
+        };
+      });
+    }
+
+    function loadFromRepo() {
+      setStatus(false, "正在读取仓库里的 projects.json…");
+      return WBGitHub.getFile({
+        owner: TARGET.owner, repo: TARGET.repo, branch: TARGET.branch, path: TARGET.path
+      }).then(function (file) {
+        if (!file) {
+          setStatus(false, "仓库里没找到 " + TARGET.path);
+          toast("没读到 " + TARGET.path + "，检查一下路径", "err");
+          return;
+        }
+        fileSha = file.sha || "";
+        var text = b64DecodeUnicode(String(file.content || "").replace(/\s/g, ""));
+        var parsed;
+        try {
+          parsed = JSON.parse(text);
+        } catch (err) {
+          // 解析不了绝不写回去：一写就把原文件覆盖成空的了
+          setStatus(false, "文件内容不是合法 JSON，没有改动任何东西");
+          toast("读出来的内容解析不了：" + err.message, "err");
+          return;
+        }
+        data = normalize(parsed);
+        render();
+        markClean();
+        setStatus(true, "已连接（" + data.length + " 个项目）");
+      }).catch(function (err) {
+        setStatus(false, err.message);
+      });
+    }
+
+    function saveProjects() {
+      // 保存前当面校验：标题是必填的（前台的卡片没标题就是个空壳）
+      var bad = -1;
+      for (var i = 0; i < data.length; i++) {
+        if (!String(data[i].title || "").trim()) { bad = i; break; }
+      }
+      if (bad >= 0) {
+        toast("第 " + (bad + 1) + " 个项目还没填标题", "err");
+        var box = $("pj-list").querySelector('.pj-item[data-i="' + bad + '"]');
+        if (box) { box.scrollIntoView({ block: "center" }); var t = document.getElementById("t" + bad); if (t) t.focus(); }
+        return;
+      }
+
+      var text = JSON.stringify(data, null, "\t") + "\n";
+      var btn = $("save-btn");
+      btn.disabled = true; btn.textContent = "保存中…";
+      setStatus(false, "正在提交到仓库…");
+
+      WBGitHub.putFile({
+        owner: TARGET.owner, repo: TARGET.repo, branch: TARGET.branch, path: TARGET.path,
+        content: b64EncodeUnicode(text),
+        message: "chore: 更新项目清单",
+        sha: fileSha || undefined
+      }).then(function (res) {
+        fileSha = (res && res.content && res.content.sha) || fileSha;
+        markClean();
+        setStatus(true, "已提交，等 Cloudflare 重新构建");
+        toast("已保存。Cloudflare 重新构建后 /projects/ 生效（约一两分钟）", "ok");
+      }).catch(function (err) {
+        setStatus(false, err.message);
+        toast(err.message, "err");
+      }).then(function () {
+        btn.textContent = "保存并生效";
+        syncSaveBtn();
+      });
+    }
+
+    function reloadFromRepo() {
+      if (isDirty() && !confirm("现在有没保存的改动，还原会丢掉它们。继续？")) return;
+      loadFromRepo();
+    }
+
+    // ===== 初始化 =====
+    function checkAuth() {
+      return fetch("/api/auth/status")
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (!d.authed) { window.location.href = "/admin/"; return false; }
+          return true;
+        })
+        .catch(function () { window.location.href = "/admin/"; return false; });
+    }
+    function doLogout() {
+      localStorage.removeItem("admin_auth");
+      fetch("/api/auth/logout", { method: "POST" }).catch(function () {});
+      window.location.href = "/admin/";
+    }
+
+    WBEditor.guardUnsavedChanges(isDirty);
+    checkAuth().then(function (ok) { if (ok) loadFromRepo(); });
+  </script>
+</body>
+</html>
