@@ -4,7 +4,7 @@ published: 2026-10-07
 tags: ["生活", "随笔", "路上"]
 category: "生活"
 description: "早上九点半上车，晚上七点到站。出站的时候碰到同校的同学，剩下的路一起走的。"
-image: ""
+image: "/images/covers/life-a-classmate-at-nanchang-west.jpg"
 ---
 
 十月七日，一整天都在路上。
