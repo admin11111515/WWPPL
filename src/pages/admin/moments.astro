@@ -25,7 +25,10 @@ import { uiIcon } from "@/constants/ui-icons";
     /* ===== 只放这一页特有的排版，通用部分在 src/styles/admin.css ===== */
 
     /* 这一页是窄栏内容，标题条与内容区一起收窄，免得四周太空 */
-    #admin-main { --admin-content-max: 640px; }
+/* ⚠️ 宽度必须声明在 `.container` 自己身上；写 `#admin-main { --admin-content-max }` 是死代码（admin.css 那条 1280 会压掉它，实测过）。详见 admin.css「3. 宽度容器」。 */
+    #admin-main > .container {
+      --admin-content-max: 640px;
+    }
 
     /* ⚠️ .status-bar / .submit-row / .save-row / .draft-hint 已提到
           admin.css 共享层（第三遍：状态条统一成小药丸、操作区收进卡片底栏），

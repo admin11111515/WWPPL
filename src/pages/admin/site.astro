@@ -147,7 +147,10 @@ const groups = [
           改共享层会看着像没生效。 */
 
     /* 这一页是表单，内容窄一些更好读 */
-    #admin-main { --admin-content-max: 720px; }
+/* ⚠️ 宽度必须声明在 `.container` 自己身上；写 `#admin-main { --admin-content-max }` 是死代码（admin.css 那条 1280 会压掉它，实测过）。详见 admin.css「3. 宽度容器」。 */
+    #admin-main > .container {
+      --admin-content-max: 720px;
+    }
 
     /* 多行输入框比默认再高一点，句子长的时候不至于只看见一行 */
     .card textarea { min-height: 4.5rem; }

@@ -340,7 +340,10 @@ import { uiIcon } from "@/constants/ui-icons";
           实测首屏顶部空了 **186px** 才看到第一块内容 —— 那比贴顶更像"没加载完"。
           已删。这一页是一份**列表**（接着写的几条 + 三个动作），列表该从顶部往下长，
           短一点就短一点，留白在底部是正常的。 */
-    #admin-main { --admin-content-max: 900px; }
+/* ⚠️ 宽度必须声明在 `.container` 自己身上；写 `#admin-main { --admin-content-max }` 是死代码（admin.css 那条 1280 会压掉它，实测过）。详见 admin.css「3. 宽度容器」。 */
+    #admin-main > .container {
+      --admin-content-max: 900px;
+    }
     /* .admin-welcome / .admin-overview / .admin-stat* / .admin-overview-foot
        的样式已随那两块 UI 一起删掉（站长 2026-10-03：这一整块不需要）。
        现在首页就是页头 + 九张入口卡。 */

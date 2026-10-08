@@ -130,7 +130,10 @@ const pageSwitches = [
   <AdminAuthGate />
   <style is:inline>
     /* ===== 只放这一页特有的排版，通用部分在 src/styles/admin.css ===== */
-    #admin-main { --admin-content-max: 720px; }
+/* ⚠️ 宽度必须声明在 `.container` 自己身上；写 `#admin-main { --admin-content-max }` 是死代码（admin.css 那条 1280 会压掉它，实测过）。详见 admin.css「3. 宽度容器」。 */
+    #admin-main > .container {
+      --admin-content-max: 720px;
+    }
 
     /* ⚠️ .page-lead / .section-title / .save-row / .dirty-hint 已提到
           admin.css 的共享层（第三遍），这里不要重复定义 —— 页面 <style>
