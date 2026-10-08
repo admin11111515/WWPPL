@@ -40,7 +40,7 @@ const fields: Field[] = [
 		key: "themeHue",
 		label: "主题色相",
 		kind: "hue",
-		hint: '整站的主色。0 红 · 30 橙 · 90 黄绿 · 150 青绿 · 200 青 · 250 蓝绿（本站现在这个）· 300 紫 · 345 粉。填 0–360 之间的整数，填别的会退回上一次的值。',
+		hint: '整站的主色。下面那排是命名预设（红 / 橙 / 黄绿 / 青绿 / 青 / 蓝绿 / <b>蓝紫</b> / 紫 / 粉），点一下就换，<b>蓝紫 270 是本站现在的值</b>。想微调就在左边「自定义」里填 0–360 的整数，填别的会退回上一次的值。',
 	},
 	{
 		key: "visitorCanChangeHue",
@@ -138,7 +138,8 @@ const pageSwitches = [
           下面只留这一页特有的：色相试色块、开关行、页面开关。 */
 
     /* 色相：数字框 + 色块，色块跟着数字实时变 */
-    .hue-row { display: flex; align-items: center; gap: 0.625rem; }
+    .hue-row { display: flex; align-items: center; gap: 0.625rem; flex-wrap: wrap; }
+    .hue-custom { font-size: 0.75rem; color: var(--text-3); flex-shrink: 0; }
     .hue-row input { width: 6rem; flex-shrink: 0; }
     .hue-swatch {
       width: 2.25rem;
@@ -148,16 +149,52 @@ const pageSwitches = [
       flex-shrink: 0;
       background: oklch(0.6 0.16 270);
     }
-    .hue-presets { display: flex; flex-wrap: wrap; gap: 0.375rem; margin-top: 0.5rem; }
+    .hue-current { font-size: 0.75rem; color: var(--text-3); }
+    /* 预设改成「色点 + 名字」的按钮（2026-10-08，backlog 第 7 条）：
+       原来只有 8 个不带名字的圆点 —— 鼠标不悬停就不知道哪个是哪个，
+       而且**看不出当前选的是哪个**，默认的 270 甚至不在预设里。
+       ⚠️ 点本身还是那个点，加的是名字 + 选中框 + 当前色回显。 */
+    /* ⚠️ `grid-column: 2` 不能省：设置类表单的 .field 是**网格**
+       （120px 标签列 + 控件列），子元素按顺序自动落格 ——
+       标签→第1列、hue-row→第2列、**预设容器→又回到第1列**、
+       hint→第2列。于是预设被塞进 120px 那列，9 个色点只能排成两列
+       （2026-10-08 实测：容器宽 120px，chip 44px）。
+       指定它落在控件列，才跟上面的输入框、下面的说明对齐。 */
+    .hue-presets {
+      grid-column: 2;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.375rem;
+      margin-top: 0.625rem;
+    }
     .hue-chip {
-      width: 1.75rem;
-      height: 1.75rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.1875rem;
+      min-width: 2.75rem;
+      padding: 0.3125rem 0.375rem 0.25rem;
+      border: 1px solid transparent;
+      border-radius: var(--r-md);
+      background: transparent;
+      cursor: pointer;
+    }
+    .hue-chip .dot {
+      width: 1.375rem;
+      height: 1.375rem;
       border-radius: 999px;
       border: 1px solid var(--line-soft);
-      cursor: pointer;
-      padding: 0;
     }
-    .hue-chip:focus-visible { outline: 2px solid var(--primary-ring); outline-offset: 2px; }
+    .hue-chip .nm { font-size: 0.6875rem; color: var(--text-3); line-height: 1.2; }
+    .hue-chip:hover { background: var(--hover); }
+    .hue-chip.on {
+      border-color: var(--accent-ink);
+      background: color-mix(in oklab, var(--accent-fill) 12%, transparent);
+    }
+    .hue-chip.on .nm { color: var(--accent-ink); font-weight: 700; }
+    /* ⚠️ 焦点圈用 --accent-ink（≈5.6:1），不用 --primary-ring —— 后者在浅色主题下
+       只有 2.7:1，键盘用户看不清焦点在哪（同理见 admin.css 里那条全局 :focus-visible） */
+    .hue-chip:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
 
     /* 开关行：左边说明，右边开关 */
     .switch-row {
@@ -207,6 +244,7 @@ const pageSwitches = [
               <div class="field">
                 <div class="field-label">{f.label}</div>
                 <div class="hue-row">
+                  <label class="hue-custom" for={f.key}>自定义</label>
                   <input
                     type="number"
                     class="input-single"
@@ -218,6 +256,8 @@ const pageSwitches = [
                     aria-label={f.label}
                   />
                   <span class="hue-swatch" id="hue-swatch" />
+                  {/* 回显"现在用的是哪个色"：光看数字 250 / 270 谁也认不出是什么颜色 */}
+                  <span class="hue-current" id="hue-current" aria-live="polite"></span>
                 </div>
                 <div class="hue-presets" id="hue-presets" />
                 <div class="field-hint" set:html={f.hint} />
@@ -331,10 +371,13 @@ const pageSwitches = [
     var fileSha = "";
     var cleanSnapshot = "";
 
-    // ===== 色相：数字框与色块联动，下面一排常用色点一下就换 =====
+    /* ===== 色相：命名预设 + 自定义 =====
+       每项 [色相值, 名字]。⚠️ 改这里也要同步改 field 的 hint（它把那串色名列了一遍）。
+       270「蓝紫」是本站的默认值 —— 原来预设里没有它，所以一进来
+       "当前选的是哪个"根本无从显示。 */
     var HUE_PRESETS = [
       [0, "红"], [30, "橙"], [90, "黄绿"], [150, "青绿"],
-      [200, "青"], [250, "蓝绿"], [300, "紫"], [345, "粉"],
+      [200, "青"], [250, "蓝绿"], [270, "蓝紫"], [300, "紫"], [345, "粉"],
     ];
     (function () {
       var box = $("hue-presets");
@@ -342,9 +385,17 @@ const pageSwitches = [
         var b = document.createElement("button");
         b.type = "button";
         b.className = "hue-chip";
-        b.style.background = "oklch(0.6 0.16 " + p[0] + ")";
-        b.title = p[1] + " " + p[0];
-        b.setAttribute("aria-label", p[1] + " " + p[0]);
+        b.dataset.hue = String(p[0]);
+        b.title = p[1] + "（" + p[0] + "）";
+        b.setAttribute("aria-label", p[1] + " 色相 " + p[0]);
+        var dot = document.createElement("span");
+        dot.className = "dot";
+        dot.style.background = "oklch(0.6 0.16 " + p[0] + ")";
+        var nm = document.createElement("span");
+        nm.className = "nm";
+        nm.textContent = p[1];
+        b.appendChild(dot);
+        b.appendChild(nm);
         b.onclick = function () {
           $("themeHue").value = p[0];
           paintSwatch();
@@ -353,10 +404,22 @@ const pageSwitches = [
         box.appendChild(b);
       });
     })();
+
     function paintSwatch() {
       var v = Number($("themeHue").value);
-      var hue = isNaN(v) ? 250 : v;
+      var hue = isNaN(v) ? 270 : v;
       $("hue-swatch").style.background = "oklch(0.6 0.16 " + hue + ")";
+
+      // 当前色回显 + 预设高亮：数字 250 / 270 是认不出颜色的，得给个名字
+      var named = null;
+      Array.prototype.forEach.call(document.querySelectorAll(".hue-chip"), function (b) {
+        var on = Number(b.dataset.hue) === hue;
+        b.classList.toggle("on", on);
+        b.setAttribute("aria-pressed", on ? "true" : "false");
+        if (on) named = b.querySelector(".nm").textContent;
+      });
+      var cur = $("hue-current");
+      if (cur) cur.textContent = named ? "当前：" + named : "当前：自定义 " + hue;
     }
 
     // ===== 取值 / 填值 =====

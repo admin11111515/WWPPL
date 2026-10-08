@@ -2013,23 +2013,32 @@ textarea { border-radius: 0.75rem; }
 
 /* ── 3. 分组小标题 ────────────────────────────────────────────────
    左边一条竖杠（是"这一节"），右边一条细线（把下一节推开）。 */
+/* ⚠️ 2026-10-08：这一条原来和 .field-label **完全同级**（都是 0.75rem / --text-2），
+   于是"分组标题"和"字段标签"看着一样重 —— 一眼分不出哪里是新的一组。
+   现在把层级拉开：分组标题更大一档、颜色更深一档、上面的留白更多。
+   度量口径：上面留白(2rem) > 下面留白(0.875rem)，符合"标题上方比下方空"。
+   ⚠️ 竖条原来用 --primary —— 那是**填充**色，浅色主题下 oklch(.70) 在白底只有 2.7:1，
+      当色块几乎看不见（跟侧栏激活态那条是同一个毛病）。改用 --accent-ink。 */
 .section-title {
 	display: flex;
 	align-items: center;
 	gap: 0.5rem;
-	margin: 1.5rem 0 0.875rem;
-	font-size: 0.75rem;
+	margin: 2rem 0 0.875rem;
+	font-size: 0.8125rem;
 	font-weight: 700;
 	letter-spacing: 0.04em;
-	color: var(--text-2);
+	color: var(--text);
+}
+.section-title:first-child {
+	margin-top: 0.25rem;
 }
 .section-title::before {
 	content: "";
 	width: 3px;
-	height: 0.875rem;
+	height: 1rem;
 	flex: none;
 	border-radius: 2px;
-	background: var(--primary);
+	background: var(--accent-ink);
 }
 .section-title::after {
 	content: "";
@@ -2064,8 +2073,12 @@ textarea { border-radius: 0.75rem; }
 	background: color-mix(in oklab, var(--card-bg-soft) 55%, transparent);
 }
 
+/* ⚠️ 这两条特异性比上面那条 `.section-title` 高（0,3,0 > 0,1,0），
+   所以外边距是**这里**说了算 —— 只改上面那条会看着像"没生效"
+   （2026-10-08 实测：字号颜色生效了、margin 还是这儿的 12/4px）。
+   值跟新的层级对齐：上面 1.5rem > 下面 0.5rem，分组之间才分得开。 */
 .form-rows .form-group > .section-title {
-	margin: 1rem 0 0.25rem;
+	margin: 1.5rem 0 0.5rem;
 }
 .form-rows .form-group:first-child > .section-title {
 	margin-top: 0.75rem;
