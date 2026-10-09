@@ -7,6 +7,17 @@ export type GalleryAlbum = {
 	location?: string; // 拍摄地点
 	tags?: string[]; // 标签（用于首页筛选）
 	cover?: string; // 手动指定封面（可选，省略则自动取 cover.* 或第一张）
+	/**
+	 * 照片列表（**2026-10-09 新增，后台可填**）。
+	 *
+	 * 为什么要在"扫目录"之外再加这一条：原来相册只能靠 `public/gallery/<id>/` 里放文件，
+	 * 而后台没有任何地方能建相册、能选图 —— 结果 `/gallery/` 一直是空的（`albums: []`）。
+	 * 现在这些路径由后台的 `/admin/gallery/` 写进 `src/data/gallery.json`，
+	 * 可以直接引用**图片库**里已有的图（上传与压缩图片库那边都做好了），不用手动管目录。
+	 *
+	 * 两种方式**并存**：这里列出的排前面，目录里扫出来的接在后面（去重）。
+	 */
+	photos?: string[];
 	password?: string; // 加密密码（非空时启用加密）
 	passwordHint?: string; // 密码提示
 };

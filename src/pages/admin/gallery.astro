@@ -1,0 +1,527 @@
+---
+// 相册 —— 读写仓库里的 src/data/gallery.json
+//
+// 为什么会有这一页：`/gallery/` 一直是空的。原主题要求"往 public/gallery/<相册名>/ 里
+// 放照片"，而后台**没有任何地方能建相册、能选图** —— 数据(`albums: [])`还写死在
+// `src/config/galleryConfig.ts` 里，后台改不了。现在照片直接引用**图片库**里已有的图，
+// 这一页就是相册唯一的编辑入口。
+//
+// 保存后提交进仓库，Cloudflare 重新构建，/gallery/ 跟着变。
+import AdminTheme from "@/components/admin/AdminTheme.astro";
+import AdminAuthGate from "@/components/admin/AdminAuthGate.astro";
+import AdminTopBar from "@/components/admin/AdminTopBar.astro";
+import { adminBodyClass, adminHtmlClass } from "@/components/admin/adminShell";
+import { externalPostsConfig } from "@/config/externalPostsConfig";
+import { uiIcon } from "@/constants/ui-icons";
+
+/** 这个页面读写仓库里的哪个文件 */
+const target = {
+	owner: externalPostsConfig.owner,
+	repo: externalPostsConfig.repo,
+	branch: externalPostsConfig.branch,
+	path: "src/data/gallery.json",
+};
+
+/**
+ * 页面里要用的图标。⚠️ 必须在 `scripts/generate-icons.js` 的 EXPLICIT_ICONS 白名单里 ——
+ * `uiIcon()` 对不在名单里的名字是**静默返回空串**（按钮在、里面什么都没有）。
+ * 后台页脚本是 `is:inline` 不能用 import，所以构建期渲染好、用 data 属性传进去。
+ */
+const rowIcons = {
+	up: uiIcon("material-symbols:arrow-upward"),
+	down: uiIcon("material-symbols:arrow-downward"),
+	del: uiIcon("material-symbols:delete"),
+	left: uiIcon("material-symbols:chevron-left"),
+	right: uiIcon("material-symbols:chevron-right"),
+	pick: uiIcon("fluent-color:image-24"),
+};
+const mediaIcons = {
+	upload: uiIcon("material-symbols:upload"),
+	close: uiIcon("material-symbols:close"),
+};
+---
+
+<html lang="zh-CN" class={adminHtmlClass}>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>相册 · 后台</title>
+  {/* 后台是站长自用界面，不该出现在搜索结果里（sitemap 中同样已剔除） */}
+  <meta name="robots" content="noindex, nofollow" />
+  <AdminTheme />
+  <AdminAuthGate />
+  <style is:inline>
+    /* ===== 只放这一页特有的排版，通用部分在 src/styles/admin.css ===== */
+
+    /* ⚠️ 宽度必须声明在 `.container` 自己身上；写 `#admin-main { --admin-content-max }`
+       是死代码（admin.css 那条 1280 会压掉它，实测过）。详见 admin.css「3. 宽度容器」。 */
+    #admin-main > .container {
+      --admin-content-max: 1040px;
+    }
+
+    .al-item {
+      border: 1px solid var(--line-soft);
+      border-radius: var(--r-lg);
+      padding: var(--sp-3) var(--sp-4) var(--sp-4);
+      margin-bottom: var(--sp-4);
+      background: var(--card-bg);
+    }
+    .al-head {
+      display: flex; align-items: center; gap: var(--sp-2);
+      margin-bottom: var(--sp-3);
+      padding-bottom: var(--sp-2);
+      border-bottom: 1px solid var(--line-soft);
+    }
+    .al-no { font-size: 0.6875rem; font-weight: 700; color: var(--text-3); min-width: 1.5rem; }
+    .al-head .al-title {
+      flex: 1; min-width: 0;
+      font-size: 0.8125rem; font-weight: 700; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .al-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--sp-2) var(--sp-4);
+    }
+    .al-grid .wide { grid-column: 1 / -1; }
+    @media (max-width: 720px) { .al-grid { grid-template-columns: 1fr; } }
+    .al-label {
+      display: block; font-size: 0.6875rem; font-weight: 700;
+      color: var(--text-3); margin-bottom: 0.25rem;
+    }
+
+    /* 照片墙：缩略图 + 每张上面的操作 */
+    .al-photos {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+      gap: var(--sp-2);
+      margin-top: 0.375rem;
+    }
+    .al-photo {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border: 1px solid var(--line-soft);
+      border-radius: var(--r-md);
+      overflow: hidden;
+      background: var(--card-bg-soft);
+    }
+    .al-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .al-photo .ph-ops {
+      position: absolute; left: 0; right: 0; bottom: 0;
+      display: flex; justify-content: center; gap: 2px;
+      padding: 3px;
+      background: oklch(0.2 0.02 var(--hue) / 0.62);
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    /* 触屏没有 hover，所以"当前这张"也把操作条显示出来，别让人永远点不到 */
+    .al-photo:hover .ph-ops,
+    .al-photo:focus-within .ph-ops { opacity: 1; }
+    .al-photo .ph-ops .btn-icon { color: oklch(0.98 0 0); }
+    .al-photo .ph-ops .btn-icon:hover { color: oklch(1 0 0); }
+    .al-photo .ph-ops .btn-icon.is-danger { color: oklch(0.82 0.14 25); }
+    .al-photo .ph-first {
+      position: absolute; left: 4px; top: 4px;
+      padding: 0 0.3125rem;
+      border-radius: var(--r-sm);
+      background: oklch(0.2 0.02 var(--hue) / 0.62);
+      color: oklch(0.98 0 0);
+      font-size: 0.625rem; line-height: 1.35rem; height: 1.35rem;
+    }
+    .al-photo-add {
+      aspect-ratio: 4 / 3;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 0.25rem;
+      border: 1px dashed var(--line);
+      border-radius: var(--r-md);
+      background: transparent;
+      color: var(--text-3);
+      font-size: 0.6875rem;
+      cursor: pointer;
+    }
+    .al-photo-add:hover { border-color: var(--accent-ink); color: var(--accent-ink); }
+    .al-empty {
+      padding: var(--sp-8) var(--sp-4);
+      text-align: center; font-size: 0.8125rem; color: var(--text-3);
+    }
+  </style>
+</head>
+<body class={adminBodyClass}>
+
+  <div id="admin-main">
+    <AdminTopBar title="相册" />
+
+    <div class="container">
+      <div class="card">
+        <div class="page-lead">
+          <span class="lead-icon" set:html={uiIcon("fluent-color:image-24")} />
+          <span>
+            这里改的是前台 <b>/gallery/</b> 那页的相册。照片可以直接从<b>图片库</b>里选，
+            也能在这里直接上传 —— 不用自己去建目录、丢文件。保存后提交到仓库，
+            Cloudflare 重新构建（约一两分钟）才生效。
+          </span>
+        </div>
+
+        <div id="al-list"></div>
+
+        <div class="save-row" style="margin-top: 1rem;">
+          <button class="btn" type="button" onclick="addAlbum()">+ 新建一个相册</button>
+        </div>
+
+        {/* ⚠️ id 必须是 save-btn / dirty-hint（全局 Ctrl/⌘+S 与悬浮保存条靠它们找）；
+              而且一开始就得 disabled —— 数据还没读回来时不该能点。 */}
+        <div class="save-row">
+          <button class="btn btn-primary" id="save-btn" onclick="saveAlbums()" disabled>保存并生效</button>
+          <button class="btn btn-ghost" type="button" onclick="reloadFromRepo()">还原成仓库里的版本</button>
+          <span class="dirty-hint" id="dirty-hint"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  {/* ⚠️ admin-github.js 不能漏：WBGitHub 是它挂上去的。漏了的表现是
+         「点保存毫无反应、状态栏永远停在正在读取」——TypeError 落在 .then() 链里，
+         只变成一条没人接的 rejection。 */}
+  <script is:inline src="/js/admin-github.js"></script>
+  <script is:inline src="/js/admin-media.js"></script>
+  <script is:inline src="/js/editor-commons.js"></script>
+  <script
+    is:inline
+    data-target={JSON.stringify(target)}
+    data-row-icons={JSON.stringify(rowIcons)}
+    data-media-icons={JSON.stringify(mediaIcons)}
+    data-repo={JSON.stringify({
+      owner: externalPostsConfig.owner,
+      repo: externalPostsConfig.repo,
+      branch: externalPostsConfig.branch,
+    })}
+  >
+    var _script = document.currentScript;
+    var TARGET = JSON.parse(_script.getAttribute("data-target") || "{}");
+    var ICONS = JSON.parse(_script.getAttribute("data-row-icons") || "{}");
+    var REPO = JSON.parse(_script.getAttribute("data-repo") || "{}");
+
+    // 图片能力（共用 /js/admin-media.js）：照片进仓库的 public/images 下
+    WBMedia.init({
+      owner: REPO.owner, repo: REPO.repo, branch: REPO.branch,
+      uploadDir: "public/images/uploads",
+      listRoot: "public/images",
+      icons: JSON.parse(_script.getAttribute("data-media-icons") || "{}"),
+    });
+
+    // ===== 工具 =====
+    function $(id) { return document.getElementById(id); }
+    function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+    function toast(msg, type) {
+      var el = $("toast"); el.textContent = msg; el.className = "toast " + type + " show";
+      clearTimeout(el._t); el._t = setTimeout(function () { el.className = "toast"; }, 3200);
+    }
+    function setStatus(ok, text) { $("status-dot").className = "status-dot " + (ok ? "ok" : "err"); $("status-text").textContent = text; }
+    function b64EncodeUnicode(str) { return btoa(unescape(encodeURIComponent(str))); }
+    function b64DecodeUnicode(str) { return decodeURIComponent(escape(atob(str))); }
+
+    // ===== 状态 =====
+    var data = { albums: [], columnWidth: 240 };
+    var fileSha = "";
+    var cleanSnapshot = "";
+
+    function snapshot() { return JSON.stringify(data); }
+    function isDirty() { return snapshot() !== cleanSnapshot; }
+    function markClean() { cleanSnapshot = snapshot(); updateHint(); syncSaveBtn(); }
+    function updateHint() {
+      var el = $("dirty-hint");
+      if (!el) return;
+      var dirty = isDirty();
+      el.textContent = dirty ? "有改动还没保存" : "";
+      el.className = "dirty-hint" + (dirty ? " dirty" : "");
+      syncSaveBtn();
+    }
+    function syncSaveBtn() {
+      var b = $("save-btn");
+      if (!b) return;
+      var dirty = isDirty();
+      b.disabled = !dirty;
+      b.title = dirty ? "" : "还没有改动可保存";
+    }
+
+    // ===== 渲染 =====
+    function render() {
+      var box = $("al-list");
+      var albums = data.albums || [];
+      if (!albums.length) {
+        box.innerHTML = '<div class="al-empty">还没有相册。点下面的「+ 新建一个相册」开始。<br />' +
+          '（前台 /gallery/ 现在显示的是空态，建好第一个之后就会变成相册列表。）</div>';
+        updateHint();
+        return;
+      }
+      box.innerHTML = albums.map(function (a, i) {
+        var photos = Array.isArray(a.photos) ? a.photos : [];
+        return '' +
+          '<div class="al-item" data-i="' + i + '">' +
+            '<div class="al-head">' +
+              '<span class="al-no">#' + (i + 1) + '</span>' +
+              '<span class="al-title">' + (esc(a.name) || "（还没填相册名）") + '</span>' +
+              '<button class="btn-icon" type="button" title="上移" aria-label="上移" data-al-move="-1" data-i="' + i + '">' + ICONS.up + '</button>' +
+              '<button class="btn-icon" type="button" title="下移" aria-label="下移" data-al-move="1" data-i="' + i + '">' + ICONS.down + '</button>' +
+              '<button class="btn-icon is-danger" type="button" title="删除这个相册" aria-label="删除这个相册" data-al-del="1" data-i="' + i + '">' + ICONS.del + '</button>' +
+            '</div>' +
+            '<div class="al-grid">' +
+              '<div><label class="al-label" for="an' + i + '">相册名（必填）</label>' +
+                '<input type="text" class="input-single" id="an' + i + '" data-k="name" data-i="' + i + '" value="' + esc(a.name) + '" placeholder="例：南昌西站" maxlength="40" /></div>' +
+              '<div><label class="al-label" for="ai' + i + '">地址标识（英文，留空自动生成）</label>' +
+                '<input type="text" class="input-single" id="ai' + i + '" data-k="id" data-i="' + i + '" value="' + esc(a.id) + '" placeholder="nanchang-west" /></div>' +
+              '<div><label class="al-label" for="ad' + i + '">日期</label>' +
+                '<input type="date" class="input-single" id="ad' + i + '" data-k="date" data-i="' + i + '" value="' + esc(a.date || "") + '" /></div>' +
+              '<div><label class="al-label" for="al' + i + '">拍摄地点</label>' +
+                '<input type="text" class="input-single" id="al' + i + '" data-k="location" data-i="' + i + '" value="' + esc(a.location || "") + '" placeholder="例：南昌" maxlength="40" /></div>' +
+              '<div class="wide"><label class="al-label" for="as' + i + '">一句话说明</label>' +
+                '<textarea class="input-single" id="as' + i + '" data-k="description" data-i="' + i + '" rows="2" maxlength="200">' + esc(a.description || "") + '</textarea></div>' +
+              '<div class="wide"><label class="al-label" for="at' + i + '">标签（用逗号分隔）</label>' +
+                '<input type="text" class="input-single" id="at' + i + '" data-k="tags" data-i="' + i + '" value="' + esc((a.tags || []).join("，")) + '" placeholder="旅行，随手拍" /></div>' +
+              '<div class="wide"><label class="al-label" for="ac' + i + '">封面（留空就用第一张）</label>' +
+                '<input type="text" class="input-single" id="ac' + i + '" data-k="cover" data-i="' + i + '" value="' + esc(a.cover || "") + '" placeholder="/images/..." /></div>' +
+              '<div class="wide">' +
+                '<span class="al-label">照片（' + photos.length + ' 张，第一张当封面用）</span>' +
+                '<div class="al-photos">' +
+                  photos.map(function (p, j) {
+                    return '<div class="al-photo">' +
+                      (j === 0 ? '<span class="ph-first">封面</span>' : "") +
+                      '<img src="' + esc(p) + '" alt="" loading="lazy" onerror="this.style.opacity=0.25" />' +
+                      '<div class="ph-ops">' +
+                        '<button class="btn-icon" type="button" title="往左" aria-label="往左" data-ph-move="-1" data-i="' + i + '" data-j="' + j + '">' + ICONS.left + '</button>' +
+                        '<button class="btn-icon" type="button" title="往右" aria-label="往右" data-ph-move="1" data-i="' + i + '" data-j="' + j + '">' + ICONS.right + '</button>' +
+                        '<button class="btn-icon is-danger" type="button" title="从相册移除" aria-label="从相册移除" data-ph-del="1" data-i="' + i + '" data-j="' + j + '">' + ICONS.del + '</button>' +
+                      '</div>' +
+                    '</div>';
+                  }).join("") +
+                  '<button class="al-photo-add" type="button" data-ph-pick="1" data-i="' + i + '">' + ICONS.pick + '<span>从图片库选</span></button>' +
+                  '<button class="al-photo-add" type="button" data-ph-upload="1" data-i="' + i + '">' + ICONS.pick + '<span>直接上传</span></button>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+      }).join("");
+      updateHint();
+    }
+
+    // ===== 编辑 =====
+    document.addEventListener("input", function (e) {
+      var el = e.target;
+      if (!el || !el.hasAttribute || !el.hasAttribute("data-k")) return;
+      var i = Number(el.getAttribute("data-i")), k = el.getAttribute("data-k");
+      if (!data.albums[i]) return;
+      data.albums[i][k] = k === "tags" ? splitList(el.value) : el.value;
+      if (k === "name") {
+        var box = $("al-list").querySelector('.al-item[data-i="' + i + '"] .al-title');
+        if (box) box.textContent = el.value || "（还没填相册名）";
+      }
+      updateHint();
+    });
+    function splitList(v) {
+      return String(v || "").split(/[,，、]/).map(function (s) { return s.trim(); })
+        .filter(function (s, i, a) { return s && a.indexOf(s) === i; });
+    }
+
+    document.addEventListener("click", function (e) {
+      var el = e.target.closest ? e.target.closest("[data-al-move],[data-al-del],[data-ph-move],[data-ph-del],[data-ph-pick],[data-ph-upload]") : null;
+      if (!el) return;
+      var i = Number(el.getAttribute("data-i"));
+      var al = data.albums[i];
+      if (!al) return;
+      if (!Array.isArray(al.photos)) al.photos = [];
+
+      if (el.hasAttribute("data-al-del")) {
+        if (!confirm("删掉相册「" + (al.name || "这个") + "」？照片本身还在图片库里，只是从这个相册移除。删完要点保存才生效。")) return;
+        data.albums.splice(i, 1);
+        render();
+        return;
+      }
+      if (el.hasAttribute("data-al-move")) {
+        var j2 = i + Number(el.getAttribute("data-al-move"));
+        if (j2 < 0 || j2 >= data.albums.length) return;
+        var t = data.albums[i]; data.albums[i] = data.albums[j2]; data.albums[j2] = t;
+        render();
+        return;
+      }
+
+      var j = Number(el.getAttribute("data-j"));
+      if (el.hasAttribute("data-ph-del")) {
+        al.photos.splice(j, 1);
+        render();
+        return;
+      }
+      if (el.hasAttribute("data-ph-move")) {
+        var k2 = j + Number(el.getAttribute("data-ph-move"));
+        if (k2 < 0 || k2 >= al.photos.length) return;
+        var t2 = al.photos[j]; al.photos[j] = al.photos[k2]; al.photos[k2] = t2;
+        render();
+        return;
+      }
+      if (el.hasAttribute("data-ph-pick")) {
+        WBMedia.openPicker({
+          title: "从图片库选一张（加进「" + (al.name || "这个相册") + "」）",
+          onPick: function (url) { al.photos.push(url); render(); },
+        });
+        return;
+      }
+      if (el.hasAttribute("data-ph-upload")) {
+        var inp = document.createElement("input");
+        inp.type = "file";
+        inp.accept = "image/*";
+        inp.multiple = true;
+        inp.onchange = function () {
+          var files = Array.prototype.slice.call(inp.files || []);
+          if (!files.length) return;
+          toast("正在上传 " + files.length + " 张…", "ok");
+          Promise.all(files.map(function (f) {
+            return WBMedia.upload(f).then(function (r) { al.photos.push(r.url); }).catch(function (err) { toast("上传失败：" + err.message, "err"); });
+          })).then(function () { render(); toast("传好了（重新构建后站上生效）", "ok"); });
+        };
+        inp.click();
+      }
+    });
+
+    /** 相册名 → 地址标识：中文名没法直接当 slug，就退回时间戳，保证唯一 */
+    function autoId(name) {
+      var latin = String(name || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+      return latin || "album-" + Date.now();
+    }
+
+    function addAlbum() {
+      data.albums.push({
+        id: "", name: "", description: "", date: "", location: "",
+        tags: [], cover: "", photos: [],
+      });
+      render();
+      var items = $("al-list").querySelectorAll(".al-item");
+      var last = items.length - 1;
+      if (items.length) items[last].scrollIntoView({ block: "center" });
+      var n = document.getElementById("an" + last);
+      if (n) n.focus();
+    }
+
+    // ===== 读 / 写仓库 =====
+    function normalize(parsed) {
+      var out = { albums: [], columnWidth: 240 };
+      if (!parsed || typeof parsed !== "object") return out;
+      out.columnWidth = Number(parsed.columnWidth) || 240;
+      if (Array.isArray(parsed.albums)) {
+        out.albums = parsed.albums.map(function (a) {
+          return {
+            id: a.id || "",
+            name: a.name || "",
+            description: a.description || "",
+            date: a.date || "",
+            location: a.location || "",
+            tags: Array.isArray(a.tags) ? a.tags : [],
+            cover: a.cover || "",
+            password: a.password || "",
+            passwordHint: a.passwordHint || "",
+            photos: Array.isArray(a.photos) ? a.photos : [],
+          };
+        });
+      }
+      return out;
+    }
+
+    function loadFromRepo() {
+      setStatus(false, "正在读取仓库里的 gallery.json…");
+      return WBGitHub.getFile({
+        owner: TARGET.owner, repo: TARGET.repo, branch: TARGET.branch, path: TARGET.path
+      }).then(function (file) {
+        if (!file) {
+          setStatus(false, "仓库里没找到 " + TARGET.path);
+          toast("没读到 " + TARGET.path + "，检查一下路径", "err");
+          return;
+        }
+        fileSha = file.sha || "";
+        var text = b64DecodeUnicode(String(file.content || "").replace(/\s/g, ""));
+        var parsed;
+        try {
+          parsed = JSON.parse(text);
+        } catch (err) {
+          setStatus(false, "文件内容不是合法 JSON，没有改动任何东西");
+          toast("读出来的内容解析不了：" + err.message, "err");
+          return;
+        }
+        data = normalize(parsed);
+        render();
+        markClean();
+        setStatus(true, "已连接（" + data.albums.length + " 个相册）");
+      }).catch(function (err) {
+        setStatus(false, err.message);
+      });
+    }
+
+    function saveAlbums() {
+      // 保存前当面判：相册名必填；地址标识留空的按相册名补一个（全站要唯一）
+      var used = {};
+      for (var i = 0; i < data.albums.length; i++) {
+        var a = data.albums[i];
+        if (!String(a.name || "").trim()) {
+          toast("第 " + (i + 1) + " 个相册还没填相册名", "err");
+          var box = $("al-list").querySelector('.al-item[data-i="' + i + '"]');
+          if (box) box.scrollIntoView({ block: "center" });
+          var n = document.getElementById("an" + i);
+          if (n) n.focus();
+          return;
+        }
+        var id = String(a.id || "").trim();
+        if (!id) { id = autoId(a.name); a.id = id; }
+        if (used[id]) { toast("有两个相册的地址标识都是「" + id + "」，改一个", "err"); return; }
+        used[id] = 1;
+      }
+
+      var text = JSON.stringify(data, null, "\t") + "\n";
+      var btn = $("save-btn");
+      btn.disabled = true; btn.textContent = "保存中…";
+      setStatus(false, "正在提交到仓库…");
+
+      WBGitHub.putFile({
+        owner: TARGET.owner, repo: TARGET.repo, branch: TARGET.branch, path: TARGET.path,
+        content: b64EncodeUnicode(text),
+        message: "chore: 更新相册",
+        sha: fileSha || undefined
+      }).then(function (res) {
+        fileSha = (res && res.content && res.content.sha) || fileSha;
+        render();          // 补出来的 id 要落到界面上
+        markClean();
+        setStatus(true, "已提交，等 Cloudflare 重新构建");
+        toast("已保存。Cloudflare 重新构建后 /gallery/ 生效（约一两分钟）", "ok");
+      }).catch(function (err) {
+        setStatus(false, err.message);
+        toast(err.message, "err");
+      }).then(function () {
+        btn.textContent = "保存并生效";
+        syncSaveBtn();
+      });
+    }
+
+    function reloadFromRepo() {
+      if (isDirty() && !confirm("现在有没保存的改动，还原会丢掉它们。继续？")) return;
+      loadFromRepo();
+    }
+
+    // ===== 初始化 =====
+    function checkAuth() {
+      return fetch("/api/auth/status")
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (!d.authed) { window.location.href = "/admin/"; return false; }
+          return true;
+        })
+        .catch(function () { window.location.href = "/admin/"; return false; });
+    }
+    function doLogout() {
+      localStorage.removeItem("admin_auth");
+      fetch("/api/auth/logout", { method: "POST" }).catch(function () {});
+      window.location.href = "/admin/";
+    }
+
+    WBEditor.guardUnsavedChanges(isDirty);
+    checkAuth().then(function (ok) { if (ok) loadFromRepo(); });
+  </script>
+</body>
+</html>

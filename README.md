@@ -93,7 +93,7 @@ WWPPL_GITHUB_TOKEN=xxx python ../verify/2026-09-23/API推送.py
 
 ## 四、后台（`/admin/`）
 
-十个页面：首页 / 说说 / 笔记 / 文章 / 页面 / 项目 / 图片库 / 站点信息 / 导航菜单 / 站点外观。
+十一个页面：首页 / 说说 / 笔记 / 文章 / 页面 / 项目 / 图片库 / 相册 / 站点信息 / 导航菜单 / 站点外观。
 
 - 每个后台页是**独立的 HTML 文档**，不走博客的 `Layout`，所以拿不到前台样式；
   它们统一接在 `src/styles/admin.css` 上。
@@ -102,7 +102,7 @@ WWPPL_GITHUB_TOKEN=xxx python ../verify/2026-09-23/API推送.py
 - 每页 `<html>` 上的 `data-no-swup` **不能删**（删了每次点链接会报 swup 容器不匹配）。
 - 导航只有一份来源：`src/components/admin/adminNav.ts`（侧栏和 ⌘K 命令面板共用）。
 
-**可以直接在后台改的 5 份 JSON 数据源**（清单类数据都放这里，别写死进 `src/config/*.ts`
+**可以直接在后台改的 6 份 JSON 数据源**（清单类数据都放这里，别写死进 `src/config/*.ts`
 或 `src/data/*.ts` —— 写进去后台就改不了了，这是这个项目反复踩过的一条）：
 
 | 文件 | 管什么 | 后台在哪 |
@@ -112,6 +112,7 @@ WWPPL_GITHUB_TOKEN=xxx python ../verify/2026-09-23/API推送.py
 | `src/data/appearance.json` | 站点外观（配色、壁纸、页面开关） | `/admin/appearance/` |
 | `src/data/notebooks.json` | 笔记本清单（名字 → Gist ID） | `/admin/notebooks/` |
 | `src/data/projects.json` | 项目清单（前台 `/projects/`） | `/admin/projects/` |
+| `src/data/gallery.json` | 相册与照片（前台 `/gallery/`） | `/admin/gallery/` |
 
 ⚠️ 加一个这样的数据源要**四处一起改**：JSON + 读取器（`.ts` 只留接口与读取）+
 后台页 + `adminNav.ts` 加一条（侧栏与 ⌘K 共用那份数据，加一处两处都有）。
@@ -124,6 +125,10 @@ WWPPL_GITHUB_TOKEN=xxx python ../verify/2026-09-23/API推送.py
   页面地址是 `/posts/<分类>/<slug>/`（`/blog/<分类>/<slug>/` 是别名，
   但**没有** `/blog/` 或 `/posts/` 这种列表页 —— 列表走「归档 / 分类 / 标签」）。
 - **说说**、**笔记**：**不在仓库里**，各自存在一个 GitHub Gist，前台运行时拉。
+- **相册**：`src/data/gallery.json` 里，后台 `/admin/gallery/` 改。
+  照片有**两种来源，同时生效**：① 后台选/传的（写进 JSON 的 `photos`，推荐 ——
+  可以直接引用图片库里已有的图）② 原主题那套"往 `public/gallery/<相册 id>/` 放文件"
+  （会被自动扫到，接在 ① 后面）。取图逻辑在 `src/utils/gallery-utils.ts` 的 `getAlbumPhotos`。
 
 ⚠️ **Gist 必须和部署令牌同属一个账号**。令牌写不了别人的 Gist：
 读得到（secret gist 匿名都能读），一写就 **404**，而且**不报错**——
@@ -154,7 +159,11 @@ WWPPL_GITHUB_TOKEN=xxx python ../verify/2026-09-23/API推送.py
    漏了的表现是「点保存毫无反应、状态栏永远停在『正在读取…』」——
    因为 `WBGitHub.getFile()` 那一刻抛 TypeError，而它在 `.then()` 链里，
    只变成一条**没人接的 rejection**（只有控制台看得到）。
-8. **页面 `<html>` 上的 `data-no-swup` 不能删**；后台页的保存按钮 id 必须叫 `save-btn`、
+8. **动图标名之后一定要看一眼截图**：`uiIcon()` 对不在白名单里的名字**静默返回空串**，
+   按钮渲染出来但里面是空的（相册页的「往左」按钮就差点这样 —— 白名单里有 `chevron-right`
+   却没有 `chevron-left`）。加图标：`scripts/generate-icons.js` 的 `EXPLICIT_ICONS`
+   → 沙箱 `pnpm icons` → **手动回拷** `src/constants/ui-icons.ts`。
+9. **页面 `<html>` 上的 `data-no-swup` 不能删**；后台页的保存按钮 id 必须叫 `save-btn`、
    提示必须是 `dirty-hint`（全局 Ctrl/⌘+S 与悬浮保存条靠这两个 id 找），
    而且**保存按钮在标记里就该带 `disabled`**，读完数据才可能启用。
 6. **删一个数据源/组件要顺着「谁引用它」查到底**（import、变量名、配置项都要看）。

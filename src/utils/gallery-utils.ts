@@ -51,6 +51,25 @@ export function scanAlbumPhotos(albumId: string): string[] {
 }
 
 /**
+ * 相册的全部照片 = **JSON 里列出的** + **目录里扫到的**，按路径去重。
+ *
+ * 2026-10-09 加：原来只有目录扫描，而"把文件放进 public/gallery/<id>/"这件事
+ * 后台做不到，所以相册一直是空的。现在后台填的那个 photos 排在前面（顺序由人定），
+ * 目录里扫出来的接在后面（原主题的用法照旧能用）。
+ */
+export function getAlbumPhotos(album: GalleryAlbum): string[] {
+	const fromJson = Array.isArray(album.photos) ? album.photos.filter(Boolean) : [];
+	const merged = [...fromJson, ...scanAlbumPhotos(album.id)];
+	const seen = new Set<string>();
+	return merged.filter((p) => {
+		const k = p.trim();
+		if (!k || seen.has(k)) return false;
+		seen.add(k);
+		return true;
+	});
+}
+
+/**
  * 获取相册封面图
  * 优先级：手动指定 > cover.* 文件 > 第一张图片
  */

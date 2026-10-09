@@ -51,6 +51,10 @@ const EXPLICIT_ICONS = [
 	"material-symbols:arrow-upward", // 上移
 	"material-symbols:arrow-downward", // 下移
 	"material-symbols:drag-indicator", // 拖拽手柄
+	// 相册后台里"这张照片往左/往右"用的（2026-10-09）。
+	// ⚠️ chevron-right 本来就有、chevron-left 没有 —— 只加一边的话另一边会
+	//    **静默渲染成空按钮**（uiIcon 对非白名单名返回空串，不报错）。
+	"material-symbols:chevron-left", // 往左
 	// 字段标签
 	"fluent-color:document-text-24", // 内容
 	"fluent-color:image-24", // 图片（带外框，用于字段标签）

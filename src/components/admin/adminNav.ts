@@ -48,6 +48,10 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
 		title: "媒体",
 		items: [
 			{ name: "图片库", href: "/admin/media/", icon: "image" },
+			// 相册（前台 /gallery/）的数据在 src/data/gallery.json。
+			// 图标用 add-photo-alternate 而**不是** image —— image 已经被"图片库"占了，
+			// 两个入口同一个图标会分不清。
+			{ name: "相册", href: "/admin/gallery/", icon: "add-photo-alternate" },
 			// 「换头像」原来只有后台首页那张入口卡能打开（首页现在改成概览、不再放功能清单），
 			// 所以挪到这儿：指向 /admin/?avatar=1，由首页自己读这个参数把面板展开。
 			// ⚠️ 头像面板的代码仍在 index.astro（它和「传图片」共用 compressImage）。
