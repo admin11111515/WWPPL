@@ -1,0 +1,138 @@
+---
+/**
+ * 「编辑这一页」——**从博客跳到后台**的入口。
+ *
+ * 为什么要有它：后台那边早就有「看前台」，但**反方向没有**。站长在自己站上逛的时候，
+ * 看到一段想改的文案，只能自己去 /admin/ 找对应页面、再找那条内容。
+ * 这个组件把「当前这一页 → 对应的后台页」直接接上，写文章的人不用记路由。
+ *
+ * ⚠️ **对访客零成本**（这是设计前提，别改成"先请求再判断"）：
+ *   后台登录时会在同源的 localStorage 里留一个 `admin_auth` 标记，
+ *   这里先**同步**读它 —— 没这个标记就直接 return，**一个请求都不发**。
+ *   有标记才去 `/api/auth/status` 核对（标记只是 UI 提示，真凭据是 HttpOnly cookie）。
+ *
+ * ⚠️ 未知路由不显示（返回 null）——宁可没有入口，也不要给一个跳到无关页面的按钮。
+ * ⚠️ 位置放**右下**：看板娘默认在左下（Live2DWidget 的 position: bottom-left），
+ *    两个都固定定位，别挤到一起。
+ */
+---
+
+<div id="admin-quick-edit" hidden></div>
+
+<style is:inline>
+  #admin-quick-edit {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 900; /* 看板娘是 999，别压过它 */
+  }
+  .aqe-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    min-height: 32px;
+    padding: 0 0.75rem;
+    border: 1px solid var(--line-color);
+    border-radius: 999px;
+    background: var(--float-panel-bg);
+    color: var(--text-90);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-decoration: none;
+    box-shadow: 0 4px 16px rgb(0 0 0 / 0.12);
+    transition:
+      transform 0.15s,
+      box-shadow 0.15s,
+      border-color 0.15s;
+  }
+  .aqe-pill:hover {
+    transform: translateY(-1px);
+    border-color: var(--primary);
+    box-shadow: 0 6px 20px rgb(0 0 0 / 0.16);
+  }
+  .aqe-pill:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+  .aqe-pill svg {
+    width: 1rem;
+    height: 1rem;
+    flex: none;
+  }
+  /* 手机上收成只有图标，别占着正文的位置 */
+  @media (max-width: 640px) {
+    .aqe-pill .aqe-text {
+      display: none;
+    }
+    .aqe-pill {
+      padding: 0 0.5rem;
+    }
+  }
+</style>
+
+<script is:inline>
+  (function () {
+    var KEY = "admin_auth";
+
+    /** 当前页 → 对应的后台页。认不出来就返回 null（不显示入口）。 */
+    function targetFor(p) {
+      var path = p.replace(/\/+$/, "") + "/";
+
+      // 文章详情：/posts/<分类>/<slug>/ 与 /blog/<分类>/<slug>/
+      var m = path.match(/^\/(?:posts|blog)\/([^/]+)\/([^/]+)\/$/);
+      if (m) {
+        return {
+          url: "/admin/posts/?edit=" + encodeURIComponent(m[2]),
+          label: "编辑这篇文章",
+        };
+      }
+
+      if (path === "/") return { url: "/admin/", label: "后台概览" };
+      if (path.indexOf("/moments/") === 0) return { url: "/admin/moments/", label: "管理说说" };
+      if (path.indexOf("/life/notebooks/") === 0)
+        return { url: "/admin/notebooks/", label: "写笔记" };
+      if (path.indexOf("/friends/") === 0) return { url: "/admin/friends/", label: "管理友链" };
+      if (path.indexOf("/gallery/") === 0) return { url: "/admin/gallery/", label: "管理相册" };
+      if (path.indexOf("/projects/") === 0) return { url: "/admin/projects/", label: "管理项目" };
+      if (path === "/archive/" || path === "/categories/" || path === "/tags/")
+        return { url: "/admin/posts/", label: "管理文章" };
+      // 这三页的正文都在「页面」里改
+      if (path === "/about/" || path === "/guestbook/" || path === "/sponsor/")
+        return { url: "/admin/pages/", label: "改这一页的内容" };
+
+      return null;
+    }
+
+    // ① 同步读标记 —— 访客到这里就返回了，不发任何请求
+    var hint = null;
+    try {
+      hint = localStorage.getItem(KEY);
+    } catch (e) {
+      hint = null;
+    }
+    if (!hint) return;
+
+    // ② 有标记才去核对（标记只是 UI 提示，真凭据是 HttpOnly cookie）
+    fetch("/api/auth/status")
+      .then(function (r) {
+        return r.json();
+      })
+      .then(function (d) {
+        if (!d || !d.authed) return;
+        // ③ 只在认得出对应后台页的地方挂
+        var t = targetFor(location.pathname);
+        if (!t) return;
+        var box = document.getElementById("admin-quick-edit");
+        if (!box) return;
+        box.innerHTML =
+          '<a class="aqe-pill" href="' + t.url + '" title="' + t.label + '">' +
+          '<svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>' +
+          '<span class="aqe-text">' + t.label + "</span>" +
+          "</a>";
+        box.hidden = false;
+      })
+      .catch(function () {
+        /* 核对不了就不显示，静默 */
+      });
+  })();
+</script>
