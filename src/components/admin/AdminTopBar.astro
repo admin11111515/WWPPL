@@ -251,14 +251,78 @@ const isAdminHome = Astro.url.pathname.replace(/\/+$/, "") === "/admin";
 
   /* 「本地预览」标记：只在**本机预览**上露出。
      线上后台不显示（那边点保存是真写仓库，没有这个问题）。
-     判据用 hostname 而不是端口 —— 端口可以换，主机名不会。 */
+     判据用 hostname 而不是端口 —— 端口可以换，主机名不会。
+
+     它还承担一件事：**把本地改的东西带到线上，不让站长手动复制**。
+     做法是把本站的编辑草稿（localStorage 里的 `wb-draft:*`）塞进跳转链接的
+     `#wbimport=` 里 ——
+       · hash 不会被发到服务器，所以不怕长；
+       · 线上那边由 AdminTheme 在**页面脚本之前**写回 localStorage，
+         各编辑器自带的"发现一份没提交的草稿 → 一键恢复"就会照常出现。
+     于是流程是：本机改完 → 点这颗标记 → 线上同一页 → 点「恢复」→ 保存。
+
+     ⚠️ 目标地址要**落在当前这一页**（不是后台首页），否则他还得自己再找一次。
+     ⚠️ 草稿太大就退化成不带草稿的普通链接（URL 有长度上限，别硬塞）。 */
   (function () {
     var host = location.hostname;
     if (host !== "127.0.0.1" && host !== "localhost" && host !== "::1") return;
     var tag = document.getElementById("admin-localtag");
     if (!tag) return;
     tag.hidden = false;
-    // 顺带把页签标题也标一下，开着一排标签页时不至于认错
+
+    var ONLINE = "https://wwppl.dpdns.org";
+    var go = function () {
+      location.href = ONLINE + location.pathname + location.search;
+    };
+
+    // 收本站的编辑草稿
+    var picked = {};
+    var total = 0;
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (!k || k.indexOf("wb-draft:") !== 0) continue;
+        var raw = localStorage.getItem(k);
+        if (!raw) continue;
+        total += raw.length;
+        if (total > 150000) {
+          picked = null; // 太大，放弃带草稿
+          break;
+        }
+        picked[k] = JSON.parse(raw);
+      }
+    } catch (e) {
+      picked = null;
+    }
+
+    var count = picked ? Object.keys(picked).length : 0;
+    if (count) {
+      try {
+        var b64 = btoa(unescape(encodeURIComponent(JSON.stringify(picked))));
+        // 转成 URL 安全的 base64url，免得 `+` `/` `=` 在 hash 里出岔子
+        var safe = b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+        tag.href = ONLINE + location.pathname + location.search + "#wbimport=" + safe;
+        var t = tag.querySelector(".admin-localtag-text");
+        var g = tag.querySelector(".admin-localtag-go");
+        if (t) t.textContent = "本地预览";
+        if (g) g.textContent = "带 " + count + " 份改动去线上 →";
+        tag.setAttribute(
+          "title",
+          "你正在本机预览上，这里不会写进仓库。点它会打开**线上同一个页面**，" +
+            "并把你还没提交的 " +
+            count +
+            " 份草稿一并带过去（到那儿点「恢复」再保存）。",
+        );
+      } catch (e) {
+        go();
+      }
+    } else {
+      tag.href = ONLINE + location.pathname + location.search;
+      // 顺带把页签标题也标一下，开着一排标签页时不至于认错
+      document.title = "【本地预览】" + document.title;
+      return;
+    }
+
     document.title = "【本地预览】" + document.title;
   })();
 </script>

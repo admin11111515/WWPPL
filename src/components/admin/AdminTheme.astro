@@ -183,6 +183,55 @@ const pageWidth = `${siteConfig.pageWidth ?? PAGE_WIDTH}rem`;
   }
 </script>
 
+{/* ── 从本地预览"带草稿过来"的接收端 ─────────────────────────────
+   场景：站长在本机预览（127.0.0.1:4322）上改了一篇文章，点保存 → 被预览挡下
+   （预览故意不写仓库）。他不想手动复制粘贴，所以**由本机那边把草稿塞进跳转链接**，
+   这里负责在页面脚本跑之前把它写回 localStorage。
+
+   为什么写回 localStorage 就够了：各编辑器本来就有"发现一份没提交的草稿 → 一键恢复"，
+   草稿键是 `wb-draft:<name>`（见 editor-commons.js 的 createDraftStore）。
+   把它塞回去，各页**自己的**恢复条就会照常出现 —— 不用改任何一个编辑器。
+
+   ⚠️ 必须放在 <head> 里、**早于页面自己的脚本**（页面脚本在 <body> 末尾）。
+      AdminTheme 正是被各页放在 <head> 的，所以这段天然在前面。
+   ⚠️ 用完把 hash 抹掉：免得刷新时反复导入，URL 也难看。 */}
+<script is:inline>
+  (function () {
+    var hash = location.hash || "";
+    var m = hash.match(/[#&]wbimport=([A-Za-z0-9\-_]+)/);
+    if (!m) return;
+    var payload = null;
+    try {
+      var b64 = m[1].replace(/-/g, "+").replace(/_/g, "/");
+      payload = JSON.parse(decodeURIComponent(escape(atob(b64))));
+    } catch (e) {
+      payload = null;
+    }
+    var n = 0;
+    if (payload && typeof payload === "object") {
+      Object.keys(payload).forEach(function (k) {
+        // 只认草稿键，别的东西一概不写
+        if (k.indexOf("wb-draft:") !== 0) return;
+        try {
+          localStorage.setItem(k, JSON.stringify(payload[k]));
+          n++;
+        } catch (e) {
+          /* 存储满了就算了，不打断 */
+        }
+      });
+    }
+    if (n) {
+      try {
+        sessionStorage.setItem("wb-draft-imported", String(n));
+      } catch (e) {}
+    }
+    // 抹掉 hash（保留 path 与 query）
+    try {
+      history.replaceState(null, "", location.pathname + location.search);
+    } catch (e) {}
+  })();
+</script>
+
 {/* ── 保存这件事，不该靠"滚到底" ────────────────────────────────
    后台的设置类页面（站点信息 / 站点外观 / 导航菜单 / 页面）表单都很长，
    而「保存并生效」原本只长在卡片最末尾 —— 改一个顶部字段要滚到底才存得上，
