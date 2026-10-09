@@ -7,8 +7,6 @@ import CopyMessage from "@components/common/CopyMessage.svelte"; //复制内容�
 import FancyboxManager from "@components/features/FancyboxManager.astro";
 import FontManager from "@components/features/FontManager.astro";
 import MusicManager from "@components/features/MusicManager.astro";
-// 「编辑这一页」：从博客跳到后台（只有站长自己看得到，见组件里的说明）
-import AdminQuickEdit from "@components/features/AdminQuickEdit.astro";
 import SakuraEffect from "@components/features/SakuraEffect.astro";
 import ScrollProgressBar from "@components/features/ScrollProgressBar.astro";
 import TitleChange from "@components/features/TitleChange.astro"; //网页标题切换组件
@@ -657,8 +655,12 @@ const siteLang = lang.replace("_", "-");
     {shouldShowTopHighlight && <div class="top-gradient-highlight" />}
     <ConfigCarrier />
     <MusicManager />
-    {/* 从博客跳后台的入口。对访客零成本：本地没有登录标记时它一个请求都不发 */}
-    <AdminQuickEdit />
+    {/*
+      这里原本挂过 <AdminQuickEdit />（前台右下角「编辑这一页」，登录后台才看得到，
+      点了跳到对应后台页）。2026-10-09 站长看到之后说「完全去掉」—— 他去掉了。
+      ⚠️ 别当成"漏了一个功能"又加回来：他明确不要前台出现任何回后台的入口。
+         后台那边那颗「本地预览 · 带 N 份改动去线上」是**另一回事**，留着。
+    */}
     <slot />
 
 
