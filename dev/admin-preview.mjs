@@ -383,7 +383,15 @@ async function handleApi(req, res, url) {
 	if (imgContents && req.method !== "GET") {
 		const rel = decodeURIComponent(imgContents[1]).split("/").map(decodeURIComponent).join("/");
 		if (!rel.startsWith("public/images/")) {
-			return json(res, { error: "本地预览不写仓库（只放行 public/images/ 下的图片）" }, 403);
+			return json(
+				res,
+				{
+					error:
+						"本地预览不写仓库（只放行 public/images/ 下的图片）。" +
+						"这里改的内容不会提交，也就不会上线 —— 要真的保存，请到线上后台：https://wwppl.dpdns.org/admin/",
+				},
+				403,
+			);
 		}
 		const body = await readJsonBody(req);
 		if (req.method === "PUT") {

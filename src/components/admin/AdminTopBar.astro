@@ -68,6 +68,27 @@ const isAdminHome = Astro.url.pathname.replace(/\/+$/, "") === "/admin";
       }
       {!isAdminHome && <span class="admin-head-sep">/</span>}
       <span class="admin-head-title">{title}</span>
+      {/*
+        ⚠️ 「本地预览」标记：**只有当你在本机那个预览服务上时才出现**。
+        为什么要有它：本地预览（127.0.0.1:4322）和线上后台长得一模一样，
+        但它**故意不往仓库写内容** —— 站长在这儿改完文章点保存，会收到一句
+        「本地预览不写仓库」，很容易以为是坏了（2026-10-09 实际发生过一次）。
+        光靠那句报错解释太晚，这里提前把"你在哪"说清楚，并给出线上后台的入口。
+        显示与否由下面那段内联脚本按 location.hostname 决定，默认 hidden 不占位。
+      */}
+      <a
+        class="admin-localtag"
+        id="admin-localtag"
+        href="https://wwppl.dpdns.org/admin/"
+        target="_blank"
+        rel="noopener"
+        title="你正在本机预览上：这里改的东西不会写进仓库。要真的保存，请到线上后台。"
+        hidden
+      >
+        <span class="admin-localtag-dot" aria-hidden="true"></span>
+        <span class="admin-localtag-text">本地预览</span>
+        <span class="admin-localtag-go">去线上后台 →</span>
+      </a>
     </div>
     <div class="admin-head-right">
       {/*
@@ -120,6 +141,43 @@ const isAdminHome = Astro.url.pathname.replace(/\/+$/, "") === "/admin";
     padding-bottom: 0.6875rem;
     border-bottom: 1px solid var(--line-soft);
   }
+  /* 「本地预览」标记：低调但看得见，窄屏只留一个小圆点+两个字 */
+  .admin-localtag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    margin-left: 0.5rem;
+    /* ⚠️ 这是个可点元素，高度要过 24px 的触控下限（0.125rem 时实测只有 23px） */
+    min-height: 24px;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--card-bg-soft);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--text-2);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .admin-localtag:hover {
+    border-color: var(--accent-ink);
+    color: var(--accent-ink);
+  }
+  .admin-localtag-dot {
+    width: 0.375rem;
+    height: 0.375rem;
+    flex: none;
+    border-radius: 999px;
+    background: var(--warning);
+  }
+  /* 窄屏收掉"去线上后台 →"，只留点 + 本地预览 */
+  @media (max-width: 768px) {
+    .admin-localtag-go {
+      display: none;
+    }
+  }
+
   .admin-head-left {
     display: flex;
     align-items: center;
@@ -190,4 +248,17 @@ const isAdminHome = Astro.url.pathname.replace(/\/+$/, "") === "/admin";
       }
     });
   });
+
+  /* 「本地预览」标记：只在**本机预览**上露出。
+     线上后台不显示（那边点保存是真写仓库，没有这个问题）。
+     判据用 hostname 而不是端口 —— 端口可以换，主机名不会。 */
+  (function () {
+    var host = location.hostname;
+    if (host !== "127.0.0.1" && host !== "localhost" && host !== "::1") return;
+    var tag = document.getElementById("admin-localtag");
+    if (!tag) return;
+    tag.hidden = false;
+    // 顺带把页签标题也标一下，开着一排标签页时不至于认错
+    document.title = "【本地预览】" + document.title;
+  })();
 </script>
