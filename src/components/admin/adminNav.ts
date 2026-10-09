@@ -42,6 +42,8 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
 			{ name: "站点信息", href: "/admin/site/", icon: "badge" },
 			{ name: "导航菜单", href: "/admin/nav/", icon: "list-alt" },
 			{ name: "站点外观", href: "/admin/appearance/", icon: "palette" },
+			// 友链墙（/friends/）的数据在 src/data/friends.json。图标 group 与前台导航一致。
+			{ name: "友链", href: "/admin/friends/", icon: "group" },
 		],
 	},
 	{

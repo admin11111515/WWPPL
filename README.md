@@ -199,6 +199,20 @@ node _gen/_后台保存链路实测.mjs     # 保存链路：抓页面真实请�
 ⚠️ 两条环境上的坑：**超过 60~90 秒的命令放后台跑**（前台会被终止）；
 **同一个浏览器里连开好几页会累积**，跑多页体检要分批。
 
+### ⚠️⚠️ 删掉 `src/content/` 里的内容后，**必须清缓存**
+Astro 有一层**内容缓存**在 `node_modules/.astro/data-store.json`。
+删掉 `src/content/**` 里的文件**不等于**它从站上消失 —— 缓存里那条记录还在，
+下一次构建**照样把它渲染出来**（2026-10-09 实测：删了一条示例说说，
+连着重建三次都还在；把 `node_modules/.astro` 删掉再建，才真的没了）。
+
+```bash
+cd "$LOCALAPPDATA/Temp/wwppl-dev/WWPPL" && rm -rf ./node_modules/.astro ./dist
+```
+（沙箱里执行。删完重建即可；只删 `dist` **没用**。）
+
+**删任何 content 集合里的文件（文章 / 说说 / spec / 资源）之后都要走一遍。**
+删 `src/data/*.ts`、`src/config/*.ts` 这类**不是** content 集合的，不需要。
+
 ---
 
 ## 八、内容来源（记一笔，免得以后搞混）

@@ -20,10 +20,19 @@ export const friendsPageConfig: FriendsPageConfig = {
 	randomizeSort: false,
 };
 
+// 友链：**接口在 types 里，数据在 src/data/friends.json**
+//
+// ⚠️ 为什么数据不写在这个文件里：写在 `.ts` 里**后台就改不了** ——
+//    2026-10-09 的核查发现友链墙一直是空的，根子就是这个（第三个同类的坑：
+//    项目页、相册页、友链页全是"数据写在 .ts 里 + 后台没入口"）。
+//    现在后台 `/admin/friends/` 直接改 `src/data/friends.json`。
+//
+// ⚠️ 加字段：改 types/friendsConfig.ts 的 FriendLink + friends.json 的数据
+//    + 后台页的表单（三处一起改）。
+import friendsJson from "../data/friends.json";
+
 // 友链配置
-export const friendsConfig: FriendLink[] = [
-	// 添加你的友链
-];
+export const friendsConfig: FriendLink[] = friendsJson as FriendLink[];
 
 // 获取启用的友链并进行排序
 export const getEnabledFriends = (): FriendLink[] => {

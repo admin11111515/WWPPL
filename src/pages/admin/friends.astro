@@ -1,0 +1,416 @@
+---
+// 友链 —— 读写仓库里的 src/data/friends.json
+//
+// 为什么会有这一页：友链墙（/friends/）**一直是空的**（"暂无友情链接"）。
+// 查下去根子和项目页、相册页一模一样 —— 数据写死在 `src/config/friendsConfig.ts`
+// 里的 `friendsConfig: FriendLink[] = []`，后台**没有任何地方能加友链**。
+// 数据搬到 `friends.json` 之后，这一页就是它唯一的编辑入口。
+//
+// 保存后提交进仓库，Cloudflare 重新构建，/friends/ 跟着变。
+import AdminTheme from "@/components/admin/AdminTheme.astro";
+import AdminAuthGate from "@/components/admin/AdminAuthGate.astro";
+import AdminTopBar from "@/components/admin/AdminTopBar.astro";
+import { adminBodyClass, adminHtmlClass } from "@/components/admin/adminShell";
+import { externalPostsConfig } from "@/config/externalPostsConfig";
+import { uiIcon } from "@/constants/ui-icons";
+
+/** 这个页面读写仓库里的哪个文件 */
+const target = {
+	owner: externalPostsConfig.owner,
+	repo: externalPostsConfig.repo,
+	branch: externalPostsConfig.branch,
+	path: "src/data/friends.json",
+};
+
+/**
+ * 页面里要用的图标。
+ * ⚠️ 必须在 `scripts/generate-icons.js` 的 EXPLICIT_ICONS 白名单里 ——
+ *    `uiIcon()` 对不在名单里的名字**静默返回空串**（按钮在、里面什么都没有）。
+ * 后台页脚本是 `is:inline` 不能用 import，所以构建期渲染好、用 data 属性传进去。
+ */
+const rowIcons = {
+	up: uiIcon("material-symbols:arrow-upward"),
+	down: uiIcon("material-symbols:arrow-downward"),
+	del: uiIcon("material-symbols:delete"),
+};
+---
+
+<html lang="zh-CN" class={adminHtmlClass}>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>友链 · 后台</title>
+  {/* 后台是站长自用界面，不该出现在搜索结果里（sitemap 中同样已剔除） */}
+  <meta name="robots" content="noindex, nofollow" />
+  <AdminTheme />
+  <AdminAuthGate />
+  <style is:inline>
+    /* ===== 只放这一页特有的排版，通用部分在 src/styles/admin.css ===== */
+
+    /* ⚠️ 宽度必须声明在 `.container` 自己身上；写 `#admin-main { --admin-content-max }`
+       是死代码（admin.css 那条 1280 会压掉它，实测过）。详见 admin.css「3. 宽度容器」。 */
+    #admin-main > .container {
+      --admin-content-max: 820px;
+    }
+
+    .fr-item {
+      border: 1px solid var(--line-soft);
+      border-radius: var(--r-lg);
+      padding: var(--sp-3) var(--sp-4) var(--sp-4);
+      margin-bottom: var(--sp-3);
+      background: var(--card-bg);
+    }
+    .fr-item.off { opacity: 0.55; }
+    .fr-head {
+      display: flex; align-items: center; gap: var(--sp-2);
+      margin-bottom: var(--sp-3);
+      padding-bottom: var(--sp-2);
+      border-bottom: 1px solid var(--line-soft);
+    }
+    .fr-no { font-size: 0.6875rem; font-weight: 700; color: var(--text-3); min-width: 1.5rem; }
+    .fr-avatar {
+      width: 1.5rem; height: 1.5rem; flex: none;
+      border-radius: var(--r-full);
+      border: 1px solid var(--line-soft);
+      object-fit: cover;
+      background: var(--card-bg-soft);
+    }
+    .fr-head .fr-title {
+      flex: 1; min-width: 0;
+      font-size: 0.8125rem; font-weight: 700; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .fr-tag {
+      flex: none;
+      padding: 0 0.375rem;
+      border-radius: var(--r-sm);
+      background: var(--btn-regular-bg);
+      color: var(--text-2);
+      font-size: 0.625rem;
+      line-height: 1.35rem;
+    }
+    .fr-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--sp-2) var(--sp-4);
+    }
+    .fr-grid .wide { grid-column: 1 / -1; }
+    @media (max-width: 720px) { .fr-grid { grid-template-columns: 1fr; } }
+    .fr-label {
+      display: block; font-size: 0.6875rem; font-weight: 700;
+      color: var(--text-3); margin-bottom: 0.25rem;
+    }
+    .fr-check {
+      display: flex; align-items: center; gap: 0.4375rem;
+      font-size: 0.75rem; color: var(--text-2);
+      min-height: 24px; cursor: pointer;
+    }
+    .fr-empty {
+      padding: var(--sp-8) var(--sp-4);
+      text-align: center; font-size: 0.8125rem; color: var(--text-3);
+    }
+  </style>
+</head>
+<body class={adminBodyClass}>
+
+  <div id="admin-main">
+    <AdminTopBar title="友链" />
+
+    <div class="container">
+      <div class="card">
+        <div class="page-lead">
+          <span class="lead-icon" set:html={uiIcon("fluent-color:link-24")} />
+          <span>
+            这里改的是前台 <b>/friends/</b> 那页的友链墙。保存后提交到仓库，
+            Cloudflare 重新构建（约一两分钟）才生效。
+            <br />头像建议先在「图片库」上传再粘路径，也可以直接填对方站点的图片地址。
+            权重数字越大排得越前。
+          </span>
+        </div>
+
+        <div id="fr-list"></div>
+
+        <div class="save-row" style="margin-top: 1rem;">
+          <button class="btn" type="button" onclick="addFriend()">+ 添加一条友链</button>
+        </div>
+
+        {/* ⚠️ id 必须是 save-btn / dirty-hint（全局 Ctrl/⌘+S 与悬浮保存条靠它们找）；
+              而且一开始就得 disabled —— 数据还没读回来时不该能点。 */}
+        <div class="save-row">
+          <button class="btn btn-primary" id="save-btn" onclick="saveFriends()" disabled>保存并生效</button>
+          <button class="btn btn-ghost" type="button" onclick="reloadFromRepo()">还原成仓库里的版本</button>
+          <span class="dirty-hint" id="dirty-hint"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  {/* ⚠️ admin-github.js 不能漏：WBGitHub 是它挂上去的。漏了的表现是
+         「点保存毫无反应、状态栏永远停在正在读取」——TypeError 落在 .then() 链里，
+         只变成一条没人接的 rejection。 */}
+  <script is:inline src="/js/admin-github.js"></script>
+  <script is:inline src="/js/editor-commons.js"></script>
+  <script is:inline data-target={JSON.stringify(target)} data-row-icons={JSON.stringify(rowIcons)}>
+    var _script = document.currentScript;
+    var TARGET = JSON.parse(_script.getAttribute("data-target") || "{}");
+    var ICONS = JSON.parse(_script.getAttribute("data-row-icons") || "{}");
+
+    // ===== 工具 =====
+    function $(id) { return document.getElementById(id); }
+    function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+    function toast(msg, type) {
+      var el = $("toast"); el.textContent = msg; el.className = "toast " + type + " show";
+      clearTimeout(el._t); el._t = setTimeout(function () { el.className = "toast"; }, 3200);
+    }
+    function setStatus(ok, text) { $("status-dot").className = "status-dot " + (ok ? "ok" : "err"); $("status-text").textContent = text; }
+    function b64EncodeUnicode(str) { return btoa(unescape(encodeURIComponent(str))); }
+    function b64DecodeUnicode(str) { return decodeURIComponent(escape(atob(str))); }
+
+    // ===== 状态 =====
+    var data = [];        // 当前编辑中的友链数组
+    var fileSha = "";
+    var cleanSnapshot = "";
+
+    function snapshot() { return JSON.stringify(data); }
+    function isDirty() { return snapshot() !== cleanSnapshot; }
+    function markClean() { cleanSnapshot = snapshot(); updateHint(); syncSaveBtn(); }
+    function updateHint() {
+      var el = $("dirty-hint");
+      if (!el) return;
+      var dirty = isDirty();
+      el.textContent = dirty ? "有改动还没保存" : "";
+      el.className = "dirty-hint" + (dirty ? " dirty" : "");
+      syncSaveBtn();
+    }
+    function syncSaveBtn() {
+      var b = $("save-btn");
+      if (!b) return;
+      var dirty = isDirty();
+      b.disabled = !dirty;
+      b.title = dirty ? "" : "还没有改动可保存";
+    }
+
+    // ===== 渲染 =====
+    function render() {
+      var box = $("fr-list");
+      if (!data.length) {
+        box.innerHTML = '<div class="fr-empty">还没有友链。点下面的「+ 添加一条友链」开始。<br />' +
+          '（前台 /friends/ 现在显示的是"暂无友情链接"，加上第一条之后就会变成友链卡片。）</div>';
+        updateHint();
+        return;
+      }
+      box.innerHTML = data.map(function (f, i) {
+        return '' +
+          '<div class="fr-item' + (f.enabled === false ? " off" : "") + '" data-i="' + i + '">' +
+            '<div class="fr-head">' +
+              '<span class="fr-no">#' + (i + 1) + '</span>' +
+              (f.imgurl ? '<img class="fr-avatar" src="' + esc(f.imgurl) + '" alt="" onerror="this.style.opacity=0.2" />' : '<span class="fr-avatar"></span>') +
+              '<span class="fr-title">' + (esc(f.title) || "（还没填名字）") + '</span>' +
+              (f.enabled === false ? '<span class="fr-tag">已隐藏</span>' : "") +
+              '<button class="btn-icon" type="button" title="上移" aria-label="上移" data-move="-1" data-i="' + i + '">' + ICONS.up + '</button>' +
+              '<button class="btn-icon" type="button" title="下移" aria-label="下移" data-move="1" data-i="' + i + '">' + ICONS.down + '</button>' +
+              '<button class="btn-icon is-danger" type="button" title="删除这条" aria-label="删除这条" data-del="1" data-i="' + i + '">' + ICONS.del + '</button>' +
+            '</div>' +
+            '<div class="fr-grid">' +
+              '<div><label class="fr-label" for="ft' + i + '">站点名（必填）</label>' +
+                '<input type="text" class="input-single" id="ft' + i + '" data-k="title" data-i="' + i + '" value="' + esc(f.title) + '" placeholder="例：某某的小站" maxlength="30" /></div>' +
+              '<div><label class="fr-label" for="fu' + i + '">站点地址（必填）</label>' +
+                '<input type="url" class="input-single" id="fu' + i + '" data-k="siteurl" data-i="' + i + '" value="' + esc(f.siteurl) + '" placeholder="https://" /></div>' +
+              '<div><label class="fr-label" for="fi' + i + '">头像地址</label>' +
+                '<input type="text" class="input-single" id="fi' + i + '" data-k="imgurl" data-i="' + i + '" value="' + esc(f.imgurl) + '" placeholder="/images/... 或 https://" /></div>' +
+              '<div><label class="fr-label" for="fw' + i + '">权重（越大越靠前）</label>' +
+                '<input type="number" class="input-single" id="fw' + i + '" data-k="weight" data-i="' + i + '" value="' + esc(f.weight == null ? 0 : f.weight) + '" step="1" /></div>' +
+              '<div class="wide"><label class="fr-label" for="fd' + i + '">一句话介绍</label>' +
+                '<input type="text" class="input-single" id="fd' + i + '" data-k="desc" data-i="' + i + '" value="' + esc(f.desc) + '" maxlength="80" placeholder="ta 的站点是写什么的" /></div>' +
+              '<div><label class="fr-label" for="fg' + i + '">标签（用逗号分隔）</label>' +
+                '<input type="text" class="input-single" id="fg' + i + '" data-k="tags" data-i="' + i + '" value="' + esc((f.tags || []).join("，")) + '" placeholder="技术，博客" /></div>' +
+              '<div><label class="fr-check"><input type="checkbox" data-k="enabled" data-i="' + i + '"' + (f.enabled === false ? "" : " checked") + ' /> 在友链墙上显示</label></div>' +
+            '</div>' +
+          '</div>';
+      }).join("");
+      updateHint();
+    }
+
+    // ===== 编辑 =====
+    function splitList(v) {
+      return String(v || "").split(/[,，、]/).map(function (s) { return s.trim(); })
+        .filter(function (s, i, a) { return s && a.indexOf(s) === i; });
+    }
+
+    document.addEventListener("input", function (e) {
+      var el = e.target;
+      if (!el || !el.hasAttribute || !el.hasAttribute("data-k")) return;
+      var i = Number(el.getAttribute("data-i")), k = el.getAttribute("data-k");
+      if (!data[i]) return;
+      if (k === "tags") data[i][k] = splitList(el.value);
+      else if (k === "weight") data[i][k] = Number(el.value) || 0;
+      else {
+        data[i][k] = el.value;
+        // 名字或头像变了，列表顶上那行跟着变（头像也换，省得对不上）
+        if (k === "title" || k === "imgurl") {
+          var item = $("fr-list").querySelector('.fr-item[data-i="' + i + '"]');
+          if (item) {
+            if (k === "title") { var t = item.querySelector(".fr-title"); if (t) t.textContent = el.value || "（还没填名字）"; }
+            if (k === "imgurl") { var a = item.querySelector(".fr-avatar"); if (a && a.tagName === "IMG") a.src = el.value; }
+          }
+        }
+      }
+      updateHint();
+    });
+
+    document.addEventListener("change", function (e) {
+      var el = e.target;
+      if (!el || !el.hasAttribute || !el.hasAttribute("data-k")) return;
+      if (el.type !== "checkbox") return;
+      var i = Number(el.getAttribute("data-i")), k = el.getAttribute("data-k");
+      if (!data[i]) return;
+      data[i][k] = el.checked;
+      render();   // 「已隐藏」那个标记也要跟着变
+    });
+
+    document.addEventListener("click", function (e) {
+      var el = e.target.closest ? e.target.closest("[data-move],[data-del]") : null;
+      if (!el) return;
+      var i = Number(el.getAttribute("data-i"));
+      if (el.hasAttribute("data-del")) {
+        if (!confirm("删掉「" + (data[i].title || "这条友链") + "」？删完还要点保存才真的生效。")) return;
+        data.splice(i, 1);
+        render();
+        return;
+      }
+      var j = i + Number(el.getAttribute("data-move"));
+      if (j < 0 || j >= data.length) return;
+      var t = data[i]; data[i] = data[j]; data[j] = t;
+      render();
+    });
+
+    function addFriend() {
+      data.push({ title: "", imgurl: "", desc: "", siteurl: "", tags: [], weight: 0, enabled: true });
+      render();
+      var items = $("fr-list").querySelectorAll(".fr-item");
+      var last = items.length - 1;
+      if (items.length) items[last].scrollIntoView({ block: "center" });
+      var t = document.getElementById("ft" + last);
+      if (t) t.focus();
+    }
+
+    // ===== 读 / 写仓库 =====
+    function normalize(parsed) {
+      if (!Array.isArray(parsed)) return [];
+      return parsed.map(function (f) {
+        return {
+          title: f.title || "",
+          imgurl: f.imgurl || "",
+          desc: f.desc || "",
+          siteurl: f.siteurl || "",
+          tags: Array.isArray(f.tags) ? f.tags : [],
+          weight: Number(f.weight) || 0,
+          enabled: f.enabled !== false,
+        };
+      });
+    }
+
+    function loadFromRepo() {
+      setStatus(false, "正在读取仓库里的 friends.json…");
+      return WBGitHub.getFile({
+        owner: TARGET.owner, repo: TARGET.repo, branch: TARGET.branch, path: TARGET.path
+      }).then(function (file) {
+        if (!file) {
+          setStatus(false, "仓库里没找到 " + TARGET.path);
+          toast("没读到 " + TARGET.path + "，检查一下路径", "err");
+          return;
+        }
+        fileSha = file.sha || "";
+        var text = b64DecodeUnicode(String(file.content || "").replace(/\s/g, ""));
+        var parsed;
+        try {
+          parsed = JSON.parse(text);
+        } catch (err) {
+          // 解析不了绝不写回去：一写就把原文件覆盖成空的了
+          setStatus(false, "文件内容不是合法 JSON，没有改动任何东西");
+          toast("读出来的内容解析不了：" + err.message, "err");
+          return;
+        }
+        data = normalize(parsed);
+        render();
+        markClean();
+        setStatus(true, "已连接（" + data.length + " 条友链）");
+      }).catch(function (err) {
+        setStatus(false, err.message);
+      });
+    }
+
+    function saveFriends() {
+      // 保存前当面判：站点名和地址是必填的（前台的卡片没这两样就是个空壳）
+      for (var i = 0; i < data.length; i++) {
+        if (!String(data[i].title || "").trim()) {
+          toast("第 " + (i + 1) + " 条还没填站点名", "err");
+          focusItem(i, "ft");
+          return;
+        }
+        if (!String(data[i].siteurl || "").trim()) {
+          toast("第 " + (i + 1) + " 条还没填站点地址", "err");
+          focusItem(i, "fu");
+          return;
+        }
+      }
+
+      var text = JSON.stringify(data, null, "\t") + "\n";
+      var btn = $("save-btn");
+      btn.disabled = true; btn.textContent = "保存中…";
+      setStatus(false, "正在提交到仓库…");
+
+      WBGitHub.putFile({
+        owner: TARGET.owner, repo: TARGET.repo, branch: TARGET.branch, path: TARGET.path,
+        content: b64EncodeUnicode(text),
+        message: "chore: 更新友链",
+        sha: fileSha || undefined
+      }).then(function (res) {
+        fileSha = (res && res.content && res.content.sha) || fileSha;
+        markClean();
+        setStatus(true, "已提交，等 Cloudflare 重新构建");
+        toast("已保存。Cloudflare 重新构建后 /friends/ 生效（约一两分钟）", "ok");
+      }).catch(function (err) {
+        setStatus(false, err.message);
+        toast(err.message, "err");
+      }).then(function () {
+        btn.textContent = "保存并生效";
+        syncSaveBtn();
+      });
+    }
+
+    function focusItem(i, prefix) {
+      var box = $("fr-list").querySelector('.fr-item[data-i="' + i + '"]');
+      if (box) box.scrollIntoView({ block: "center" });
+      var el = document.getElementById(prefix + i);
+      if (el) el.focus();
+    }
+
+    function reloadFromRepo() {
+      if (isDirty() && !confirm("现在有没保存的改动，还原会丢掉它们。继续？")) return;
+      loadFromRepo();
+    }
+
+    // ===== 初始化 =====
+    function checkAuth() {
+      return fetch("/api/auth/status")
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (!d.authed) { window.location.href = "/admin/"; return false; }
+          return true;
+        })
+        .catch(function () { window.location.href = "/admin/"; return false; });
+    }
+    function doLogout() {
+      localStorage.removeItem("admin_auth");
+      fetch("/api/auth/logout", { method: "POST" }).catch(function () {});
+      window.location.href = "/admin/";
+    }
+
+    WBEditor.guardUnsavedChanges(isDirty);
+    checkAuth().then(function (ok) { if (ok) loadFromRepo(); });
+  </script>
+</body>
+</html>

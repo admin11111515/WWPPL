@@ -55,6 +55,7 @@ const EXPLICIT_ICONS = [
 	// ⚠️ chevron-right 本来就有、chevron-left 没有 —— 只加一边的话另一边会
 	//    **静默渲染成空按钮**（uiIcon 对非白名单名返回空串，不报错）。
 	"material-symbols:chevron-left", // 往左
+	"material-symbols:group", // 友链（前台导航也用这个）
 	// 字段标签
 	"fluent-color:document-text-24", // 内容
 	"fluent-color:image-24", // 图片（带外框，用于字段标签）
