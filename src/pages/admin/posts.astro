@@ -451,6 +451,19 @@ const postsConfig = JSON.stringify(externalPostsConfig);
     var draftStore = WBEditor.createDraftStore("post");
     var cleanSnapshot = "";
 
+    /**
+     * 保存成功后要一直挂在状态栏上的那句话。
+     *
+     * 为什么需要它：文章是**静态生成**的 —— 提交进仓库不等于网站上已经变了，
+     * Cloudflare 还要重新构建一遍（实测约 2~4 分钟）。而保存成功后这里会立刻
+     * `loadPosts()` 刷新列表，顺手把状态栏改成「已连接 · N 篇」，
+     * **把"还没生效"这个事实冲掉** —— 站长就会看到"写着保存成功、网站上却没有"。
+     * 所以把提示存下来，让 loadPosts 优先显示它。
+     * 其它后台页（站点信息/导航/页面/站点外观/项目/相册/友链）早就是这么说的，
+     * 只有文章页漏了；说说页不用重建（数据存 Gist、前台运行时拉），所以它不提示是对的。
+     */
+    var pendingNotice = "";
+
     function $(id) { return document.getElementById(id); }
     function esc(t) { var d = document.createElement("div"); d.textContent = t; return d.innerHTML; }
     function toast(msg, type) {
@@ -546,7 +559,8 @@ const postsConfig = JSON.stringify(externalPostsConfig);
           });
           renderList();
           fillSuggestions();
-          setStatus(true, "已连接 · " + posts.length + " 篇");
+          // 刚保存完时优先显示"还没生效"那句，别被"已连接 · N 篇"冲掉
+          setStatus(true, pendingNotice || ("已连接 · " + posts.length + " 篇"));
           applyDeepLink();
         })
         .catch(function(e) {
@@ -992,6 +1006,9 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       if (!title) { toast("请填写标题", "err"); return; }
       if (!body) { toast("请填写正文", "err"); return; }
 
+      // 上一轮那条"等重建"的提示到这就过期了
+      pendingNotice = "";
+
       // 先把本地这份写下来：万一这次没存进仓库，内容也还在
       saveDraftNow();
       clearTimeout(autosaveTimer);
@@ -1014,6 +1031,9 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       var md = buildMarkdown();
 
       function finish(okMsg) {
+        // 提交进仓库 ≠ 网站上已经变了 —— 这句话要留在状态栏，别只写在 2.8 秒的 toast 里
+        pendingNotice = "已提交到仓库，等 Cloudflare 重新构建（约一两分钟）";
+        setStatus(true, pendingNotice);
         toast(okMsg, "ok");
         btn.disabled = false;
         btn.textContent = originalText;
@@ -1027,6 +1047,7 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       }
 
       function doPut(sha) {
+        setStatus(false, "正在提交到仓库…");
         putTextFile(newPath, md, sha, (renamingFrom || !isNew ? "更新文章: " : "发布文章: ") + title)
           .then(function() {
             editingPath = newPath;
@@ -1044,9 +1065,11 @@ const postsConfig = JSON.stringify(externalPostsConfig);
                 toast("文章已保存，但旧文件删除失败: " + e.message, "err");
               });
           })
-          .then(function() { finish(isNew ? "发布成功 ✓" : "已保存 ✓"); })
+          .then(function() { finish(isNew ? "发布成功 ✓ 网站约一两分钟后更新" : "已保存 ✓ 网站约一两分钟后更新"); })
           .catch(function(e) {
             toast("保存失败：" + e.message, "err");
+            // 别让状态栏停在「正在提交到仓库…」—— 那会变成另一种撒谎
+            setStatus(false, "提交失败，仓库没有改动");
             btn.disabled = false;
             btn.textContent = originalText;
           });
