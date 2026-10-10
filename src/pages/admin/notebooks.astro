@@ -645,6 +645,10 @@ const templatesForAdmin = (externalNotebooksConfig.templates || []).map(
         var first = names.slice().sort()[0];
         if (activateNotebook(first)) {
           $("target-notebook").textContent = first;
+          // ⚠️ 选中笔记本会改 `currentNotebook`，而它**是快照的一部分** ——
+          //    不在这儿重建基线的话，进页面什么都没改，isDirty() 就已经是真了：
+          //    离开弹「未保存」、"取消编辑"也白问一句。（2026-10-10 站长报的就是这个）
+          markClean();
         }
       }
     }
@@ -1045,6 +1049,10 @@ const templatesForAdmin = (externalNotebooksConfig.templates || []).map(
       };
     }
     function isDirty() {
+      // ⚠️ 还没建立基线时**不算有改动** —— 数据没读上来时（网慢、接口挂了）
+      //    cleanSnapshot 还是空串，照原样比会把"什么都没改"判成"有改动"，
+      //    于是离开页面就弹「未保存」，还会拦掉"取消编辑"这类操作。
+      if (!cleanSnapshot) return false;
       return JSON.stringify(snapshot()) !== cleanSnapshot;
     }
     function markClean() {
