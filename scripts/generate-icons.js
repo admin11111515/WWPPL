@@ -100,6 +100,12 @@ const EXPLICIT_ICONS = [
 	// 图片库 /admin/media/（2026-10-02 加：预览 / 上传 / 改名 / 删除 / 插入正文）
 	"material-symbols:zoom-in", // 放大预览
 	"material-symbols:content-copy", // 复制 Markdown / 复制路径
+	// ⚠️ 「复制站上地址」自己一个图标（原来和上面那个共用 content-copy，
+	//    同一排按钮里两个一模一样的图标，分不清哪个是哪个）。
+	//    **2026-10-10 补**：当时只改了页面、没加进这份清单 —— `uiIcon()` 对清单外的名字
+	//    静默返回空串，于是这颗按钮在线上一直是个**空壳**（按钮在、里面什么都没有）。
+	//    是靠 `_gen/_低级问题自检.py` 的「uiIcon 名字都在白名单」那条查出来的。
+	"material-symbols:link",
 	"material-symbols:drive-file-rename-outline", // 改名
 	"material-symbols:upload", // 上传
 	"material-symbols:refresh", // 重新加载
