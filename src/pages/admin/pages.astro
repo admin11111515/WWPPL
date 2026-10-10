@@ -333,13 +333,25 @@ const pages = [
       $("status-dot").className = "status-dot " + (ok ? "ok" : "err");
       $("status-text").textContent = text;
     }
+    /**
+     * 把保存按钮的"能不能点"和"为什么不能点"跟**此刻的真实情况**对齐。
+     *
+     * ⚠️ 必须**在内容变化时也调一次**（挂在 updateHint 上）。
+     *    原来这两行只写在 `setBusy()` 里，而 `setBusy` 只在"忙碌切换"时跑 ——
+     *    进页面时算出来 `isDirty()` 还是 false，按钮就被永久设成禁用；
+     *    用户改了正文、提示条都写着"有改动还没保存"了，按钮还是灰的、
+     *    title 还写着"先选一个页面"，**改完存不了**。
+     *    （2026-10-10 交互走查实测到：「页面」页正文能写、按钮点不动。）
+     */
+    function syncSaveBtn() {
+      var b = $("save-btn");
+      var noPage = !current; // 没选页面就不该存
+      b.disabled = loading || noPage || !isDirty(); // 没有改动也没必要存（空提交会白烧一次构建）
+      b.title = noPage ? "先选一个页面" : loading ? "正在读取仓库里的内容…" : isDirty() ? "" : "还没有改动可保存";
+    }
     function setBusy(on) {
       loading = on;
-      // ⚠️ 这里的禁用有两层理由，要**一起算**：
-      //   a) 这一页自己的：没选页面就不该存
-      //   b) 通用的：没有改动也没必要存（空提交会白烧一次 Cloudflare 构建）
-      $("save-btn").disabled = on || !current || !isDirty();
-      $("save-btn").title = (!current || on) ? "先选一个页面" : (isDirty() ? "" : "还没有改动可保存");
+      syncSaveBtn();
       $("page-text").disabled = on;
     }
 
@@ -383,6 +395,8 @@ const pages = [
       var dirty = isDirty();
       el.textContent = dirty ? "有改动还没保存" : "";
       el.className = "dirty-hint" + (dirty ? " dirty" : "");
+      // ⚠️ 内容一变就要重算按钮 —— 不然会出现"提示条说有改动、按钮却是灰的"这种自相矛盾
+      syncSaveBtn();
       updateCount();
     }
     function markClean() {
