@@ -1,6 +1,6 @@
 ---
 title: "周末去了趟海边"
-published: 2026-09-14
+published: 2026-09-05
 tags: ["生活", "汕头", "海边"]
 category: "生活"
 description: "骑车四十分钟，在防波堤上坐了三个小时。"
