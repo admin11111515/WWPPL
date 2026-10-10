@@ -377,7 +377,15 @@ const mediaIcons = {
           toast("正在上传 " + files.length + " 张…", "ok");
           Promise.all(files.map(function (f) {
             return WBMedia.upload(f).then(function (r) { al.photos.push(r.url); }).catch(function (err) { toast("上传失败：" + err.message, "err"); });
-          })).then(function () { render(); toast("传好了（重新构建后站上生效）", "ok"); });
+          })).then(function () {
+            render();
+            toast(
+              WBGitHub.isLocalPreview
+                ? "照片只放在本机预览里 —— 没进仓库，线上看不到。要真用它们，请在线上后台重传一次"
+                : "传好了（重新构建后站上生效）",
+              WBGitHub.isLocalPreview ? "err" : "ok",
+            );
+          });
         };
         inp.click();
       }

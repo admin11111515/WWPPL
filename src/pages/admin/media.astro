@@ -643,7 +643,13 @@ const ICONS = {
             return WBGitHub.deleteFile({ owner: T.owner, repo: T.repo, branch: T.branch, path: it.path, sha: it.sha, message: "图片改名（删旧）：" + it.name });
           });
         })
-        .then(function () { toast("改名完成 ✓（重建后生效）", "ok"); return loadAll(); })
+        .then(function () {
+          toast(
+            WBGitHub.isLocalPreview ? "本机预览里改了名 —— 没进仓库，线上还是原名" : "改名完成 ✓（重建后生效）",
+            WBGitHub.isLocalPreview ? "err" : "ok",
+          );
+          return loadAll();
+        })
         .catch(function (e) { toast("改名失败：" + (e && e.message ? e.message : e), "err"); });
     };
 
@@ -787,7 +793,12 @@ const ICONS = {
               });
               setStatus(true, "已连接 · " + all.length + " 张");
               renderMedia();
-              toast("上传好了 ✓ 复制 Markdown 就能贴进正文（重建后站上生效）", "ok");
+              toast(
+                WBGitHub.isLocalPreview
+                  ? "这张图只放在本机预览里 —— 没进仓库，线上看不到。要真用它，请在线上后台重传一次"
+                  : "上传好了 ✓ 复制 Markdown 就能贴进正文（重建后站上生效）",
+                WBGitHub.isLocalPreview ? "err" : "ok",
+              );
             });
           });
         })

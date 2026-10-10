@@ -464,6 +464,83 @@ const postsConfig = JSON.stringify(externalPostsConfig);
      */
     var pendingNotice = "";
 
+    /**
+     * 「到底什么时候真的上线了」
+     * ============================================================
+     * 只有「约一两分钟」还是让人干等 —— 那就干脆去问 GitHub：这次提交的构建跑完没有。
+     * 后台本来就有 GitHub 代理，读一次 check-runs 就行（实测令牌读得到，
+     * 名字是 `Workers Builds: firefly`）。
+     *
+     * ⚠️ 读不到就**退回那句静态说明**，绝不猜。宁可说"约一两分钟"，
+     *    也不能把"读不到状态"说成"已经上线了"。
+     * ⚠️ 进度写在 localStorage：保存完关掉页面、过会儿再回来，它接着报。
+     */
+    var BUILD_WATCH_KEY = "wb-build-watch";
+    var buildTimer = null;
+
+    function setNotice(text, ok) {
+      pendingNotice = text;
+      setStatus(ok !== false, text);
+    }
+    function readBuildWatch() {
+      try { return JSON.parse(localStorage.getItem(BUILD_WATCH_KEY) || "null"); } catch (e) { return null; }
+    }
+    function writeBuildWatch(w) {
+      try {
+        if (w) localStorage.setItem(BUILD_WATCH_KEY, JSON.stringify(w));
+        else localStorage.removeItem(BUILD_WATCH_KEY);
+      } catch (e) { /* 存不了就只在本次会话里跟 */ }
+    }
+    function fmtDur(ms) {
+      var s = Math.max(0, Math.round(ms / 1000));
+      var m = Math.floor(s / 60);
+      return m ? m + " 分 " + (s % 60) + " 秒" : s + " 秒";
+    }
+    var NOTICE_WAIT = "已提交到仓库，等 Cloudflare 重新构建（约一两分钟）";
+
+    function stopBuildWatch() {
+      writeBuildWatch(null);
+      clearTimeout(buildTimer);
+      buildTimer = null;
+    }
+    /** 提交成功后开始盯这次提交的构建 */
+    function startBuildWatch(commitSha) {
+      writeBuildWatch({ sha: commitSha, t0: Date.now(), tries: 0 });
+      pollBuild();
+    }
+    function pollBuild() {
+      var w = readBuildWatch();
+      if (!w || !w.sha) return;
+      var waited = Date.now() - w.t0;
+      // 等太久就不等了（构建那边多半有别的状况），退回那句静态说明
+      if (waited > 15 * 60 * 1000) { stopBuildWatch(); setNotice(NOTICE_WAIT); return; }
+      setNotice("已提交到仓库，Cloudflare 正在构建…（已等 " + fmtDur(waited) + "）");
+      WBGitHub.request("/repos/" + CONFIG.owner + "/" + CONFIG.repo + "/commits/" + w.sha + "/check-runs")
+        .then(function(d) {
+          var runs = (d && d.check_runs) || [];
+          var mine = runs.filter(function(r) { return /^Workers Builds/.test(r.name || ""); });
+          if (!mine.length) {
+            // 构建任务过一会儿才登记出来；试几次还是没有，就当这条路走不通
+            w.tries = (w.tries || 0) + 1;
+            if (w.tries > 4) { stopBuildWatch(); setNotice(NOTICE_WAIT); return; }
+            writeBuildWatch(w);
+            buildTimer = setTimeout(pollBuild, 20000);
+            return;
+          }
+          var run = mine[0];
+          if (run.status !== "completed") { writeBuildWatch(w); buildTimer = setTimeout(pollBuild, 15000); return; }
+          stopBuildWatch();
+          if (run.conclusion === "success") setNotice("已上线 ✓（Cloudflare 构建用了 " + fmtDur(waited) + "）");
+          else if (run.conclusion === "skipped" || run.conclusion === "neutral") setNotice(NOTICE_WAIT);
+          else setNotice("构建失败（" + run.conclusion + "）—— 去 Cloudflare 控制台看日志", false);
+        })
+        .catch(function() {
+          // 读不到构建状态就不要硬猜 —— 退回静态说明，别撒谎
+          stopBuildWatch();
+          setNotice(NOTICE_WAIT);
+        });
+    }
+
     function $(id) { return document.getElementById(id); }
     function esc(t) { var d = document.createElement("div"); d.textContent = t; return d.innerHTML; }
     function toast(msg, type) {
@@ -1006,8 +1083,9 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       if (!title) { toast("请填写标题", "err"); return; }
       if (!body) { toast("请填写正文", "err"); return; }
 
-      // 上一轮那条"等重建"的提示到这就过期了
+      // 上一轮那条"等重建"的提示到这就过期了；上一轮那个构建也不用再盯（这次会建个新的）
       pendingNotice = "";
+      stopBuildWatch();
 
       // 先把本地这份写下来：万一这次没存进仓库，内容也还在
       saveDraftNow();
@@ -1031,9 +1109,9 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       var md = buildMarkdown();
 
       function finish(okMsg) {
-        // 提交进仓库 ≠ 网站上已经变了 —— 这句话要留在状态栏，别只写在 2.8 秒的 toast 里
-        pendingNotice = "已提交到仓库，等 Cloudflare 重新构建（约一两分钟）";
-        setStatus(true, pendingNotice);
+        // 提交进仓库 ≠ 网站上已经变了。有构建 sha 可盯的话，状态栏交给 pollBuild 管；
+        // 没有（或盯不了）才退回那句静态说明 —— 别把正在报的进度盖掉。
+        if (!readBuildWatch()) setNotice(NOTICE_WAIT);
         toast(okMsg, "ok");
         btn.disabled = false;
         btn.textContent = originalText;
@@ -1049,7 +1127,10 @@ const postsConfig = JSON.stringify(externalPostsConfig);
       function doPut(sha) {
         setStatus(false, "正在提交到仓库…");
         putTextFile(newPath, md, sha, (renamingFrom || !isNew ? "更新文章: " : "发布文章: ") + title)
-          .then(function() {
+          .then(function(res) {
+            // 把这次提交号记下来，好去问"Cloudflare 构建完没有"
+            var commitSha = res && res.commit && res.commit.sha;
+            if (commitSha) startBuildWatch(commitSha);
             editingPath = newPath;
             if (!renamingFrom) return;
             return moveImagesForPost(slugFromPath(renamingFrom), newSlug)
@@ -1586,8 +1667,11 @@ const postsConfig = JSON.stringify(externalPostsConfig);
           toast(
             r.dup
               ? "这张图这篇里已经传过，直接用原来那份（没有再传第二份）"
-              : "图片已上传 ✓ 预览里已经能看到了（重新构建后站上生效）",
-            "ok",
+              : WBGitHub.isLocalPreview
+                ? "这张图只放在本机预览里 —— 没进仓库，线上是裂图。要真用它，请在线上后台重传一次"
+                : "图片已上传 ✓ 预览里已经能看到了（重新构建后站上生效）",
+            // 本机那条是**警告**不是成功：红了才看得见
+            WBGitHub.isLocalPreview ? "err" : "ok",
           );
         })
         .catch(function(e) {
@@ -1824,6 +1908,8 @@ const postsConfig = JSON.stringify(externalPostsConfig);
     checkAuth().then(function(ok) {
       if (!ok) return;
       connect();
+      // 上次保存完关掉页面、这次又回来 —— 接着把那次构建报完，别让它变成"不知道生没生效"
+      if (readBuildWatch()) pollBuild();
     });
   </script>
 </body>

@@ -250,9 +250,31 @@
 		}).catch(function () { return null; });
 	}
 
+	/**
+	 * 当前是不是"本机预览"（127.0.0.1 / localhost / ::1）。
+	 *
+	 * 为什么需要它：本地预览**放行图片写入** —— 不放行的话，站长在本机点上传必然失败，
+	 * 看起来就像"图片上传功能是坏的"（2026-10-02 踩过）。但放行的代价是：
+	 * 那些图只落在本机 `dist/` 里，**没有进仓库**。
+	 * 于是「图片已上传 ✓（重建后站上生效）」这句话在本地就是**假的** ——
+	 * 他插完图、把正文带到线上发布，线上就是一张裂图。
+	 *
+	 * 所以凡是"上传成功"的提示，都得先问一句这个：
+	 * 本机就别提"站上生效"，直接说清"只在本机、线上看不到"。
+	 */
+	var isLocalPreview = (function () {
+		try {
+			var h = global.location.hostname;
+			return h === "127.0.0.1" || h === "localhost" || h === "::1";
+		} catch (e) {
+			return false;
+		}
+	})();
+
 	global.WBGitHub = {
 		API: API,
 		explain: explain,
+		isLocalPreview: isLocalPreview,
 		request: request,
 		encPath: encPath,
 		getFile: getFile,
