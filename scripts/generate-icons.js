@@ -123,6 +123,11 @@ const EXPLICIT_ICONS = [
 	"material-symbols:image", // 图片库
 	"material-symbols:open-in-new", // 侧栏「看前台」（新标签打开）
 	"material-symbols:logout", // 侧栏「退出登录」
+	// ⚠️ 2026-10-11 补：侧栏媒体组「换头像」用的是 adminNav.ts 里的短名 `account-circle`
+	//    （和首页分组那行用的 fluent-color:person-24 不是一个名字）。
+	//    短名不在清单里 → `uiIcon()` 静默返回空串 → **那颗图标是空的**。
+	//    靠 `_gen/_后台页与导航对照.py` 的「导航图标在白名单里吗」查出来的。
+	"material-symbols:account-circle", // 侧栏「换头像」
 	"material-symbols:inventory-2", // 首页分组标题「内容」
 	"material-symbols:tune", // 首页分组标题「站点」
 	"fluent-color:person-24", // 首页分组里「换头像」那一行
