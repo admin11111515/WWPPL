@@ -246,16 +246,6 @@ export const skillsData: Skill[] = [
 		color: "#F5792A",
 	},
 	{
-		id: "blender",
-		name: "Blender",
-		description: "开源 3D 建模和动画软件",
-		icon: "simple-icons:blender",
-		category: "tools",
-		level: "beginner",
-		experience: { years: 0, months: 6 },
-		color: "#F5792A",
-	},
-	{
 		id: "office",
 		name: "Office 全家桶",
 		description: "Word、Excel、PowerPoint 等办公软件",
