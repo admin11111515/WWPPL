@@ -10,7 +10,7 @@
 	"bannerText": true,
 	"pages": {
 		"friends": true,
-		"sponsor": true,
+		"sponsor": false,
 		"guestbook": true,
 		"anime": true,
 		"gallery": true,

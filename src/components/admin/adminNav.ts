@@ -40,6 +40,9 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
 		title: "站点",
 		items: [
 			{ name: "站点信息", href: "/admin/site/", icon: "badge" },
+			// 公告：全站左侧栏那条。数据在 src/data/announcement.json，
+			// 2026-10-12 之前写死在 src/config/announcementConfig.ts 里、后台改不了。
+			{ name: "公告", href: "/admin/announcement/", icon: "campaign" },
 			{ name: "导航菜单", href: "/admin/nav/", icon: "list-alt" },
 			{ name: "站点外观", href: "/admin/appearance/", icon: "palette" },
 			// 友链墙（/friends/）的数据在 src/data/friends.json。图标 group 与前台导航一致。

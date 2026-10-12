@@ -128,6 +128,13 @@ const EXPLICIT_ICONS = [
 	//    短名不在清单里 → `uiIcon()` 静默返回空串 → **那颗图标是空的**。
 	//    靠 `_gen/_后台页与导航对照.py` 的「导航图标在白名单里吗」查出来的。
 	"material-symbols:account-circle", // 侧栏「换头像」
+	// 2026-10-12：后台新增「公告」页（/admin/announcement/，读写 announcement.json）
+	//   · campaign —— 侧栏那条「公告」入口（material-symbols 短名）
+	//   · pin-24 —— 该页页头那条说明的图标
+	//     ⚠️ 本来想用 fluent-color:megaphone-24，但**这个名字不存在**，
+	//        生成器会直接非零退出（这道闸是对的）—— 改回白名单里已有的 pin-24。
+	"material-symbols:campaign",
+	"fluent-color:pin-24",
 	"material-symbols:inventory-2", // 首页分组标题「内容」
 	"material-symbols:tune", // 首页分组标题「站点」
 	"fluent-color:person-24", // 首页分组里「换头像」那一行

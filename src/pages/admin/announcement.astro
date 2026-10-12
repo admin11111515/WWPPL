@@ -1,0 +1,448 @@
+---
+// 公告 - 改的是侧栏那条公告，不用动代码。
+// 读写仓库里的 src/data/announcement.json，保存后由 Cloudflare 自动重新构建。
+//
+// ⚠️ 这一页是 2026-10-12 新建的。为什么要有它：公告原来写死在
+//    `src/config/announcementConfig.ts` 里，**后台改不了**（同类的坑：
+//    项目页/相册页/友链页/技能页/打赏页）。现在数据搬到 JSON，这一页是它唯一的编辑入口。
+//
+// ⚠️ 键名必须与 src/data/announcement.json 的键、以及 src/config/announcementConfig.ts
+//    里读的键**三处完全一致**。对不上不会报错，只是前台退回默认值 ——
+//    表现是"保存了但没生效"，极难排查。
+import AdminTheme from "@/components/admin/AdminTheme.astro";
+import AdminAuthGate from "@/components/admin/AdminAuthGate.astro";
+import AdminTopBar from "@/components/admin/AdminTopBar.astro";
+import { adminBodyClass, adminHtmlClass } from "@/components/admin/adminShell";
+import { externalPostsConfig } from "@/config/externalPostsConfig";
+// 后台不走博客 Layout，也就没有 iconify 运行时，图标用构建期内联的 SVG
+import { uiIcon } from "@/constants/ui-icons";
+
+/**
+ * 这个页面读写仓库里的哪个文件。
+ * 仓库信息与文章后台共用一份（externalPostsConfig），别在这里另写一遍 owner/repo。
+ */
+const target = {
+	owner: externalPostsConfig.owner,
+	repo: externalPostsConfig.repo,
+	branch: externalPostsConfig.branch,
+	path: "src/data/announcement.json",
+};
+
+/**
+ * 表单字段表。
+ *
+ * kind：
+ *   text  —— 单行输入框
+ *   para  —— 多行输入框，但值是**一整段字符串**（不是一行一句的数组）
+ *   bool  —— 勾选框
+ */
+const fields = [
+	{
+		key: "title",
+		label: "公告标题",
+		kind: "text",
+		maxlength: 24,
+		placeholder: "欢迎来访者",
+		hint: "显示在：侧栏公告卡片<b>顶部加粗那一行</b>。图标由组件自动补，这里只写文字。",
+	},
+	{
+		key: "content",
+		label: "公告正文",
+		kind: "para",
+		rows: 3,
+		maxlength: 120,
+		placeholder: "Hi，欢迎来到……",
+		hint: "显示在：<b>全站左侧栏的公告卡片</b>。⚠️ 正文区只有 222px 宽、16px 字号，<b>两行总宽超过约 415px 就会翻成三行</b>（末行只剩两三个字，比原来更难看）。下面的宽度提示是按同字号估算的，最终以测量脚本为准。",
+		liveHint: "width",
+	},
+	{
+		key: "closable",
+		label: "允许访客关闭这条公告",
+		kind: "bool",
+		hint: "打开后公告右上角出现关闭按钮；关闭状态记在浏览器会话里 —— 换页仍生效，关掉标签页复位。",
+	},
+	{
+		key: "linkEnable",
+		label: "显示底部的链接",
+		kind: "bool",
+		hint: "公告底部那行可点的小链接。关掉就只剩文案。",
+	},
+	{
+		key: "linkText",
+		label: "链接文字",
+		kind: "text",
+		maxlength: 16,
+		placeholder: "了解更多",
+		hint: "显示在公告底部的可点文字。",
+	},
+	{
+		key: "linkUrl",
+		label: "链接地址",
+		kind: "text",
+		maxlength: 200,
+		placeholder: "/about/",
+		hint: "站内页面写 <b>/about/</b> 这种以斜杠开头的路径；站外写完整网址（要带 https://）。地址不合法时不会保存，会当面拦住。",
+	},
+	{
+		key: "linkExternal",
+		label: "是站外链接（新标签打开）",
+		kind: "bool",
+		hint: "只有站外链接才勾：会新开一个标签页，并带上 noopener。",
+	},
+];
+
+/** 只管"这一屏怎么分节"，跟写回 JSON 没关系 */
+const groups = [
+	{ title: "公告文案", keys: ["title", "content", "closable"] },
+	{ title: "底部链接", keys: ["linkEnable", "linkText", "linkUrl", "linkExternal"] },
+];
+---
+
+<html lang="zh-CN" class={adminHtmlClass}>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>公告 · 后台</title>
+  {/* 后台是站长自用界面，不该出现在搜索结果里（sitemap 中同样已剔除） */}
+  <meta name="robots" content="noindex, nofollow" />
+  {/* 样式、字体、主题色都来自这里，页面自己的样式放在它后面 */}
+  <AdminTheme />
+  <AdminAuthGate />
+  <style is:inline>
+    /* ===== 只放这一页特有的排版，通用部分在 src/styles/admin.css =====
+       ⚠️ .page-lead / .save-row / .section-title / .dirty-hint / .switch-row
+          已经提到 admin.css 的共享层，这里**不要再写一遍**：
+          页面 <style> 在 admin.css 之后加载，写了就是本地那份赢，
+          改共享层会看着像没生效。 */
+
+    /* 这一页是短表单，内容窄一些更好读 */
+    /* ⚠️ 宽度必须声明在 `.container` 自己身上；写 `#admin-main { --admin-content-max }` 是死代码（admin.css 那条 1280 会压掉它，实测过）。详见 admin.css「3. 宽度容器」。 */
+    #admin-main > .container {
+      --admin-content-max: 720px;
+    }
+
+    /* 多行输入框比默认再高一点 */
+    .card textarea { min-height: 4.5rem; }
+
+    /* 量正文宽度的隐藏探针：与前台上公告卡片的字号一致（16px），不换行地量总宽 */
+    #width-probe {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      visibility: hidden;
+      white-space: nowrap;
+      font-size: 16px;
+      font-family: inherit;
+    }
+    #width-hint.warn { color: var(--danger); font-weight: 600; }
+  </style>
+</head>
+<body class={adminBodyClass}>
+
+  <div id="admin-main">
+    <AdminTopBar title="公告" />
+
+    <div class="container">
+      <div class="card">
+        <div class="page-lead">
+          <span class="lead-icon" set:html={uiIcon("fluent-color:pin-24")} />
+          <span>
+            这里改的是<b>全站左侧栏那条公告</b>。点「保存并生效」会提交到仓库，
+            Cloudflare 随后自动重新构建，大约一两分钟全站生效 —— 刷新一下就能看到。
+          </span>
+        </div>
+
+        <div class="form-rows">
+          {
+            groups.map((g) => (
+              <div class="form-group">
+                <div class="section-title">{g.title}</div>
+                {g.keys.map((key) => {
+                  const f = fields.find((x) => x.key === key);
+                  return f.kind === "bool" ? (
+                    // ⚠️ 用 <label> 包住整行：点「名字/说明」也能切换，不用瞄那个小方块
+                    <label class="switch-row">
+                      <div class="switch-text">
+                        <div class="switch-name">{f.label}</div>
+                        <div class="switch-hint" set:html={f.hint} />
+                      </div>
+                      <input type="checkbox" id={f.key} data-kind="bool" aria-label={f.label} />
+                    </label>
+                  ) : (
+                    <div class="field">
+                      <div class="field-label">{f.label}</div>
+                      {f.kind === "para" ? (
+                        <textarea id={f.key} rows={f.rows} maxlength={f.maxlength} placeholder={f.placeholder} />
+                      ) : (
+                        <input
+                          type="text"
+                          class="input-single"
+                          id={f.key}
+                          maxlength={f.maxlength}
+                          placeholder={f.placeholder}
+                        />
+                      )}
+                      <div class="field-hint" set:html={f.hint} />
+                      {f.liveHint === "width" && <div class="field-hint" id="width-hint" role="status" />}
+                    </div>
+                  );
+                })}
+              </div>
+            ))
+          }
+        </div>
+
+        {/* 操作区在卡片**里**（贴卡片左右边缘），不是卡片外一条通栏 */}
+        <div class="save-row">
+          <button class="btn btn-primary" id="save-btn" onclick="saveAnnouncement()" disabled>保存并生效</button>
+          <button class="btn btn-ghost" type="button" onclick="reloadFromRepo()">还原成仓库里的版本</button>
+          <span class="dirty-hint" id="dirty-hint"></span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <span id="width-probe" aria-hidden="true"></span>
+  <div class="toast" id="toast"></div>
+
+  <script is:inline src="/js/editor-commons.js"></script>
+  <script is:inline src="/js/admin-github.js"></script>
+  <script is:inline data-target={JSON.stringify(target)}>
+    var _script = document.currentScript;
+    var TARGET = JSON.parse(_script.getAttribute("data-target") || "{}");
+
+    // ===== 工具 =====
+    function $(id) { return document.getElementById(id); }
+    function toast(msg, type) {
+      var el = $("toast"); el.textContent = msg; el.className = "toast " + type + " show";
+      clearTimeout(el._t); el._t = setTimeout(function() { el.className = "toast"; }, 3200);
+    }
+    function setStatus(ok, text) {
+      $("status-dot").className = "status-dot " + (ok ? "ok" : "err");
+      $("status-text").textContent = text;
+    }
+
+    // toggleDark 与明暗初始化由 <AdminTheme /> 提供
+
+    // ===== 退出 =====
+    function doLogout() {
+      localStorage.removeItem("admin_auth");
+      fetch("/api/auth/logout", { method: "POST" }).catch(function() {});
+      window.location.href = "/admin/";
+    }
+
+    function checkAuth() {
+      return fetch("/api/auth/status")
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (!d.authed) { window.location.href = "/admin/"; return false; }
+          return true;
+        })
+        .catch(function() { window.location.href = "/admin/"; return false; });
+    }
+
+    // 中文要走 UTF-8 字节再转 base64，直接 btoa 会抛「Invalid character」
+    function b64EncodeUnicode(str) {
+      var bytes = new TextEncoder().encode(str);
+      var bin = "";
+      bytes.forEach(function(b) { bin += String.fromCharCode(b); });
+      return btoa(bin);
+    }
+    function b64DecodeUnicode(str) {
+      var bin = atob(str);
+      var bytes = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return new TextDecoder("utf-8").decode(bytes);
+    }
+
+    // ===== 字段与取值 =====
+    // 顺序与 announcement.json 的键顺序保持一致：写回去的文件 diff 才干净
+    var KEYS = ["title", "content", "closable", "linkEnable", "linkText", "linkUrl", "linkExternal"];
+    var BOOL_KEYS = { closable: true, linkEnable: true, linkExternal: true };
+
+    var cleanSnapshot = "";
+    var fileSha = "";
+
+    function toText(value) {
+      return typeof value === "string" ? value : "";
+    }
+
+    /** 把表单当前内容收成一个对象（字符串去首尾空白、勾选框取 checked） */
+    function snapshot() {
+      var out = {};
+      KEYS.forEach(function(key) {
+        var el = $(key);
+        if (!el) return;
+        out[key] = BOOL_KEYS[key] ? !!el.checked : el.value.trim();
+      });
+      return out;
+    }
+
+    /** 把仓库里读到的对象填回表单 */
+    function applyData(data) {
+      KEYS.forEach(function(key) {
+        var el = $(key);
+        if (!el) return;
+        var value = data ? data[key] : undefined;
+        if (BOOL_KEYS[key]) el.checked = value === true;
+        else el.value = toText(value);
+      });
+      updateWidthHint();
+    }
+
+    function isDirty() {
+      // ⚠️ 还没建立基线时**不算有改动** —— 数据没读上来时（网慢、接口挂了）
+      //    cleanSnapshot 还是空串，照原样比会把"什么都没改"判成"有改动"，
+      //    于是离开页面就弹「未保存」，还会拦掉"还原"这类操作。
+      if (!cleanSnapshot) return false;
+      return JSON.stringify(snapshot()) !== cleanSnapshot;
+    }
+    function markClean() {
+      cleanSnapshot = JSON.stringify(snapshot());
+      updateHint();
+    }
+    function updateHint() {
+      var el = $("dirty-hint");
+      var dirty = isDirty();
+      el.textContent = dirty ? "有改动还没保存" : "";
+      el.className = "dirty-hint" + (dirty ? " dirty" : "");
+      syncSaveBtn(dirty);
+    }
+
+    /** 没有改动时「保存并生效」禁用并给出理由（空提交会白烧一次构建） */
+    function syncSaveBtn(dirty) {
+      var b = $("save-btn");
+      if (!b) return;
+      b.disabled = !dirty;
+      b.title = dirty ? "" : "还没有改动可保存";
+    }
+
+    /**
+     * 正文宽度提示（估算）。
+     *
+     * 为什么要有：公告卡片正文区只有 222px、16px 字号，**两行总宽超过约 415px 就翻三行**，
+     * 末行只剩两三个字，比原来更难看。以前这件事只有事后跑
+     * `_gen/_公告栏断行测量.mjs` 才知道，改的时候看不见。
+     * ⚠️ 这里是**按同字号量总宽**的估算（后台与前台的字体不完全一致），
+     *    所以措辞里明说"约"，最终以测量脚本为准 —— 别把它当唯一判据。
+     */
+    function updateWidthHint() {
+      var el = $("width-hint");
+      var probe = $("width-probe");
+      if (!el || !probe) return;
+      var text = ($("content") && $("content").value) || "";
+      if (!text.trim()) { el.textContent = ""; el.className = "field-hint"; return; }
+      probe.textContent = text;
+      var w = Math.round(probe.getBoundingClientRect().width);
+      if (w <= 415) {
+        el.textContent = "约 " + w + "px —— 两行放得下（上限约 415px）";
+        el.className = "field-hint";
+      } else {
+        el.textContent = "约 " + w + "px —— 超过上限约 " + (w - 415) + "px，会翻成三行（末行只剩两三个字）。建议删到 415px 以内。";
+        el.className = "field-hint warn";
+      }
+    }
+
+    // ===== 读 =====
+    function loadFromRepo() {
+      setStatus(false, "正在读取仓库里的 announcement.json…");
+      return WBGitHub.getFile({
+        owner: TARGET.owner, repo: TARGET.repo, branch: TARGET.branch, path: TARGET.path
+      }).then(function(file) {
+        if (!file) {
+          // 正常情况不该发生：仓库里就有这个文件。真遇到说明路径写错了
+          setStatus(false, "仓库里没找到 " + TARGET.path);
+          toast("没读到 " + TARGET.path + "，检查一下路径", "err");
+          markClean();
+          return;
+        }
+        fileSha = file.sha || "";
+        var text = b64DecodeUnicode(String(file.content || "").replace(/\s/g, ""));
+        var data = null;
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          // 解析不了就绝不写回去：一写就把原文件覆盖成空的了
+          setStatus(false, "文件内容不是合法 JSON，没有改动任何东西");
+          toast("读出来的内容解析不了：" + e.message, "err");
+          return;
+        }
+        applyData(data);
+        markClean();
+        setStatus(true, "已连接");
+      }).catch(function(e) {
+        setStatus(false, e.message);
+        toast(e.message, "err");
+      });
+    }
+
+    function reloadFromRepo() {
+      if (isDirty() && !confirm("表单里还有没保存的改动，确定丢掉、重新读仓库里的版本？")) return;
+      loadFromRepo();
+    }
+
+    // ===== 写 =====
+    function saveAnnouncement() {
+      var data = snapshot();
+      if (!data.title) { toast("公告标题不能空", "err"); $("title").focus(); return; }
+      if (!data.content) { toast("公告正文不能空", "err"); $("content").focus(); return; }
+      // 站内路径（/ 开头）或完整 http(s) 网址，其它当面拦住 ——
+      // 不然前台会渲染出一个点了没反应的链接，你还要到页面上去找原因
+      if (data.linkEnable) {
+        if (!data.linkText) { toast("链接文字不能空（不想显示就关掉「显示底部的链接」）", "err"); $("linkText").focus(); return; }
+        var urlOk = /^\//.test(data.linkUrl);
+        if (!urlOk) {
+          try {
+            var parsed = new URL(data.linkUrl);
+            urlOk = parsed.protocol === "http:" || parsed.protocol === "https:";
+          } catch (e) { urlOk = false; }
+        }
+        if (!urlOk) {
+          toast("链接地址要么是以 / 开头的站内路径（如 /about/），要么是带 https:// 的完整网址", "err");
+          $("linkUrl").focus();
+          return;
+        }
+      }
+
+      var text = JSON.stringify(data, null, "\t") + "\n";
+      var btn = $("save-btn");
+      btn.disabled = true; btn.textContent = "保存中…";
+      setStatus(false, "正在提交到仓库…");
+
+      WBGitHub.putFile({
+        owner: TARGET.owner, repo: TARGET.repo, branch: TARGET.branch, path: TARGET.path,
+        content: b64EncodeUnicode(text),
+        message: "chore: 更新公告",
+        // 带上"我改的是哪一版"：文件在别处被改过时 GitHub 会用 409 挡下来
+        sha: fileSha || undefined
+      }).then(function(res) {
+        fileSha = (res && res.content && res.content.sha) || fileSha;
+        markClean();
+        setStatus(true, "已提交，等 Cloudflare 重新构建");
+        toast("已保存。Cloudflare 重新构建后全站生效（约一两分钟）", "ok");
+      }).catch(function(e) {
+        setStatus(false, e.message);
+        toast(e.message, "err");
+      }).then(function() {
+        btn.disabled = false; btn.textContent = "保存并生效";
+      });
+    }
+
+    // ===== 初始化 =====
+    KEYS.forEach(function(key) {
+      var el = $(key);
+      if (!el) return;
+      el.addEventListener("input", function() { updateHint(); updateWidthHint(); });
+      el.addEventListener("change", function() { updateHint(); updateWidthHint(); });
+    });
+    // 有改动没保存就关标签页时拦一下
+    WBEditor.guardUnsavedChanges(isDirty);
+
+    checkAuth().then(function(ok) {
+      if (!ok) return;
+      loadFromRepo();
+    });
+  </script>
+</body>
+</html>

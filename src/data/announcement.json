@@ -1,0 +1,9 @@
+{
+	"title": "欢迎来访者",
+	"content": "Hi，欢迎来到 WWPPL 的博客！这里都是我做完的事。",
+	"closable": true,
+	"linkEnable": true,
+	"linkText": "了解更多",
+	"linkUrl": "/about/",
+	"linkExternal": false
+}
