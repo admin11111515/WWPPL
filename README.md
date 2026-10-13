@@ -93,7 +93,7 @@ WWPPL_GITHUB_TOKEN=xxx python ../verify/2026-09-23/API推送.py
 
 ## 四、后台（`/admin/`）
 
-十三个页面：首页 / 说说 / 笔记 / 文章 / 页面 / 项目 / 图片库 / 相册 / 友链 / 站点信息 / **公告** / 导航菜单 / 站点外观。
+十四个页面：首页 / 说说 / 笔记 / 文章 / 页面 / 项目 / **技能** / 图片库 / 相册 / 友链 / 站点信息 / 公告 / 导航菜单 / 站点外观。
 
 - 每个后台页是**独立的 HTML 文档**，不走博客的 `Layout`，所以拿不到前台样式；
   它们统一接在 `src/styles/admin.css` 上。
@@ -102,7 +102,7 @@ WWPPL_GITHUB_TOKEN=xxx python ../verify/2026-09-23/API推送.py
 - 每页 `<html>` 上的 `data-no-swup` **不能删**（删了每次点链接会报 swup 容器不匹配）。
 - 导航只有一份来源：`src/components/admin/adminNav.ts`（侧栏和 ⌘K 命令面板共用）。
 
-**可以直接在后台改的 8 份 JSON 数据源**（清单类数据都放这里，别写死进 `src/config/*.ts`
+**可以直接在后台改的 9 份 JSON 数据源**（清单类数据都放这里，别写死进 `src/config/*.ts`
 或 `src/data/*.ts` —— 写进去后台就改不了了，这是这个项目反复踩过的一条）：
 
 | 文件 | 管什么 | 后台在哪 |
@@ -115,6 +115,7 @@ WWPPL_GITHUB_TOKEN=xxx python ../verify/2026-09-23/API推送.py
 | `src/data/gallery.json` | 相册与照片（前台 `/gallery/`） | `/admin/gallery/` |
 | `src/data/friends.json` | 友链（前台 `/friends/`） | `/admin/friends/` |
 | `src/data/announcement.json` | 侧栏公告（标题 / 正文 / 底部链接） | `/admin/announcement/` |
+| `src/data/skills.json` | 技能（前台 `/skills/`，图标名要能在 iconify 上取到） | `/admin/skills/` |
 
 ⚠️ 加一个这样的数据源要**四处一起改**：JSON + 读取器（`.ts` 只留接口与读取）+
 后台页 + `adminNav.ts` 加一条（侧栏与 ⌘K 共用那份数据，加一处两处都有）。

@@ -34,6 +34,8 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
 			// 项目页（/projects/）的数据在 src/data/projects.json，这一页是它唯一的编辑入口。
 			// 图标 inventory-2 = 作品/物品，跟"项目"这个意思对得上。
 			{ name: "项目", href: "/admin/projects/", icon: "inventory-2" },
+			// 技能页（/skills/）的数据在 src/data/skills.json；2026-10-13 之前写死在 skills.ts 里，后台改不了。
+			{ name: "技能", href: "/admin/skills/", icon: "psychology" },
 		],
 	},
 	{

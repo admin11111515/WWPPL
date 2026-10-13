@@ -134,6 +134,8 @@ const EXPLICIT_ICONS = [
 	//     ⚠️ 本来想用 fluent-color:megaphone-24，但**这个名字不存在**，
 	//        生成器会直接非零退出（这道闸是对的）—— 改回白名单里已有的 pin-24。
 	"material-symbols:campaign",
+	// 2026-10-13：后台「技能」页（/admin/skills/）的侧栏图标，与前台导航里「技能」用的同一个
+	"material-symbols:psychology",
 	"fluent-color:pin-24",
 	"material-symbols:inventory-2", // 首页分组标题「内容」
 	"material-symbols:tune", // 首页分组标题「站点」
