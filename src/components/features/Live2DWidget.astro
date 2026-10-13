@@ -199,7 +199,16 @@ function serializeMenus(menus: Props["config"]["menus"]) {
 			cursor: "grab",
 			// 触摸设备上按在桌宠身上应当是拖动，而不是滚动页面
 			touchAction: "none",
+			// 图层同时充当裁剪窗口。库“隐藏”状态条（挂在 body 上、zIndex 9998 的那根竖条）
+			// 的手法是把它往右挪一个自己的宽度，前提是它贴着视口右缘；而本图层整体
+			// 被左移了（给悬浮按钮让位），于是“挪出去”的那一下正好落在屏幕里 —— 表现就是
+			// 模型早加载完了，右边那根条还一直写着「正在加载」并转圈。
+			// 把盒子之外的东西裁掉，才是真的看不见。
+			overflow: "hidden",
 		});
+		// clip 比 hidden 干净：不建立可滚动区域（hidden 的元素仍可能被焦点滚动带偏）。
+		// 不认这个值的浏览器保留上面的 hidden。
+		layer.style.overflow = "clip";
 		document.body.appendChild(layer);
 		layer.append(root);
 		if (strip) layer.append(strip);
