@@ -161,7 +161,9 @@ const pages = [
       border-radius: var(--radius-sm);
       background: var(--btn-regular-bg);
       font-family: var(--admin-font-mono);
-      font-size: 0.9em;
+      /* 0.9em 叠在 0.75rem 上就是 10.8px —— 手机上比说明文字的设计值(11px)还小，
+         这里给个下限；桌面上本来就 10.8px，几乎看不出差别。（2026-10-13 移动端体检） */
+      font-size: max(11px, 0.9em);
     }
     /* 带代码的页面单独给一条实线警示，跟上面那条虚线说明区分开 */
     .page-lead.warn {

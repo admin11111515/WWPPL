@@ -11,8 +11,15 @@
  */
 import { siteConfig } from "@/config";
 
-/** <html> 上的类，与 Layout.astro 的 <html> 一致 */
-export const adminHtmlClass = "bg-(--page-bg) text-[14px] md:text-[16px]";
+/** <html> 上的类。
+ *
+ * ⚠️ **后台的根字号窄屏也保持 16px，不跟前台缩到 14px**（2026-10-13 移动端体检定的）。
+ *    前台的 14px 是给**阅读**用的（正文一行多几个字）；后台是**工具界面**，
+ *    而 admin.css 整套尺寸都写 rem —— 根字号一缩，所有东西跟着缩 12.5%：
+ *    13px 的入口文字变 11.375px、11px 的说明文字变 **9.625px**，
+ *    连带触控目标一起变小。手机上后台本来就该"更大"，不是更小。
+ */
+export const adminHtmlClass = "bg-(--page-bg) text-[16px]";
 
 /** <body> 上的类，与 Layout.astro 的 <body> 一致 */
 export const adminBodyClass = [

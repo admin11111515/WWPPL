@@ -79,7 +79,7 @@ export const notes = [
           ].map((item) => (
             <div class="flex items-center justify-between gap-2 rounded-lg bg-black/5 dark:bg-white/5 px-3 py-2">
               <div class="min-w-0">
-                <p class="text-[0.65rem] text-neutral-400 dark:text-neutral-500 mb-0.5">{item.label}</p>
+                <p class="text-[11px] md:text-[0.65rem] text-neutral-400 dark:text-neutral-500 mb-0.5">{item.label}</p>
                 <p class="text-xs font-medium truncate">{item.value}</p>
               </div>
               <button aria-label={`复制${item.label}`} onclick={`navigator.clipboard.writeText('${item.value.replace(/'/g, "\\'")}');this.querySelectorAll('svg')[0].classList.add('hidden');this.querySelectorAll('svg')[1].classList.remove('hidden');setTimeout(()=>{this.querySelectorAll('svg')[0].classList.remove('hidden');this.querySelectorAll('svg')[1].classList.add('hidden')},1500)`} class="shrink-0 w-7 h-7 flex items-center justify-center rounded-md bg-black/10 dark:bg-white/10 text-(--btn-content) hover:opacity-80 transition-opacity cursor-pointer">

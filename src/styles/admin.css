@@ -1460,13 +1460,8 @@ input[type="time"],
 	   压在浅底上几乎看不出来。强调色的**可见版本**是 --accent-ink。 */
 	background: var(--accent-ink);
 }
-.admin-side-icon {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	width: 1rem;
-	flex: none;
-}
+/* ⚠️ 这里原来是同一份 `.admin-side-icon` 写了两遍（先 1rem 再 1.125rem，后者生效），
+   2026-10-13 挪移动端时顺手合一：留下生效的那一份，渲染不变。 */
 .admin-side-icon {
 	display: inline-flex;
 	align-items: center;
@@ -1487,7 +1482,13 @@ input[type="time"],
 	border-top: 1px solid var(--line-soft);
 }
 
-/* 窄屏：侧栏不再占一列，改成横向滚动的一条 */
+/* ── 窄屏（≤900px）：侧栏不再占一列，改成横向滚动的一条 ─────────────
+   2026-10-13 移动端体检把它量出两个毛病，一起改掉：
+     ① 第 6 项会被**从中间切断**（「技能」显示成「技」），右端却没有"还能滑"的任何提示
+        → 两端加渐隐（`can-left`/`can-right` 两个类，由 AdminSideNav 里的脚本按滚动位置切）
+        + 滑动停在整项上（scroll-snap）+ 外边留一点 scroll-padding
+     ② 分组标签在窄屏被隐藏后，三个分组糊成一片 → 组之间补一条细分隔线
+   项高抬到 44px（手机上这是用得最多的导航；桌面那档是 30px，拇指太密）。 */
 @media (max-width: 900px) {
 	#admin-main {
 		display: block;
@@ -1504,11 +1505,63 @@ input[type="time"],
 		flex-direction: row;
 		gap: 0.25rem;
 		overflow-x: auto;
+		scroll-padding-inline: 0.75rem;
+		-webkit-overflow-scrolling: touch;
+		/* 横条不需要滚动条占高（渐隐已经说明"还有内容"） */
+		scrollbar-width: none;
+		/* ⚠️ 这里**不要**写 scroll-snap：脚本要给「当前项居中」设 scrollLeft，
+		   而 scroll-snap 会在每次滚动结束后把位置吸附回最近的吸附点 —— 两者互相打架
+		   （载入时引擎还可能先吸一次，早于脚本）。这条横向带不需要吸附：
+		   两端渐隐已经说明"还能滑"，位置由脚本算，可控。 */
+	}
+	.admin-side-nav::-webkit-scrollbar {
+		display: none;
+	}
+	/* 两端渐隐：只在"那一侧确实还有内容"时出现。
+	   ⚠️ 用 mask 而不是盖一层渐变 —— 盖层会挡住点击，mask 不会。 */
+	.admin-side-nav.can-left {
+		mask-image: linear-gradient(to right, transparent 0, #000 1.5rem, #000 100%);
+		-webkit-mask-image: linear-gradient(to right, transparent 0, #000 1.5rem, #000 100%);
+	}
+	.admin-side-nav.can-right {
+		mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 1.5rem), transparent 100%);
+		-webkit-mask-image: linear-gradient(
+			to right,
+			#000 0,
+			#000 calc(100% - 1.5rem),
+			transparent 100%
+		);
+	}
+	.admin-side-nav.can-left.can-right {
+		mask-image: linear-gradient(
+			to right,
+			transparent 0,
+			#000 1.5rem,
+			#000 calc(100% - 1.5rem),
+			transparent 100%
+		);
+		-webkit-mask-image: linear-gradient(
+			to right,
+			transparent 0,
+			#000 1.5rem,
+			#000 calc(100% - 1.5rem),
+			transparent 100%
+		);
 	}
 	.admin-side-group {
 		display: flex;
 		align-items: center;
 		gap: 0.25rem;
+	}
+	/* 分组标签藏了，用一条竖线把分组关系留住 */
+	.admin-side-group + .admin-side-group::before {
+		content: "";
+		flex: none;
+		align-self: center;
+		width: 1px;
+		height: 1.25rem;
+		margin: 0 0.5rem;
+		background: var(--line-soft);
 	}
 	.admin-side-group + .admin-side-group {
 		margin-top: 0;
@@ -1519,11 +1572,68 @@ input[type="time"],
 	.admin-side-item {
 		width: auto;
 		white-space: nowrap;
+		min-height: 2.75rem; /* 44px：手机上的主要导航，拇指够得着 */
 	}
 	.admin-side-foot {
 		flex-direction: row;
 		margin-top: 0.25rem;
 		padding-top: 0.25rem;
+	}
+}
+
+/* ── 手机上的控件尺寸（≤900px）────────────────────────────────
+   桌面那两档高度（--ctl-h 36px / --ctl-h-sm 32px）是按**鼠标**精度定的；
+   触屏上 36px 以下的密集按钮很难点中（2026-10-13 量到：手机上 <44px 的
+   可点元素 833 个，集中在列表行的图标按钮、工具栏、分段控件、筛选片）。
+
+   口径：手机上**所有可点元素 ≥44px**，例外只有正文里的行内链接
+   （那种撑到 44px 会把正文行距撕开，得不偿失）。
+   逐项验收：node _gen/_后台移动端体检.mjs（390 档 <44px 应只剩行内链接）。
+
+   ⚠️ 选择器带 `#admin-main` 是有意的：页头那些类（.admin-head 等）的样式写在
+      AdminTopBar.astro 的 <style> 里，带 Astro 作用域属性 → 同特异性时看打包顺序，
+      加一个 id 才稳（这也是项目里「页面里改 --admin-content-max 压不住」那条教训的反面用法）。 */
+@media (max-width: 900px) {
+	:root {
+		--ctl-h: 2.75rem;
+		--ctl-h-sm: 2.75rem;
+	}
+	/* 可点控件一律给 44px 的下限。
+	   ⚠️ 不靠 `:has(> svg:only-child)` 判"是不是纯图标按钮"—— 那条实测没兜住
+	      （工具栏按钮里有图标也有隐藏文字、`btn-danger-sm` 那批又被自己的 2rem 宽度按住），
+	      改成按类名一律给下限：`min-*` 只抬不缩，文字按钮本来就更宽，不受影响。 */
+	#admin-main .btn,
+	#admin-main .btn-sm,
+	#admin-main .btn-icon,
+	#admin-main .btn-icon-only,
+	#admin-main .btn-primary,
+	#admin-main .btn-danger-sm,
+	#admin-main .btn-ghost,
+	#admin-main .btn-plain,
+	#admin-main .toolbar-btn,
+	#admin-main .seg-btn,
+	#admin-main .hue-chip,
+	#admin-main .ov-item,
+	#admin-main .ov-more,
+	#admin-main .open-live,
+	#admin-main .notebook-tab,
+	#admin-main .cmdk-trigger,
+	#admin-main .admin-back,
+	#admin-main .admin-localtag {
+		min-height: 2.75rem;
+		min-width: 2.75rem;
+	}
+	/* 微标签（徽章 / 键位提示 / 列表行号）在手机上抬到 11px：
+	   这几处写的是 0.625rem（16px 根字号下 = 10px），手机上基本读不清。
+	   桌面不动 —— 它们本来就小，是桌面上的密度换来的。
+	   加 id 前缀也是为了压住各页自己的 `.fr-tag` / `.media-flag` / `.sk-tag`
+	   （那几条没带 id，特异性比 `#admin-main .x` 低）。 */
+	#admin-main .post-badge,
+	#admin-main .editor-footer kbd,
+	#admin-main .fr-tag,
+	#admin-main .media-flag,
+	#admin-main .sk-tag {
+		font-size: 11px;
 	}
 }
 

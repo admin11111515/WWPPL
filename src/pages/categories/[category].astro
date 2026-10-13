@@ -115,11 +115,17 @@ const initialLayoutClass =
     <!-- 面包屑导航 -->
     <div class="card-base px-6 py-4 mb-6">
         <nav class="flex items-center gap-2 text-sm text-30">
-            <a href="/" class="hover:text-(--primary) transition-colors">
+            <a
+                href="/"
+                class="hover:text-(--primary) transition-colors inline-flex items-center justify-center min-h-8 min-w-8 md:min-h-0 md:min-w-0"
+            >
                 <Icon is:inline name="fluent-color:home-24" class="inline-block align-middle" />
             </a>
             <span class="opacity-50">/</span>
-            <a href={getCategoryPageUrl()} class="hover:text-(--primary) transition-colors">
+            <a
+                href={getCategoryPageUrl()}
+                class="hover:text-(--primary) transition-colors inline-flex items-center min-h-8 min-w-8 justify-center md:min-h-0 md:min-w-0"
+            >
                 {i18n(I18nKey.categories)}
             </a>
             <span class="opacity-50">/</span>

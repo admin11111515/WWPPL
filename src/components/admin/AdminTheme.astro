@@ -15,8 +15,9 @@
  *                                明暗按 siteConfig.themeColor.defaultMode
  *
  * 用法：在 <head> 里放一个 <AdminTheme />。
- * 页面的 <html> 与 <body> 要带上博客同款类：
- *   <html class="bg-(--page-bg) text-[14px] md:text-[16px]">
+ * 页面的 <html> 与 <body> 要带上博客同款类（**但根字号用 adminShell.ts 的 adminHtmlClass：
+ * 后台窄屏保持 16px，不跟前台缩到 14px** —— 理由见那个文件的注释）：
+ *   <html class={adminHtmlClass}>
  *   <body class="min-h-screen enable-card-border card-follow-theme-hue">
  */
 import ConfigCarrier from "@components/layout/ConfigCarrier.astro";

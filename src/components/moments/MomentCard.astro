@@ -513,7 +513,11 @@ const formatTimeAgo = (date: Date): string => {
 		}
 
 		.meta-row {
-			font-size: 0.6875rem;
+			/* 时间 / 地点 / 标签这些元信息。0.6875rem 在桌面上是 11px，
+			   但手机上前台根字号是 14px → 只剩 9.625px，手机上太小了。
+			   写法用 max()：桌面上取 11px 不变，手机上不许小于 11px。
+			   （2026-10-13 移动端体检：它是手机档里最小的两处文字之一） */
+			font-size: max(11px, 0.6875rem);
 		}
 
 		.location {

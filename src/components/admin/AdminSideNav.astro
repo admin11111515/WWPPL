@@ -56,3 +56,53 @@ const isActive = (href) => href === here;
     </button>
   </div>
 </aside>
+
+{/*
+  窄屏（≤900px）顶部横条的两件事，纯 CSS 做不到，只能在这儿补：
+
+  ① **让人知道"还能往右滑"**。14 个入口挤成一条，右端会把当前那一项从中间切断
+     （实测：「技能」显示成「技」），看着像坏了。滚动条在手机上不可见，
+     所以按滚动位置给 `.admin-side-nav` 切 `can-left` / `can-right` 两个类，
+     由 CSS 在那一侧做渐隐（admin.css 的「窄屏：侧栏不再占一列」那段）。
+
+  ② **载入时把"我在哪一项"滚到看得见的地方**。手机上第一屏常常只能看到前 5 项，
+     如果当前页是「友链」，用户会以为导航里没有自己这一项。
+
+  ⚠️ 自己算 scrollLeft，不用 scrollIntoView —— 后者在块轴方向也可能动，
+     会把整页往上卷一下（手机上一进页面就跳一下很难受）。
+  ⚠️ 字体载入完宽度会变，得再画一次；resize 同理。
+*/}
+<script is:inline>
+  (function () {
+    var nav = document.querySelector(".admin-side-nav");
+    if (!nav) return;
+    var EDGE = 4; // 容差：1px 的亚像素差不当成"还有内容"
+
+    function paint() {
+      var max = nav.scrollWidth - nav.clientWidth;
+      nav.classList.toggle("can-left", nav.scrollLeft > EDGE);
+      nav.classList.toggle("can-right", max > EDGE && nav.scrollLeft < max - EDGE);
+    }
+
+    function centerActive() {
+      var active = nav.querySelector('[aria-current="page"]');
+      if (!active) return;
+      var navBox = nav.getBoundingClientRect();
+      var itemBox = active.getBoundingClientRect();
+      // 只改横轴：把当前项挪到横条中间（左右各留一半余量）
+      var delta = itemBox.left - navBox.left - (nav.clientWidth - itemBox.width) / 2;
+      nav.scrollLeft = Math.max(0, nav.scrollLeft + delta);
+    }
+
+    centerActive();
+    paint();
+    nav.addEventListener("scroll", paint, { passive: true });
+    window.addEventListener("resize", paint);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(paint);
+    // 兜底：图片/图标字形晚一步把宽度撑开时，再画一次
+    window.setTimeout(function () {
+      centerActive();
+      paint();
+    }, 400);
+  })();
+</script>
