@@ -178,7 +178,28 @@ if (isLocalSrcLogo) {
                 )}
                 {/* @ts-ignore */}
                 <LightDarkSwitch client:load></LightDarkSwitch>
-                <a aria-label="后台管理" href="/admin/" class="btn-plain scale-animation rounded-lg h-11 w-11 active:scale-90">
+                {/* 2026-10-14 站长定的：这颗「人像」按钮拆成两颗 ——
+                    窄屏进**关于我**，宽屏仍进**后台管理**。
+                    为什么：手机上访客看到人像只会想到"关于我/个人资料"，点进去却是后台登录页；
+                    而「关于我」当时唯一显眼的入口是 ☰ 菜单（资料卡与公告那两条在页底 3~6 屏）。
+                    ⚠️ 拆的目的是**让 aria-label 与去向一致**（一个元素没法在窄屏改 href）；
+                      后台管理的口子由 ☰ 菜单承接（见 NavMenuPanel），不吃掉任何功能：
+                      手机上进后台 = ☰ → 后台管理（两次点击）。
+                    ⚠️ 图标都用 account-circle：它本来就是"人"的意思，两处都成立，
+                      也就不必再动图标白名单。
+                    ⚠️ 显示/隐藏必须带 `!`：`.btn-plain` 在 @layer components 里写了 `flex`。 */}
+                <a
+                    aria-label="关于我"
+                    href={url("/about/")}
+                    class="btn-plain scale-animation rounded-lg h-11 w-11 active:scale-90 lg:hidden!"
+                >
+                    <Icon is:inline name="material-symbols:account-circle" class="text-[1.25rem]"></Icon>
+                </a>
+                <a
+                    aria-label="后台管理"
+                    href="/admin/"
+                    class="btn-plain scale-animation rounded-lg h-11 w-11 active:scale-90 hidden! lg:flex!"
+                >
                     <Icon is:inline name="material-symbols:account-circle" class="text-[1.25rem]"></Icon>
                 </a>
                 <button aria-label="菜单" name="Nav Menu" class="btn-plain scale-animation rounded-lg w-11 h-11 active:scale-90 lg:hidden!" id="nav-menu-switch">
