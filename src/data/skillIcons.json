@@ -1,5 +1,5 @@
 {
-	"_说明": "由 _gen/_下载技能图标.mjs 生成，供 /skills/ 构建期内联使用（别手改；改了重跑脚本）。",
+	"_说明": "iconify 图标由 _gen/_下载技能图标.mjs 生成；后台 /admin/skills/ 上传的图标也会并进来（local: 前缀）。供 /skills/ 构建期内联使用。",
 	"_来源": "https://api.iconify.design/<prefix>/<name>.svg",
 	"_为什么": "图标原来走 <iconify-icon> 运行时取，api.iconify.design 一不通整页图标全空白",
 	"icons": {

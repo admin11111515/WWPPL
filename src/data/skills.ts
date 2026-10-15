@@ -14,6 +14,8 @@
  * ⚠️ 图标名（`icon`）是 **iconify** 的名字（如 `logos:python`），而且它是
  * **构建期内联**的：名字不在 `src/data/skillIcons.json` 里，卡片上就是一块空白。
  * 后台保存时会去 iconify 把缺的 SVG 拉下来一起提交；拉不到就不让保存。
+ * 另一条路：后台「选图标」面板里能**上传自己的 SVG**（名字形如 `local:xxx`，
+ * 同样落进 skillIcons.json）—— 不用记 iconify 名字。
  */
 export interface Skill {
 	id: string;

@@ -9,6 +9,10 @@
 // ⚠️ 技能图标是**构建期内联**的：名字不在 `skillIcons.json` 里 = 卡片上一个空图标。
 //    所以保存时会去 iconify 把缺的 SVG 拉下来、一起提交；**拉不到就不让保存** ——
 //    宁可当面拦住，也不要存出一个静默的空图标。
+// ⚠️ 2026-10-15：图标选择改成**两条路**（站长：「别搞那么麻烦」）——
+//    ① 每行「选图标」→ 面板里浏览图标集全部图标，点一下就用；
+//       面板里还能**直接上传自己的 SVG**（随技能一起存进 skillIcons.json，名字带 local: 前缀）；
+//    ② 也可以照旧手填 iconify 名字（保存时自动去拉）。
 import AdminTheme from "@/components/admin/AdminTheme.astro";
 import AdminAuthGate from "@/components/admin/AdminAuthGate.astro";
 import AdminTopBar from "@/components/admin/AdminTopBar.astro";
@@ -34,6 +38,9 @@ const rowIcons = {
 	up: uiIcon("material-symbols:arrow-upward"),
 	down: uiIcon("material-symbols:arrow-downward"),
 	del: uiIcon("material-symbols:delete"),
+	// 图标选择器用：close 是「关掉预览」那颗（白名单里已有），upload 同
+	close: uiIcon("material-symbols:close"),
+	upload: uiIcon("material-symbols:upload"),
 };
 ---
 
@@ -113,6 +120,102 @@ const rowIcons = {
       padding: var(--sp-8) var(--sp-4);
       text-align: center; font-size: 0.8125rem; color: var(--text-3);
     }
+
+    /* ── 图标字段：输入框 + 「选图标」（2026-10-15 加）──────────────
+       手填 iconify 名字那条路留着（老用户习惯），旁边加一个按钮走
+       「浏览 + 上传」那条路 —— 不用记名字，点一下就用。 */
+    .sk-icon-row { display: flex; align-items: flex-start; gap: 0.375rem; }
+    .sk-icon-row .input-single { flex: 1; min-width: 0; }
+    .sk-icon-row .btn { flex: none; white-space: nowrap; }
+    /* ⚠️ 这条提示**原来没有样式**（类名在 JS 里切、CSS 里没写）——
+       11px 说明文字两档：正常 --text-3（5:1），要提醒的加 ⚠ 前缀并抬到 --text-2（7.5:1）。
+       不用 --warning 写字：那个色值是按「色点」调的，当正文颜色对比度不够。 */
+    .sk-icon-hint { margin-top: 0.25rem; font-size: 0.6875rem; line-height: 1.4; color: var(--text-3); }
+    .sk-icon-hint.warn { color: var(--text-2); }
+
+    /* ── 图标选择器（浏览图标集 + 上传自己的 SVG）──────────────────
+       形态照「从图片库选一张」那套浮层（admin.css 的 .wb-picker-*），
+       但样式自带一份：那一套的宽/高是按照片墙调的，图标墙要更矮更密。 */
+    .skp-mask[hidden] { display: none; }
+    .skp-mask {
+      position: fixed; inset: 0; z-index: 70;
+      display: flex; align-items: flex-start; justify-content: center;
+      padding: 6vh var(--sp-4) var(--sp-4);
+      background: color-mix(in oklab, #000 55%, transparent);
+      -webkit-backdrop-filter: blur(2px);
+      backdrop-filter: blur(2px);
+    }
+    .skp {
+      display: flex; flex-direction: column;
+      width: min(44rem, 100%);
+      max-height: 86vh;
+      background: var(--card-bg);
+      border: 1px solid var(--line-soft);
+      border-radius: var(--radius-large);
+      box-shadow: 0 24px 60px -24px rgb(0 0 0 / 0.4);
+      overflow: hidden;
+    }
+    .skp-head {
+      display: flex; align-items: center; gap: var(--sp-2);
+      padding: 0.875rem 1.125rem;
+      border-bottom: 1px solid var(--line-soft);
+    }
+    .skp-title { font-size: 0.9375rem; font-weight: 700; }
+    .skp-sub {
+      flex: 1; min-width: 0;
+      font-size: 0.75rem; color: var(--text-3);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .skp-tools {
+      display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap;
+      padding: 0.75rem 1.125rem;
+      border-bottom: 1px solid var(--line-soft);
+    }
+    .skp-tools .input-single { flex: 1; min-width: 8rem; max-width: 16rem; }
+    .skp-count { font-size: 0.6875rem; color: var(--text-3); }
+    .skp-body { flex: 1; min-height: 12rem; overflow-y: auto; padding: 0.875rem 1.125rem 1.125rem; }
+    .skp-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(4.75rem, 1fr));
+      gap: 0.5rem;
+    }
+    .skp-cell {
+      position: relative;
+      display: flex; flex-direction: column; align-items: center; gap: 0.25rem;
+      padding: 0.5rem 0.25rem 0.375rem;
+      border: 1px solid var(--line-soft);
+      border-radius: var(--r-md);
+      background: var(--card-bg-soft);
+      cursor: pointer;
+      transition: border-color 0.15s, background-color 0.15s;
+    }
+    .skp-cell:hover { border-color: var(--accent-ink); }
+    .skp-cell.sel {
+      border-color: var(--accent-ink);
+      background: color-mix(in oklab, var(--primary) 12%, transparent);
+    }
+    .skp-cell:focus-visible { outline: 2px solid var(--primary-ring); outline-offset: 2px; }
+    .skp-ico { display: inline-flex; align-items: center; justify-content: center; width: 1.75rem; height: 1.75rem; }
+    .skp-ico svg { width: 1.5rem; height: 1.5rem; }
+    .skp-name {
+      max-width: 100%;
+      font-size: 0.625rem; line-height: 1.3; color: var(--text-3);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    /* 「新」角标：本轮上传、还没保存进仓库的 */
+    .skp-new {
+      position: absolute; top: 0.1875rem; right: 0.1875rem;
+      padding: 0 0.25rem;
+      border-radius: var(--r-sm);
+      background: var(--accent-solid);
+      color: var(--on-accent);
+      font-size: 0.5625rem; line-height: 1.25;
+    }
+    .skp-foot {
+      padding: 0.625rem 1.125rem;
+      border-top: 1px solid var(--line-soft);
+      font-size: 0.6875rem; color: var(--text-3);
+    }
   </style>
 </head>
 <body class={adminBodyClass}>
@@ -127,8 +230,10 @@ const rowIcons = {
           <span>
             这里改的是前台 <b>/skills/</b> 那页的技能墙。保存后提交到仓库，
             Cloudflare 重新构建（约一两分钟）才生效。
-            <br />图标名（形如 <code>logos:python</code>）在 <b>iconify.design</b> 上搜；
-            写错了这里会当面拦住，不会让你存出一个空图标。
+            <br />图标两条路：① 点每行的「选图标」—— 面板里能浏览图标集里所有图标，
+            点一下就用；也能直接<b>上传自己的 SVG</b>（随技能一起存进仓库）。
+            ② 也可以照旧手填 iconify 名字（形如 <code>logos:python</code>，保存时自动去拉）。
+            名字不对会当面拦住，不会让你存出一个空图标。
           </span>
         </div>
 
@@ -144,6 +249,32 @@ const rowIcons = {
           <button class="btn btn-primary" id="save-btn" onclick="saveSkills()" disabled>保存并生效</button>
           <button class="btn btn-ghost" type="button" onclick="reloadFromRepo()">还原成仓库里的版本</button>
           <span class="dirty-hint" id="dirty-hint"></span>
+        </div>
+      </div>
+    </div>
+
+    {/* ══ 图标选择器（2026-10-15）════════════════════════════════════
+       放在 #admin-main 里：一是手机档那条「可点元素 ≥44px」的规则按
+       `#admin-main .btn` 选择器生效，浮层里的按钮才跟着变大；
+       二是 hidden 时 `offsetParent` 为 null，各体检脚本自动跳过它。
+       z-70 与「从图片库选一张」同级，压在命令面板（90）之下。 */}
+    <div class="skp-mask" id="skp-mask" hidden>
+      <div class="skp" role="dialog" aria-modal="true" aria-label="选图标">
+        <div class="skp-head">
+          <span class="skp-title">选图标</span>
+          <span class="skp-sub" id="skp-sub"></span>
+          <button type="button" class="btn-icon" id="skp-close" aria-label="关闭" set:html={rowIcons.close}></button>
+        </div>
+        <div class="skp-tools">
+          <input type="text" class="input-single" id="skp-search" placeholder="搜图标名…" />
+          <span class="skp-count" id="skp-count"></span>
+          <button type="button" class="btn" id="skp-upload-btn">上传图标</button>
+          <input type="file" id="skp-file" accept=".svg,image/svg+xml" multiple hidden />
+        </div>
+        <div class="skp-body" id="skp-body"></div>
+        <div class="skp-foot">
+          上传的图标随这次保存一起写进仓库（src/data/skillIcons.json），名字带 <code>local:</code> 前缀；
+          只支持 SVG，单个别超过 30KB。
         </div>
       </div>
     </div>
@@ -184,6 +315,10 @@ const rowIcons = {
     var iconSetRaw = null; // 原对象（保留 _说明/_来源/_为什么，写回去时别丢）
     var iconSetSha = "";
 
+    // 本轮上传、还没保存进仓库的图标名（local: 前缀）。
+    // 它和数据改动是两本账：只上传不选也算「有东西要保存」，所以 dirty 判定要捎上它。
+    var pendingUploads = [];
+
     function snapshot() { return JSON.stringify(data); }
     function isDirty() {
       // ⚠️ 还没建立基线时**不算有改动** —— 数据没读上来时（网慢、接口挂了）
@@ -192,21 +327,25 @@ const rowIcons = {
       if (!cleanSnapshot) return false;
       return snapshot() !== cleanSnapshot;
     }
+    function hasPendingIcons() { return pendingUploads.length > 0; }
     function markClean() { cleanSnapshot = snapshot(); updateHint(); syncSaveBtn(); }
     function updateHint() {
       var el = $("dirty-hint");
       if (!el) return;
-      var dirty = isDirty();
-      el.textContent = dirty ? "有改动还没保存" : "";
-      el.className = "dirty-hint" + (dirty ? " dirty" : "");
+      var dirty = isDirty(), pend = hasPendingIcons();
+      var text = dirty && pend ? "有改动、还有新图标没保存"
+        : dirty ? "有改动还没保存"
+        : pend ? "有新图标还没保存" : "";
+      el.textContent = text;
+      el.className = "dirty-hint" + (text ? " dirty" : "");
       syncSaveBtn();
     }
     function syncSaveBtn() {
       var b = $("save-btn");
       if (!b) return;
-      var dirty = isDirty();
-      b.disabled = !dirty;
-      b.title = dirty ? "" : "还没有改动可保存";
+      var dirty = isDirty(), pend = hasPendingIcons();
+      b.disabled = !dirty && !pend;
+      b.title = !dirty && !pend ? "还没有改动可保存" : "";
     }
 
     // ===== 渲染 =====
@@ -243,8 +382,11 @@ const rowIcons = {
             '<div class="sk-grid">' +
               '<div><label class="sk-label" for="nm' + i + '">名称（必填）</label>' +
                 '<input type="text" class="input-single" id="nm' + i + '" data-k="name" data-i="' + i + '" value="' + esc(f.name) + '" placeholder="例：影刀 RPA" maxlength="20" /></div>' +
-              '<div><label class="sk-label" for="ic' + i + '">图标名（iconify，必填）</label>' +
-                '<input type="text" class="input-single" id="ic' + i + '" data-k="icon" data-i="' + i + '" value="' + esc(f.icon) + '" placeholder="例：logos:python" />' +
+              '<div><label class="sk-label" for="ic' + i + '">图标</label>' +
+                '<div class="sk-icon-row">' +
+                  '<input type="text" class="input-single" id="ic' + i + '" data-k="icon" data-i="' + i + '" value="' + esc(f.icon) + '" placeholder="logos:python，或点右边「选图标」" />' +
+                  '<button type="button" class="btn" data-pick="' + i + '" title="浏览图标集里的图标，或上传自己的 SVG">选图标</button>' +
+                '</div>' +
                 '<div class="sk-icon-hint" id="ih' + i + '"></div></div>' +
               '<div><label class="sk-label" for="cg' + i + '">分类</label>' +
                 '<select class="input-single" id="cg' + i + '" data-k="category" data-i="' + i + '">' + CATEGORY_OPTIONS + '</select></div>' +
@@ -270,16 +412,139 @@ const rowIcons = {
       checkIcons();
     }
 
-    /** 每行图标名下面那句提示：在不在已下载的图标集里（不联网，只看本地那份 JSON） */
+    /** 每行图标下面那句提示：在不在已下载的图标集里（不联网，只看本地那份 JSON） */
     function checkIcons() {
       data.forEach(function (f, i) {
         var el = document.getElementById("ih" + i);
         if (!el) return;
         var name = String(f.icon || "").trim();
-        if (!name) { el.textContent = "没填图标名 —— 卡片上会留一个空位"; el.className = "sk-icon-hint warn"; return; }
-        if (iconSet[name]) { el.textContent = "图标集里已有 ✓"; el.className = "sk-icon-hint"; return; }
-        el.textContent = "图标集里还没有它 —— 保存时会去 iconify 拉一次（拉不到就不提交）";
+        if (!name) { el.textContent = "⚠ 还没选图标 —— 卡片上会留一个空位"; el.className = "sk-icon-hint warn"; return; }
+        if (iconSet[name]) {
+          var pending = pendingUploads.indexOf(name) !== -1;
+          if (pending) { el.textContent = "⚠ 新上传的图标，保存后生效"; el.className = "sk-icon-hint warn"; }
+          else if (name.indexOf("local:") === 0) { el.textContent = "本地上传的图标 ✓"; el.className = "sk-icon-hint"; }
+          else { el.textContent = "图标集里已有 ✓"; el.className = "sk-icon-hint"; }
+          return;
+        }
+        el.textContent = "⚠ 图标集里还没有它 —— 保存时会去 iconify 拉一次（拉不到就不提交）";
         el.className = "sk-icon-hint warn";
+      });
+    }
+
+    // ===== 图标选择器（浏览 + 上传）=====
+    var pickIndex = -1;        // 正在给哪一行选图标；-1 = 没开
+    var pickReturnFocus = null;
+
+    function openPicker(i) {
+      if (!data[i]) return;
+      pickIndex = i;
+      pickReturnFocus = document.activeElement;
+      var sub = $("skp-sub");
+      if (sub) sub.textContent = "给第 " + (i + 1) + " 条「" + (data[i].name || "还没填名字") + "」选";
+      var search = $("skp-search");
+      if (search) search.value = "";
+      renderPickerGrid();
+      var mask = $("skp-mask");
+      if (mask) mask.hidden = false;
+      if (search) search.focus();
+    }
+
+    function closePicker() {
+      var mask = $("skp-mask");
+      if (mask) mask.hidden = true;
+      pickIndex = -1;
+      // 焦点还给打开它的那颗按钮，键盘用户不会迷失
+      if (pickReturnFocus && pickReturnFocus.focus) pickReturnFocus.focus();
+      pickReturnFocus = null;
+    }
+
+    function renderPickerGrid() {
+      var body = $("skp-body");
+      if (!body) return;
+      var search = $("skp-search");
+      var q = String((search && search.value) || "").trim().toLowerCase();
+      var all = Object.keys(iconSet);
+      var names = all.filter(function (n) { return !q || n.toLowerCase().indexOf(q) !== -1; });
+      var count = $("skp-count");
+      if (count) count.textContent = names.length + " / " + all.length + " 个";
+      if (!names.length) {
+        body.innerHTML = '<div class="skp-empty">' +
+          (q ? "没有名字带「" + esc(q) + "」的图标。" : "图标集还是空的 —— 点上面的「上传图标」加一个。") +
+          "</div>";
+        return;
+      }
+      var cur = pickIndex >= 0 && data[pickIndex] ? String(data[pickIndex].icon || "") : "";
+      body.innerHTML = '<div class="skp-grid">' + names.map(function (n) {
+        // SVG 原文直接进 innerHTML（和前台 SkillCard 的 set:html 同一套做法）
+        return '<button type="button" class="skp-cell' + (n === cur ? " sel" : "") + '" data-name="' + esc(n) + '" title="' + esc(n) + '">' +
+          '<span class="skp-ico">' + iconSet[n] + "</span>" +
+          '<span class="skp-name">' + esc(n) + "</span>" +
+          (pendingUploads.indexOf(n) !== -1 ? '<span class="skp-new">新</span>' : "") +
+          "</button>";
+      }).join("") + "</div>";
+    }
+
+    function readText(file) {
+      return new Promise(function (res, rej) {
+        var r = new FileReader();
+        r.onload = function () { res(r.result); };
+        r.onerror = function () { rej(new Error("read")); };
+        r.readAsText(file);
+      });
+    }
+
+    /**
+     * 上传 SVG → 起个 local: 名字 → 并进图标集（还在内存里，保存时才写仓库）。
+     * 校验当面做、逐个说清原因：这批文件是站长自己的，但 SVG 会原样内联进
+     * 前台页面（set:html），带脚本元素 / 事件属性的必须挡掉。
+     * ⚠️ 本文件是 Astro 页面，内联脚本里不能出现 "<" + "script" 的字面序列
+     * （编译会把它当标签截断），所以下面的判断用拆字写法。
+     */
+    function onIconFiles(e) {
+      var files = e.target.files;
+      if (!files || !files.length) return;
+      var added = [], skipped = [], warns = [];
+      var chain = Promise.resolve();
+      Array.prototype.forEach.call(files, function (file) {
+        chain = chain.then(function () {
+          return readText(file).then(function (raw) {
+            // 去掉 XML 声明与注释再判断（有的编辑器会在开头塞一整串）
+            var clean = String(raw || "")
+              .replace(/<\?xml[^>]*\?>/g, "")
+              .replace(/<!--[\s\S]*?-->/g, "")
+              .trim();
+            if (!/^<svg/i.test(clean)) { skipped.push(file.name + "（不是 SVG）"); return; }
+            // 拆字拼正则：源码里不能直接写 "<" + "script" 字样（见上方注释）
+            var badScript = new RegExp("<scr" + "ipt", "i");
+            if (badScript.test(clean)) { skipped.push(file.name + "（SVG 里带脚本，已拒绝）"); return; }
+            if (/\son\w+\s*=/i.test(clean)) { skipped.push(file.name + "（SVG 里带事件属性，已拒绝）"); return; }
+            // 压掉换行缩进，和 _gen/_下载技能图标.mjs 落盘格式一致
+            var svg = clean.replace(/\n\s*/g, "");
+            if (svg.length > 30000) { skipped.push(file.name + "（太大，" + Math.round(svg.length / 1024) + "KB）"); return; }
+            if (!/viewBox/i.test(svg)) warns.push(file.name + " 没有 viewBox，显示尺寸可能不对");
+            var base = String(file.name).replace(/\.[a-z]+$/i, "").toLowerCase()
+              .replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "");
+            if (!base) base = "icon-" + Date.now().toString(36);
+            var name = "local:" + base, n = 2;
+            while (iconSet[name]) { name = "local:" + base + "-" + n; n++; }
+            iconSet[name] = svg;
+            pendingUploads.push(name);
+            added.push(name);
+          }).catch(function () { skipped.push(file.name + "（读不出来）"); });
+        });
+      });
+      chain.then(function () {
+        e.target.value = ""; // 清掉，同一个文件还能再选一次
+        renderPickerGrid();
+        checkIcons();
+        // ⚠️ 必须走 updateHint()（它内部才会捎上 syncSaveBtn）——
+        //    只调 syncSaveBtn() 的话按钮亮了、提示文案还是空的。
+        updateHint();
+        var msg = "";
+        if (added.length) msg += "已加入 " + added.length + " 个：" + added.join("、") + "（保存后写进仓库）";
+        if (skipped.length) msg += (msg ? "；" : "") + "跳过 " + skipped.length + " 个：" + skipped.join("；");
+        if (warns.length) msg += (msg ? "；" : "") + "注意：" + warns.join("；");
+        if (msg) toast(msg.length > 160 ? msg.slice(0, 160) + "…" : msg, added.length ? (skipped.length ? "err" : "ok") : "err");
       });
     }
 
@@ -317,6 +582,26 @@ const rowIcons = {
     });
 
     document.addEventListener("click", function (e) {
+      // 图标格子：点一下就填进正在编辑的那一行
+      var cell = e.target.closest ? e.target.closest(".skp-cell") : null;
+      if (cell && cell.hasAttribute("data-name")) {
+        var name = cell.getAttribute("data-name");
+        if (pickIndex >= 0 && data[pickIndex]) {
+          data[pickIndex].icon = name;
+          var input = document.getElementById("ic" + pickIndex);
+          if (input) input.value = name;
+          checkIcons();
+          updateHint();
+        }
+        closePicker();
+        return;
+      }
+      // 「选图标」按钮：打开面板
+      var openBtn = e.target.closest ? e.target.closest("[data-pick]") : null;
+      if (openBtn) {
+        openPicker(Number(openBtn.getAttribute("data-pick")));
+        return;
+      }
       var el = e.target.closest ? e.target.closest("[data-move],[data-del]") : null;
       if (!el) return;
       var i = Number(el.getAttribute("data-i"));
@@ -380,6 +665,8 @@ const rowIcons = {
         try { obj = JSON.parse(text); } catch (e) { return; }
         iconSetRaw = obj;
         iconSet = (obj && obj.icons) || {};
+        // 重新读了仓库，本轮上传的暂存作废（它们只活在内存里）
+        pendingUploads = [];
         checkIcons();
       }).catch(function () { /* 图标集读不到就先不校验，保存时会兜住 */ });
     }
@@ -420,8 +707,9 @@ const rowIcons = {
     // 图标是**构建期内联**的：名字不在 skillIcons.json 里，卡片上就是一块空白。
     // 所以保存分三步，中途任何一步不成立都**当面拦住、不写仓库**：
     //   ① 校验名称与图标名（空名字/空图标名 = 空壳卡）
-    //   ② 把图标集里缺的图标从 iconify 拉下来（404 或连不上都停）
-    //   ③ 提交 skills.json；图标有新增时再补一次 skillIcons.json
+    //   ② 把图标集里缺的图标从 iconify 拉下来（404 或连不上都停）；
+    //      上传的图标已经在集里，不走这条
+    //   ③ 提交：技能有改动才写 skills.json；图标有新增（拉的或传的）才写 skillIcons.json
     function saveSkills() {
       for (var i = 0; i < data.length; i++) {
         if (!String(data[i].name || "").trim()) {
@@ -430,10 +718,17 @@ const rowIcons = {
           return;
         }
         if (!String(data[i].icon || "").trim()) {
-          toast("第 " + (i + 1) + " 条还没填图标名（去 iconify.design 搜一个）", "err");
+          toast("第 " + (i + 1) + " 条还没选图标（点右边的「选图标」，或填一个 iconify 名字）", "err");
           focusItem(i, "ic");
           return;
         }
+      }
+
+      // 只有上传、没有改技能时也放行 —— 那种情况下只提交图标集
+      var dataDirty = isDirty();
+      if (!dataDirty && !hasPendingIcons()) {
+        toast("还没有改动可保存", "err");
+        return;
       }
 
       var want = [];
@@ -449,12 +744,14 @@ const rowIcons = {
       fetchMissingIcons(missing)
         .then(function (addedCount) {
           setStatus(false, "正在提交到仓库…");
-          return putSkills().then(function () {
-            if (!addedCount) return null;
+          var chain = dataDirty ? putSkills() : Promise.resolve();
+          return chain.then(function () {
+            if (!addedCount && !hasPendingIcons()) return null;
             return putIconSet();
           });
         })
         .then(function () {
+          pendingUploads = [];
           markClean();
           setStatus(true, "已提交，等 Cloudflare 重新构建");
           toast("已保存。Cloudflare 重新构建后 /skills/ 生效（约一两分钟）", "ok");
@@ -540,6 +837,27 @@ const rowIcons = {
       if (isDirty() && !confirm("现在有没保存的改动，还原会丢掉它们。继续？")) return;
       loadFromRepo();
     }
+
+    // ===== 图标选择器的几颗固定按钮（面板里没有动态内容，直接绑）=====
+    (function bindPicker() {
+      var mask = $("skp-mask");
+      if (!mask) return;
+      // 点遮罩（点到面板自己身上不算）关掉
+      mask.addEventListener("click", function (e) { if (e.target === mask) closePicker(); });
+      var close = $("skp-close");
+      if (close) close.addEventListener("click", closePicker);
+      var search = $("skp-search");
+      if (search) search.addEventListener("input", renderPickerGrid);
+      var up = $("skp-upload-btn");
+      var file = $("skp-file");
+      if (up && file) {
+        up.addEventListener("click", function () { file.click(); });
+        file.addEventListener("change", onIconFiles);
+      }
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && pickIndex >= 0) closePicker();
+      });
+    })();
 
     // ===== 初始化 =====
     function checkAuth() {
