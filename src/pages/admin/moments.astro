@@ -15,7 +15,7 @@ import { uiIcon } from "@/constants/ui-icons";
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>说说 · 后台</title>
+  <title>朋友圈 · 后台</title>
   {/* 后台是站长自用界面，不该出现在搜索结果里（sitemap 中同样已剔除） */}
   <meta name="robots" content="noindex, nofollow" />
   {/* 样式、字体、主题色都来自这里，页面自己的样式放在它后面 */}
@@ -191,7 +191,7 @@ import { uiIcon } from "@/constants/ui-icons";
 
   <!-- ===== 后台主页 ===== -->
   <div id="admin-main">
-    <AdminTopBar title="说说" />
+    <AdminTopBar title="朋友圈" />
 
     <div class="container">
       <!-- 连接状态 -->
@@ -290,7 +290,7 @@ import { uiIcon } from "@/constants/ui-icons";
               id="moments-search"
               class="input-single"
               placeholder="搜内容、标签、地点"
-              aria-label="搜索说说"
+              aria-label="搜索朋友圈"
               oninput="filterMoments()"
             />
             <span class="count" id="list-count"></span>
@@ -426,7 +426,7 @@ import { uiIcon } from "@/constants/ui-icons";
     });
     function pickMomentImage() {
       WBMedia.openPicker({
-        title: "从图片库选一张（说说配图）",
+        title: "从图片库选一张（朋友圈配图）",
         onPick: function (url) { pushImageUrl(url); },
       });
     }
@@ -576,7 +576,7 @@ import { uiIcon } from "@/constants/ui-icons";
         : allMoments.length + " 条";
 
       if (!shown.length) {
-        list.innerHTML = '<div class="empty-state"><div class="icon">' + ICONS.search + '</div><p>没有匹配「' + esc(kw) + '」的说说</p></div>';
+        list.innerHTML = '<div class="empty-state"><div class="icon">' + ICONS.search + '</div><p>没有匹配「' + esc(kw) + '」的朋友圈</p></div>';
         return;
       }
 
@@ -602,7 +602,7 @@ import { uiIcon } from "@/constants/ui-icons";
     function filterMoments() { renderMoments(); }
 
     function showEmpty() {
-      $("moments-list").innerHTML = '<div class="empty-state"><div class="icon">' + ICONS.comment + '</div><p>还没有说说</p></div>';
+      $("moments-list").innerHTML = '<div class="empty-state"><div class="icon">' + ICONS.comment + '</div><p>还没有朋友圈</p></div>';
       $("list-count").textContent = "";
     }
 
@@ -636,7 +636,7 @@ import { uiIcon } from "@/constants/ui-icons";
       WBGitHub.readGist(GIST_ID).then(function(gist) {
         var moments = []; try { moments = JSON.parse(WBGitHub.gistText(gist, FILE_NAME) || "[]"); } catch(e) {}
         var m = moments.find(function(x) { return x.id === id; });
-        if (!m) { toast("未找到该条说说", "err"); return; }
+        if (!m) { toast("未找到该条朋友圈", "err"); return; }
 
         editingId = id;
         $("content-input").value = m.content || "";
@@ -716,7 +716,7 @@ import { uiIcon } from "@/constants/ui-icons";
 
         if (isEdit) {
           var idx = moments.findIndex(function(x) { return x.id === editingId; });
-          if (idx === -1) { throw new Error("这条说说在 Gist 里已经找不到了，刷新页面看看"); }
+          if (idx === -1) { throw new Error("这条朋友圈在 Gist 里已经找不到了，刷新页面看看"); }
           moments[idx] = {
             id: editingId, content: content,
             published: published,

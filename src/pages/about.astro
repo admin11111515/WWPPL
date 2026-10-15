@@ -6,6 +6,12 @@ import GitHubActivity from "@/components/widget/GitHubActivity.astro";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
+import { siteConfig } from "@/config";
+
+// 检查页面是否启用（后台「站点外观 › 页面开关」可关；关掉 = 404 + 导航里那条消失）
+if (!siteConfig.pages.about) {
+	return Astro.redirect("/404/");
+}
 
 const aboutPost = await getEntry("spec", "about");
 

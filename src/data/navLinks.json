@@ -12,17 +12,20 @@
 			{
 				"name": "归档",
 				"url": "/archive/",
-				"icon": "material-symbols:archive"
+				"icon": "material-symbols:archive",
+				"pageKey": "archive"
 			},
 			{
 				"name": "分类",
 				"url": "/categories/",
-				"icon": "material-symbols:folder-open-rounded"
+				"icon": "material-symbols:folder-open-rounded",
+				"pageKey": "categories"
 			},
 			{
 				"name": "标签",
 				"url": "/tags/",
-				"icon": "material-symbols:label"
+				"icon": "material-symbols:label",
+				"pageKey": "tags"
 			}
 		]
 	},
@@ -34,7 +37,8 @@
 			{
 				"name": "朋友圈",
 				"url": "/moments/",
-				"icon": "mdi:wechat"
+				"icon": "mdi:wechat",
+				"pageKey": "moments"
 			},
 			{
 				"name": "相册",
@@ -51,7 +55,8 @@
 			{
 				"name": "笔记",
 				"url": "/life/notebooks/",
-				"icon": "material-symbols:book"
+				"icon": "material-symbols:book",
+				"pageKey": "notebooks"
 			}
 		]
 	},
@@ -69,7 +74,8 @@
 			{
 				"name": "音乐",
 				"url": "/music/",
-				"icon": "material-symbols:music-note-rounded"
+				"icon": "material-symbols:music-note-rounded",
+				"pageKey": "music"
 			},
 			{
 				"name": "友链",
@@ -87,12 +93,14 @@
 			{
 				"name": "项目",
 				"url": "/projects/",
-				"icon": "material-symbols:work"
+				"icon": "material-symbols:work",
+				"pageKey": "projects"
 			},
 			{
 				"name": "技能",
 				"url": "/skills/",
-				"icon": "material-symbols:psychology"
+				"icon": "material-symbols:psychology",
+				"pageKey": "skills"
 			}
 		]
 	},
@@ -104,7 +112,8 @@
 			{
 				"name": "关于我",
 				"url": "/about/",
-				"icon": "material-symbols:person"
+				"icon": "material-symbols:person",
+				"pageKey": "about"
 			},
 			{
 				"name": "打赏",

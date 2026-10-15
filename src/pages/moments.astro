@@ -10,6 +10,12 @@ import { externalMomentsConfig } from "@/config/externalMomentsConfig";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
+import { siteConfig } from "@/config";
+
+// 检查页面是否启用（后台「站点外观 › 页面开关」可关；关掉 = 404 + 导航里那条消失）
+if (!siteConfig.pages.moments) {
+	return Astro.redirect("/404/");
+}
 
 // 访客浏览数只有特定评论系统才提供，而且各自的元素选择器不同。
 // 原先这里写死了 Waline 的计数位，而本站评论用的是 giscus ——

@@ -18,6 +18,12 @@ import {
 
 type PostEntry = CollectionEntry<"posts">;
 
+// 检查页面是否启用（后台「站点外观 › 页面开关」可关；关掉 = 404 + 导航里那条消失）。
+// ⚠️ 明细页要跟着板块一起关 —— 只关列表页的话，别人从收藏、外链照样打得开。
+if (!siteConfig.pages.categories) {
+	return Astro.redirect("/404/");
+}
+
 interface Props {
 	categoryName: string;
 	posts: PostEntry[];

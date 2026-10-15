@@ -1,0 +1,25 @@
+---
+// 追番（前台 /anime/）—— 这一页只放**开关 + 说明**，不做编辑框。
+//
+// 为什么没有编辑框：追番列表是**构建时自动拉的**（从 B 站的番剧接口取"我在看/看过"），
+// 不是手填的数据，后台写不进去。本地那份快照在 public/anime-list.json，
+// 是接口挂了时候的兜底，不是给人编辑的版本 —— 手改它下次构建就被覆盖。
+//
+// ⚠️ 开关写的是 src/data/appearance.json 的 pages.anime，
+//    键名四处一致（appearance.ts / siteConfig.ts / navLinks.json 的 pageKey / 后台开关清单）。
+import AdminBoardPage from "@/components/admin/AdminBoardPage.astro";
+---
+
+<AdminBoardPage
+  name="追番"
+  switchKey="anime"
+  icon="movie"
+  lead="管<b>前台「追番」这一栏</b>开不开。番剧列表是构建时自动拉取的，后台没有可编辑的字段。"
+  source={`追番列表每次构建时从<b>B 站的番剧接口</b>拉一遍（当前账号的在看/看过），
+    所以「想加一部番」的正确做法是<b>去 B 站标记它</b>，不是在这里填。
+    <br /><br />
+    拉取失败时用本地快照兜底：<code>public/anime-list.json</code>
+    （⚠️ 那是兜底数据、不是编辑入口 —— 手改它下次构建就没了）。
+    <br />
+    抓哪几个账号、显示哪些状态 → 改 <code>src/pages/anime.astro</code> 顶部的取数配置。`}
+/>

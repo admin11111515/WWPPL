@@ -20,7 +20,10 @@ import type { NavBarLink } from "../types/navBarConfig";
  *    退回默认菜单。这是这一份文件与 siteInfo.ts 唯一的判别差异，别照抄过去。
  */
 
-/** 兜底菜单：与仓库里最后一次确认过的导航一致，JSON 整体不可用/一项都不剩时顶上 */
+/** 兜底菜单：与仓库里最后一次确认过的导航一致，JSON 整体不可用/一项都不剩时顶上
+ *  ⚠️ 每条带开关的栏目都要写 `pageKey`（= siteConfig.pages 里的键名）——
+ *     少了它，"后台把这一栏关掉"只会让页面 404、导航里那条**照样在**。
+ *     键名与前台板块一一对应，对照表见 `_gen/_前后台板块对照.mjs`。 */
 const FALLBACK_LINKS: NavBarLink[] = [
 	{ name: "主页", url: "/", icon: "material-symbols:home" },
 	{
@@ -28,13 +31,24 @@ const FALLBACK_LINKS: NavBarLink[] = [
 		url: "#",
 		icon: "material-symbols:article",
 		children: [
-			{ name: "归档", url: "/archive/", icon: "material-symbols:archive" },
+			{
+				name: "归档",
+				url: "/archive/",
+				icon: "material-symbols:archive",
+				pageKey: "archive",
+			},
 			{
 				name: "分类",
 				url: "/categories/",
 				icon: "material-symbols:folder-open-rounded",
+				pageKey: "categories",
 			},
-			{ name: "标签", url: "/tags/", icon: "material-symbols:label" },
+			{
+				name: "标签",
+				url: "/tags/",
+				icon: "material-symbols:label",
+				pageKey: "tags",
+			},
 		],
 	},
 	{
@@ -42,7 +56,12 @@ const FALLBACK_LINKS: NavBarLink[] = [
 		url: "#",
 		icon: "material-symbols:bolt-outline",
 		children: [
-			{ name: "朋友圈", url: "/moments/", icon: "mdi:wechat" },
+			{
+				name: "朋友圈",
+				url: "/moments/",
+				icon: "mdi:wechat",
+				pageKey: "moments",
+			},
 			{
 				name: "相册",
 				url: "/gallery/",
@@ -56,7 +75,12 @@ const FALLBACK_LINKS: NavBarLink[] = [
 				pageKey: "guestbook",
 			},
 			// 2026-10-06：日记页已与笔记本合并，入口指向笔记本（原来那个页面是模板示例数据）
-			{ name: "笔记", url: "/life/notebooks/", icon: "material-symbols:book" },
+			{
+				name: "笔记",
+				url: "/life/notebooks/",
+				icon: "material-symbols:book",
+				pageKey: "notebooks",
+			},
 		],
 	},
 	{
@@ -74,6 +98,7 @@ const FALLBACK_LINKS: NavBarLink[] = [
 				name: "音乐",
 				url: "/music/",
 				icon: "material-symbols:music-note-rounded",
+				pageKey: "music",
 			},
 			{
 				name: "友链",
@@ -88,8 +113,18 @@ const FALLBACK_LINKS: NavBarLink[] = [
 		url: "#",
 		icon: "material-symbols:more-horiz",
 		children: [
-			{ name: "项目", url: "/projects/", icon: "material-symbols:work" },
-			{ name: "技能", url: "/skills/", icon: "material-symbols:psychology" },
+			{
+				name: "项目",
+				url: "/projects/",
+				icon: "material-symbols:work",
+				pageKey: "projects",
+			},
+			{
+				name: "技能",
+				url: "/skills/",
+				icon: "material-symbols:psychology",
+				pageKey: "skills",
+			},
 		],
 	},
 	{
@@ -97,7 +132,12 @@ const FALLBACK_LINKS: NavBarLink[] = [
 		url: "#",
 		icon: "material-symbols:info",
 		children: [
-			{ name: "关于我", url: "/about/", icon: "material-symbols:person" },
+			{
+				name: "关于我",
+				url: "/about/",
+				icon: "material-symbols:person",
+				pageKey: "about",
+			},
 			{
 				name: "打赏",
 				url: "/sponsor/",

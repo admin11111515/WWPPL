@@ -105,17 +105,33 @@ const fields: Field[] = [
 
 /**
  * 页面开关：关掉的页面会返回 404，并且从导航栏里自动消失。
- * ⚠️ 这里只列**真的做出来了**的页面 —— /bangumi/ /devices/ /timeline/
- *    三个页面根本不存在，放进后台只会让人打开一个 404。
+ *
+ * ⚠️ 这份清单与**前台导航里的板块一一对应、不多不少**，顺序也照前台导航排
+ *    （文章 › 归档/分类/标签、动态 › 朋友圈/相册/留言/笔记、兴趣 › 追番/音乐/友链、
+ *     作品 › 项目/技能、关于 › 关于我/打赏）。
+ *    键名四处必须一致：这里 / `src/config/appearance.ts` 的 FALLBACK_PAGES /
+ *    `src/config/siteConfig.ts` 的 pages / `src/data/navLinks.json` 各条的 pageKey。
+ *    少任何一处，结果都是"关了开关前台导航里那条还在"或者"后台根本看不到这个开关"。
+ *    逐条断言见 `_gen/_前后台板块对照.mjs`（改板块就改它那张表）。
+ * ⚠️ **主页不在里面**：它是站点根 `/`，关掉等于没有首页，所以不给开关。
+ * ⚠️ /bangumi/ /devices/ /timeline/ 三个页面根本不存在，
+ *    放进后台只会让人打开一个 404。
  */
 const pageSwitches = [
-	["friends", "友链 /friends/"],
-	["sponsor", "打赏 /sponsor/"],
-	["guestbook", "留言 /guestbook/"],
-	["anime", "追番 /anime/"],
+	["archive", "归档 /archive/"],
+	["categories", "分类 /categories/"],
+	["tags", "标签 /tags/"],
+	["moments", "朋友圈 /moments/"],
 	["gallery", "相册 /gallery/"],
+	["guestbook", "留言 /guestbook/"],
+	["notebooks", "笔记 /life/notebooks/"],
+	["anime", "追番 /anime/"],
+	["music", "音乐 /music/"],
+	["friends", "友链 /friends/"],
 	["projects", "项目 /projects/"],
 	["skills", "技能 /skills/"],
+	["about", "关于我 /about/"],
+	["sponsor", "打赏 /sponsor/"],
 ];
 ---
 
@@ -213,7 +229,7 @@ const pageSwitches = [
     .switch-hint { font-size: 0.6875rem; color: var(--text-3); line-height: 1.7; margin-top: 0.125rem; }
     .switch-row input[type="checkbox"] { width: 1.125rem; height: 1.125rem; margin-top: 0.1875rem; flex-shrink: 0; accent-color: var(--accent-ink); }
 
-    /* 页面开关：两列排，8 个不至于拉太长 */
+    /* 页面开关：两列排，14 个（与前台板块一一对应）不至于拉太长 */
     .page-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

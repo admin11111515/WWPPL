@@ -9,13 +9,19 @@
 	"wallpaperPlayer": true,
 	"bannerText": true,
 	"pages": {
-		"friends": true,
-		"sponsor": false,
-		"guestbook": true,
-		"anime": true,
+		"archive": true,
+		"categories": true,
+		"tags": true,
+		"moments": true,
 		"gallery": true,
-		"diary": true,
+		"guestbook": true,
+		"notebooks": true,
+		"anime": true,
+		"music": true,
+		"friends": true,
 		"projects": true,
-		"skills": true
+		"skills": true,
+		"about": true,
+		"sponsor": false
 	}
 }

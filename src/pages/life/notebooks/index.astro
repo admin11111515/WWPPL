@@ -4,6 +4,12 @@ import FilterTabs from "@/components/atoms/FilterTabs.astro";
 import PageHeader from "@/components/features/page-header/PageHeader.astro";
 import { externalNotebooksConfig } from "@/config/externalNotebooksConfig";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
+import { siteConfig } from "@/config";
+
+// 检查页面是否启用（后台「站点外观 › 页面开关」可关；关掉 = 404 + 导航里那条消失）
+if (!siteConfig.pages.notebooks) {
+	return Astro.redirect("/404/");
+}
 
 // 笔记列表页
 //

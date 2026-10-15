@@ -1,6 +1,13 @@
 ---
 import { externalNotebooksConfig } from "@/config/externalNotebooksConfig";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
+import { siteConfig } from "@/config";
+
+// 检查页面是否启用（后台「站点外观 › 页面开关」可关；关掉 = 404 + 导航里那条消失）。
+// ⚠️ 单篇明细也要跟着「笔记」一起关。
+if (!siteConfig.pages.notebooks) {
+	return Astro.redirect("/404/");
+}
 
 // 单篇笔记详情页
 //

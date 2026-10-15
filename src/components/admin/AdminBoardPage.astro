@@ -1,0 +1,281 @@
+---
+/**
+ * 「板块页」通用骨架 —— 给"内容不是手填"的前台板块用（留言 / 追番 / 音乐 / 打赏）。
+ * ============================================================
+ * 为什么有它：站长要求「后台的板块要和前台的板块对得上」（2026-10-15）——
+ * 前台导航里有的栏目，后台都得有地方管。可这四个板块的内容**不是手填的**：
+ *   · 留言    → 评论系统（giscus）渲染，配置在 src/config/commentConfig.ts
+ *   · 追番    → 构建时从 B 站拉的
+ *   · 音乐    → 歌单接口预取（src/data/music.json）
+ *   · 打赏    → 打赏方式写在 src/config/sponsorConfig.ts（且当前是关掉的）
+ * 硬做编辑框就是假界面（改了不生效）。所以这四页只做两件事：
+ *   ① 一个**真的管用**的开关（写 src/data/appearance.json 的 pages.<key>，
+ *      关掉 = 前台那一页 404 + 导航栏里那条消失）；
+ *   ② 把"内容从哪来、想改该去哪儿"当面写清楚 —— 省得他在这儿找不到输入框。
+ *
+ * ⚠️ 写的是**整个 appearance.json**：读回来 → 只改 pages[switchKey] → 原样写回去。
+ *    解析不了就绝不写（否则会把色相、壁纸那些一起清空）。
+ * ⚠️ 开关键名必须与 src/config/appearance.ts、siteConfig.ts、navLinks.json 的 pageKey
+ *    以及 admin「站点外观」的 pageSwitches **完全一致**。逐条断言见
+ *    `_gen/_前后台板块对照.mjs`。
+ */
+import AdminTheme from "@/components/admin/AdminTheme.astro";
+import AdminAuthGate from "@/components/admin/AdminAuthGate.astro";
+import AdminTopBar from "@/components/admin/AdminTopBar.astro";
+import { adminBodyClass, adminHtmlClass } from "@/components/admin/adminShell";
+import { externalPostsConfig } from "@/config/externalPostsConfig";
+// 后台不走博客 Layout，也就没有 iconify 运行时，图标用构建期内联的 SVG
+import { uiIcon } from "@/constants/ui-icons";
+
+interface Props {
+	/** 页头名 == 侧栏名 == 浏览器标题前缀（术语一套），用**前台导航里的叫法** */
+	name: string;
+	/** appearance.json 里 pages 的键名（= siteConfig.pages 的键 = navLinks 的 pageKey） */
+	switchKey: string;
+	/** material-symbols 短名（拼成 material-symbols:xxx），必须在 generate-icons.js 白名单里 */
+	icon: string;
+	/** 这一页管什么（一句话，显示在卡片顶部） */
+	lead: string;
+	/** 内容从哪来、想改去哪儿改（支持 HTML） */
+	source: string;
+}
+
+const { name, switchKey, icon, lead, source } = Astro.props;
+
+/** 读写仓库里的哪个文件。仓库信息与文章后台共用一份（externalPostsConfig）。 */
+const target = {
+	owner: externalPostsConfig.owner,
+	repo: externalPostsConfig.repo,
+	branch: externalPostsConfig.branch,
+	path: "src/data/appearance.json",
+};
+---
+
+<html lang="zh-CN" class={adminHtmlClass}>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{name} · 后台</title>
+  {/* 后台是站长自用界面，不该出现在搜索结果里（sitemap 中同样已剔除） */}
+  <meta name="robots" content="noindex, nofollow" />
+  {/* 样式、字体、主题色都来自这里，页面自己的样式放在它后面 */}
+  <AdminTheme />
+  <AdminAuthGate />
+  <style is:inline>
+    /* ===== 只放这一页特有的排版，通用部分在 src/styles/admin.css =====
+       ⚠️ .page-lead / .form-rows / .section-title / .switch-row / .dirty-hint / .save-row
+          都在 admin.css 的共享层，这里**不要再写一遍**（页面 <style> 在后加载，
+          写了就是本地那份赢，改共享层会看着像没生效）。 */
+
+    /* 短表单，内容窄一些更好读。
+       ⚠️ 宽度必须声明在 `.container` 自己身上；写 `#admin-main { --admin-content-max }`
+          是死代码（admin.css 那条 1280 会压掉它）。详见 admin.css「3. 宽度容器」。 */
+    #admin-main > .container {
+      --admin-content-max: 720px;
+    }
+  </style>
+</head>
+<body class={adminBodyClass}>
+
+  <div id="admin-main">
+    <AdminTopBar title={name} />
+
+    <div class="container">
+      <div class="card">
+        <div class="page-lead">
+          <span class="lead-icon" set:html={uiIcon(`material-symbols:${icon}`)} />
+          <span set:html={lead} />
+        </div>
+
+        <div class="form-rows">
+          <div class="form-group">
+            <div class="section-title">页面开关</div>
+            {/* ⚠️ 用 <label> 包住整行：点名字/说明也能切换，不用瞄那个小方块 */}
+            <label class="switch-row">
+              <div class="switch-text">
+                <div class="switch-name">在前台显示「{name}」</div>
+                <div class="switch-hint">
+                  关掉之后：这一页会返回 404，<b>前台顶部导航里那条也一并消失</b>。
+                  保存后提交进仓库，Cloudflare 重新构建，约一两分钟全站生效。
+                </div>
+              </div>
+              <input type="checkbox" id="board-switch" aria-label={`在前台显示${name}`} />
+            </label>
+          </div>
+
+          <div class="form-group">
+            <div class="section-title">这一页的内容从哪来</div>
+            <div class="field-hint" set:html={source} />
+          </div>
+        </div>
+
+        {/* 操作区在卡片**里**（贴卡片左右边缘），不是卡片外一条通栏 */}
+        <div class="save-row">
+          <button class="btn btn-primary" id="save-btn" onclick="saveBoard()" disabled>保存并生效</button>
+          <button class="btn btn-ghost" type="button" onclick="reloadFromRepo()">还原成仓库里的版本</button>
+          <span class="dirty-hint" id="dirty-hint"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script is:inline src="/js/editor-commons.js"></script>
+  {/* ⚠️ 用 WBGitHub 的后台页必须引它，漏了就是"按钮点了没反应" */}
+  <script is:inline src="/js/admin-github.js"></script>
+  <script is:inline data-target={JSON.stringify(target)} data-key={switchKey} data-name={name}>
+    var _script = document.currentScript;
+    var TARGET = JSON.parse(_script.getAttribute("data-target") || "{}");
+    var SWITCH_KEY = _script.getAttribute("data-key") || "";
+    var BOARD_NAME = _script.getAttribute("data-name") || "这个板块";
+
+    function $(id) { return document.getElementById(id); }
+    function toast(msg, type) {
+      var el = $("toast"); el.textContent = msg; el.className = "toast " + type + " show";
+      clearTimeout(el._t); el._t = setTimeout(function() { el.className = "toast"; }, 3200);
+    }
+    function setStatus(ok, text) {
+      $("status-dot").className = "status-dot " + (ok ? "ok" : "err");
+      $("status-text").textContent = text;
+    }
+
+    // toggleDark 与明暗初始化由 <AdminTheme /> 提供
+    function doLogout() {
+      localStorage.removeItem("admin_auth");
+      fetch("/api/auth/logout", { method: "POST" }).catch(function() {});
+      window.location.href = "/admin/";
+    }
+    function checkAuth() {
+      return fetch("/api/auth/status")
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (!d.authed) { window.location.href = "/admin/"; return false; }
+          return true;
+        })
+        .catch(function() { window.location.href = "/admin/"; return false; });
+    }
+
+    // 中文要走 UTF-8 字节再转 base64，直接 btoa 会抛「Invalid character」
+    function b64EncodeUnicode(str) {
+      var bytes = new TextEncoder().encode(str);
+      var bin = "";
+      bytes.forEach(function(b) { bin += String.fromCharCode(b); });
+      return btoa(bin);
+    }
+    function b64DecodeUnicode(str) {
+      var bin = atob(str);
+      var bytes = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return new TextDecoder("utf-8").decode(bytes);
+    }
+
+    var fileSha = "";
+    var loaded = null;     // 读回来的整份 appearance.json（写回去时以它为准，只改一个键）
+    var clean = null;      // 干净基线（布尔值），用来判"有没有改动"
+
+    function updateHint() {
+      var el = $("dirty-hint");
+      var el2 = $("board-switch");
+      var dirty = clean !== null && !!el2.checked !== clean;
+      el.textContent = dirty ? "有改动还没保存" : "";
+      el.className = "dirty-hint" + (dirty ? " dirty" : "");
+      var b = $("save-btn");
+      b.disabled = !dirty;
+      b.title = dirty ? "" : "还没有改动可保存";
+    }
+    function isDirty() {
+      var el2 = $("board-switch");
+      return clean !== null && !!el2.checked !== clean;
+    }
+
+    // ===== 读 =====
+    function loadFromRepo() {
+      setStatus(false, "正在读取仓库里的 appearance.json…");
+      return WBGitHub.getFile({
+        owner: TARGET.owner, repo: TARGET.repo, branch: TARGET.branch, path: TARGET.path
+      }).then(function(file) {
+        if (!file) {
+          setStatus(false, "仓库里没找到 " + TARGET.path);
+          toast("没读到 " + TARGET.path + "，检查一下路径", "err");
+          return;
+        }
+        fileSha = file.sha || "";
+        var data = null;
+        try {
+          data = JSON.parse(b64DecodeUnicode(String(file.content || "").replace(/\s/g, "")));
+        } catch (e) {
+          // 解析不了就绝不写回去：一写就把色相、壁纸那些全清空了
+          setStatus(false, "文件内容不是合法 JSON，没有改动任何东西");
+          toast("读出来的内容解析不了：" + e.message, "err");
+          return;
+        }
+        loaded = data;
+        var pages = (data && data.pages) || {};
+        // 键不存在时按"开"处理（与 src/config/appearance.ts 的兜底默认一致）
+        clean = pages[SWITCH_KEY] !== false;
+        $("board-switch").checked = clean;
+        updateHint();
+        setStatus(true, "已连接");
+      }).catch(function(e) {
+        setStatus(false, e.message);
+        toast(e.message, "err");
+      });
+    }
+
+    function reloadFromRepo() {
+      if (isDirty() && !confirm("开关有没保存的改动，确定丢掉、重新读仓库里的版本？")) return;
+      loadFromRepo();
+    }
+
+    // ===== 写 =====
+    function saveBoard() {
+      if (!loaded) { toast("还没读到仓库里的文件，先等一下或刷新页面", "err"); return; }
+      var want = !!$("board-switch").checked;
+      // 只动这一个键，其余原样带回去（⚠️ 不能拿本地拼的对象覆盖整份文件）
+      var next = {};
+      Object.keys(loaded).forEach(function(k) { next[k] = loaded[k]; });
+      next.pages = {};
+      var src = loaded.pages || {};
+      Object.keys(src).forEach(function(k) { next.pages[k] = src[k]; });
+      next.pages[SWITCH_KEY] = want;
+
+      var text = JSON.stringify(next, null, "\t") + "\n";
+      var btn = $("save-btn");
+      btn.disabled = true; btn.textContent = "保存中…";
+      setStatus(false, "正在提交到仓库…");
+
+      WBGitHub.putFile({
+        owner: TARGET.owner, repo: TARGET.repo, branch: TARGET.branch, path: TARGET.path,
+        content: b64EncodeUnicode(text),
+        message: "chore: " + (want ? "打开" : "关掉") + "「" + BOARD_NAME + "」页面开关",
+        // 带上"我改的是哪一版"：文件在别处被改过时 GitHub 会用 409 挡下来
+        sha: fileSha || undefined
+      }).then(function(res) {
+        fileSha = (res && res.content && res.content.sha) || fileSha;
+        loaded.pages[SWITCH_KEY] = want;
+        clean = want;
+        updateHint();
+        setStatus(true, "已提交，等 Cloudflare 重新构建");
+        toast("已保存。Cloudflare 重新构建后全站生效（约一两分钟）", "ok");
+      }).catch(function(e) {
+        setStatus(false, e.message);
+        toast(e.message, "err");
+      }).then(function() {
+        btn.disabled = false; btn.textContent = "保存并生效";
+        updateHint();
+      });
+    }
+
+    // ===== 初始化 =====
+    $("board-switch").addEventListener("change", updateHint);
+    // 有改动没保存就关标签页时拦一下
+    WBEditor.guardUnsavedChanges(isDirty);
+
+    checkAuth().then(function(ok) {
+      if (!ok) return;
+      loadFromRepo();
+    });
+  </script>
+</body>
+</html>

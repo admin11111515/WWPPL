@@ -1,0 +1,30 @@
+---
+// 留言（前台 /guestbook/）—— 这一页只放**开关 + 说明**，不做编辑框。
+//
+// 为什么没有编辑框：留言的正文全在**评论系统**里（本站用 giscus，数据存在 GitHub Discussions），
+// 后台既读不到也不该去写它。硬做输入框就是假界面 —— 改了不生效，比没有更糟。
+// 内容侧能改的那一份（留言须知）在 src/content/spec/guestbook.md，
+// 走后台「说明页」改，这里只负责"这一栏在前台开不开"。
+//
+// ⚠️ 开关写的是 src/data/appearance.json 的 pages.guestbook，
+//    键名四处一致（appearance.ts / siteConfig.ts / navLinks.json 的 pageKey / 后台开关清单）。
+import AdminBoardPage from "@/components/admin/AdminBoardPage.astro";
+---
+
+<AdminBoardPage
+  name="留言"
+  switchKey="guestbook"
+  icon="chat"
+  lead="管<b>前台「留言」这一栏</b>开不开。留言的内容在评论系统里，后台不放编辑框（那会变成改了不生效的假界面）。"
+  source={`留言由<b>评论系统</b>渲染（本站用 giscus，留言存在 GitHub Discussions 里）。
+    <br /><br />
+    想换评论系统 → 改 <code>src/config/commentConfig.ts</code>（一次性配置，改完重新构建对全站生效）。
+    <br />
+    想改留言页顶部那段<b>须知文字</b> → 去后台「说明页」里的「留言板」。
+    <br />
+    想改留言页顶部的<b>标题</b> → 去后台「站点信息」。
+    <br /><br />
+    ⚠️ 这里**不用行内链接**跳那两页：后台的触控下限是 24px，而正文里的行内链接撑到 24px
+    会把行距撕开（实测 35×18 / 48×18 就被移动端体检计成"过小的触控目标"）。
+    侧栏里点「说明页」「站点信息」一样到位。`}
+/>

@@ -1,0 +1,28 @@
+---
+// 打赏（前台 /sponsor/）—— 这一页只放**开关 + 说明**，不做编辑框。
+//
+// ⚠️ 这一栏当前是**关着**的（站长 2026-10-12 要求关掉，页面变成静态跳转 /404/）。
+//    开关就在这页，想开回来勾一下即可。
+//
+// ⚠️ 另一个待办：打赏方式还是空的（src/config/sponsorConfig.ts 里 methods: []），
+//    也就是说"开着也没人能真打赏"。要真用起来得先把收款方式填进去（改那个配置文件）。
+//    这页不提供填收款方式的界面 —— 收款码/链接属于敏感信息，不适合走后台表单提交。
+//
+// ⚠️ 开关写的是 src/data/appearance.json 的 pages.sponsor，
+//    键名四处一致（appearance.ts / siteConfig.ts / navLinks.json 的 pageKey / 后台开关清单）。
+import AdminBoardPage from "@/components/admin/AdminBoardPage.astro";
+---
+
+<AdminBoardPage
+  name="打赏"
+  switchKey="sponsor"
+  icon="favorite"
+  lead="管<b>前台「打赏」这一栏</b>开不开。这一栏现在是<b>关着</b>的（你 10-12 让关的）。"
+  source={`打赏页面本身是现成的，开关就在上面 —— 勾上保存、等一次构建就回来了。
+    <br /><br />
+    ⚠️ 但<b>打赏方式还是空的</b>：<code>src/config/sponsorConfig.ts</code> 里 <code>methods: []</code>
+    —— 开着也没人能真打赏。要真用起来，得先把收款码/链接填进那个文件。
+    <br />
+    这里不做"填收款方式"的表单：收款信息比较敏感，不适合走后台提交进仓库，
+    真要加我们单独说一次。`}
+/>

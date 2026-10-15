@@ -104,35 +104,52 @@ export const siteConfig: SiteConfig = {
 
 	// 页面开关配置 - 控制特定页面的访问权限，设为false会返回404并自动隐藏对应的导航栏菜单项
 	//
-	// 其中 8 个后台「站点外观」页可改，值存在 src/data/appearance.json。
-	// ⚠️ 下面三个**不进后台**：/bangumi/ /devices/ /timeline/ 这三个页面根本没做出来
+	// ⚠️ 「前台能看到的板块」在这里**一一对应、不多不少**（顺序同前台导航）。
+	//    这套键名三处必须是同一套：这里 / 后台「站点外观」的开关清单（pageSwitches）/
+	//    `src/data/navLinks.json` 各条的 pageKey —— 少一处就会"关了开关但导航里还在、
+	//    或后台根本看不到这个开关"。逐条断言见 `_gen/_前后台板块对照.mjs`。
+	//    唯一的例外是**主页**：它是站点根，关掉等于没有首页，所以不给开关。
+	//    值存在 src/data/appearance.json（后台可改）。
+	// ⚠️ 下面几个**不进后台**：/bangumi/ /devices/ /timeline/ 这三个页面根本没做出来
 	// （src/pages 下没有），谁打开谁得到 404 —— 恒为 false，别改成 true。
 	pages: {
-		// 友链页面开关
-		friends: appearance.pages.friends,
-		// 打赏页面开关
-		sponsor: appearance.pages.sponsor,
-		// 留言板页面开关，需要配置评论系统
+		// 文章 › 归档
+		archive: appearance.pages.archive,
+		// 文章 › 分类
+		categories: appearance.pages.categories,
+		// 文章 › 标签
+		tags: appearance.pages.tags,
+		// 动态 › 朋友圈（/moments/）。模板原来那个 /diary/ 页面已删，键名一并清掉
+		moments: appearance.pages.moments,
+		// 动态 › 相册
+		gallery: appearance.pages.gallery,
+		// 动态 › 留言（需要配置评论系统）
 		guestbook: appearance.pages.guestbook,
+		// 动态 › 笔记（/life/notebooks/）
+		notebooks: appearance.pages.notebooks,
+		// 兴趣 › 追番
+		anime: appearance.pages.anime,
+		// 兴趣 › 音乐
+		music: appearance.pages.music,
+		// 兴趣 › 友链
+		friends: appearance.pages.friends,
+		// 作品 › 项目
+		projects: appearance.pages.projects,
+		// 作品 › 技能
+		skills: appearance.pages.skills,
+		// 关于 › 关于我
+		about: appearance.pages.about,
+		// 关于 › 打赏
+		sponsor: appearance.pages.sponsor,
 		// 番组计划页面开关，含追番、游戏、书籍和音乐
 		// ⚠️ /bangumi/ 页面尚未实现，开关只能保持 false，打开会 404
 		bangumi: false,
-		// 追番页面开关
-		anime: appearance.pages.anime,
-		// 相册页面开关
-		gallery: appearance.pages.gallery,
 		// 设备页面开关
 		// ⚠️ /devices/ 页面尚未实现，开关只能保持 false，打开会 404
 		devices: false,
-		// 日记页面开关
-		diary: appearance.pages.diary,
-		// 项目页面开关
-		projects: appearance.pages.projects,
 		// 时间线页面开关
 		// ⚠️ /timeline/ 页面尚未实现，开关只能保持 false，打开会 404
 		timeline: false,
-		// 技能页面开关
-		skills: appearance.pages.skills,
 	},
 	// 日记页面配置
 	diary: {

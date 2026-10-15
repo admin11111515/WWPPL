@@ -1,0 +1,29 @@
+---
+// 音乐（前台 /music/）—— 这一页只放**开关 + 说明**，不做编辑框。
+//
+// 为什么没有编辑框：歌单是**接口预取**生成的（Meting 从音乐平台把歌单拉成
+// src/data/music.json），手工改那份 JSON 下次预取就被覆盖。真正要改的是"关联哪个歌单"，
+// 那在 src/config/musicConfig.ts 里。
+//
+// ⚠️ 开关写的是 src/data/appearance.json 的 pages.music，
+//    键名四处一致（appearance.ts / siteConfig.ts / navLinks.json 的 pageKey / 后台开关清单）。
+//
+// ⚠️ 2026-10-15 新加的开关：音乐原来**没有开关**（前台导航里那条也没有 pageKey），
+//    属于"后台管不了、也关不掉"的板块 —— 与「后台板块要和前台对得上」不符，补上。
+import AdminBoardPage from "@/components/admin/AdminBoardPage.astro";
+---
+
+<AdminBoardPage
+  name="音乐"
+  switchKey="music"
+  icon="music-note-rounded"
+  lead="管<b>前台「音乐」这一栏</b>开不开。歌单是接口预取的，后台没有可编辑的字段。"
+  source={`歌单每次构建前由脚本预取（Meting 从音乐平台拉），落在 <code>src/data/music.json</code>。
+    <br /><br />
+    想换<b>歌单</b>（换平台/换歌单号）→ 改 <code>src/config/musicConfig.ts</code>，
+    然后重新构建（预取脚本在 <code>package.json</code> 的构建链里）。
+    <br />
+    ⚠️ 别手改 <code>src/data/music.json</code> —— 下一次预取会把它整个覆盖掉。
+    <br />
+    播放器外观、默认音量这些 → 改 <code>src/config/musicConfig.ts</code> 里的对应字段。`}
+/>

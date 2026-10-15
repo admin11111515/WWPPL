@@ -6,6 +6,11 @@ import { siteConfig } from "@/config";
 import { musicList, playlistCounts, playlistSongs } from "@/data/music";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
 
+// 检查页面是否启用（后台「站点外观 › 页面开关」可关；关掉 = 404 + 导航里那条消失）
+if (!siteConfig.pages.music) {
+	return Astro.redirect("/404/");
+}
+
 const basePlaylists = siteConfig.music?.playlists || [];
 const playlists = [
 	{ id: "all", name: "全部音乐" },

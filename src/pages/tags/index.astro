@@ -5,6 +5,12 @@ import { i18n } from "@/i18n/translation";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
 import { getTagList } from "@/utils/content-utils";
 import { getTagUrl } from "@/utils/url-utils";
+import { siteConfig } from "@/config";
+
+// 检查页面是否启用（后台「站点外观 › 页面开关」可关；关掉 = 404 + 导航里那条消失）
+if (!siteConfig.pages.tags) {
+	return Astro.redirect("/404/");
+}
 
 const tags = await getTagList();
 

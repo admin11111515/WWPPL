@@ -34,19 +34,31 @@ const FALLBACK = {
 	bannerText: true,
 } as const;
 
-/** 页面开关的默认值。三个没做出来的页面（bangumi/devices/timeline）不进后台，
- *  它们恒为 false —— 放进来只会让人打开一个 404 页面 */
+/** 页面开关的默认值。**与「前台能看到的板块」一一对应**（顺序同前台导航，
+ *  主页除外 —— 站点根，关掉等于没有首页）。
+ *  ⚠️ 这套键名三处必须一致：这里 / `src/config/siteConfig.ts` 的 pages /
+ *     `src/pages/admin/appearance.astro` 的 pageSwitches（后台开关清单）/
+ *     `src/data/navLinks.json` 里各条的 pageKey。
+ *     改板块就改那张表：`_gen/_前后台板块对照.mjs` 会逐条断言。
+ *  三个没做出来的页面（bangumi/devices/timeline）不进后台，它们恒为 false
+ *  —— 放进来只会让人打开一个 404 页面。
+ *  2026-10-06：模板自带的 /diary/ 页面已删除（示例数据），日记内容并入「笔记本」，
+ *  那个 diary 键一并清掉（原来只在数据里留着、后台看不到，属于"对不上"的脏键）。 */
 const FALLBACK_PAGES = {
-	friends: true,
-	sponsor: true,
-	guestbook: true,
-	anime: true,
+	archive: true,
+	categories: true,
+	tags: true,
+	moments: true,
 	gallery: true,
-	// 2026-10-06：/diary/ 页面已删除（模板自带的示例数据），日记内容并入「笔记本」。
-	// 开关保持 false：留着键位以防别处读到 pages.diary，但页面已经不存在了。
-	diary: false,
+	guestbook: true,
+	notebooks: true,
+	anime: true,
+	music: true,
+	friends: true,
 	projects: true,
 	skills: true,
+	about: true,
+	sponsor: true,
 } as const;
 
 const HUES = { min: 0, max: 360 };

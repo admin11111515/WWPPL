@@ -144,6 +144,12 @@ const EXPLICIT_ICONS = [
 	// 2026-10-15：窄屏抽屉的开关（☰）。后台 ≤900px 的侧栏从顶部横条改成抽屉，
 	// 页头要有颗按钮开合它 —— menu 这个标准汉堡名当时不在清单里，补上。
 	"material-symbols:menu",
+	// 2026-10-15：后台侧栏补「前台板块」那四条（留言 / 追番 / 音乐 / 打赏）用的图标。
+	// 名字与前台导航栏一致，一眼能对上；四个都不在清单里，一起补。
+	"material-symbols:chat", // 留言
+	"material-symbols:movie", // 追番
+	"material-symbols:music-note-rounded", // 音乐
+	"material-symbols:favorite", // 打赏
 ];
 
 // 支持的图标集及其包名
