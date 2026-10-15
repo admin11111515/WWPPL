@@ -13,8 +13,10 @@ import { ADMIN_NAV_GROUPS } from "@components/admin/adminNav";
  *
  * ⚠️ 图标一律单色（material-symbols）—— 跟顶部导航栏同一条约定：
  *    导航是"一排横向扫过"的构件，彩色在上面显杂。内容类才用 fluent-color。
- * ⚠️ 侧栏挂在 `#admin-main` 的网格里（见 admin.css 的「后台外壳布局」），
- *    不是浮层；改布局别把它挤掉。
+ * ⚠️ 侧栏挂在 `#admin-main` 的网格里（见 admin.css 的「后台外壳布局」）。
+ *    桌面宽它是常驻的一列；**窄屏（≤900px）改成抽屉**（2026-10-15）——
+ *    同样是这一份 DOM，靠 admin.css 的媒体查询 + 本文件尾部的开关脚本变形态，
+ *    别把 aside 拆成两份。
  */
 // 导航数据在 adminNav.ts —— 侧栏与命令面板共用同一份，别在这儿另抄一遍
 const GROUPS = ADMIN_NAV_GROUPS;
@@ -24,7 +26,7 @@ const here = Astro.url.pathname.replace(/\/+$/, "") + "/";
 const isActive = (href) => href === here;
 ---
 
-<aside class="admin-side" aria-label="后台导航">
+<aside class="admin-side" id="admin-side" aria-label="后台导航">
   <nav class="admin-side-nav">
     {
       GROUPS.map((g) => (
@@ -57,52 +59,81 @@ const isActive = (href) => href === here;
   </div>
 </aside>
 
+{/* 窄屏抽屉的遮罩。桌面宽永远是 hidden（脚本那边根本不开抽屉），
+    样式在 admin.css「窄屏：侧栏改成抽屉」那段。 */}
+<div class="admin-side-mask" id="admin-side-mask" hidden></div>
+
 {/*
-  窄屏（≤900px）顶部横条的两件事，纯 CSS 做不到，只能在这儿补：
+  窄屏（≤900px）侧栏是**抽屉**（2026-10-15 起；原来是顶部横向滚动条）。
+  开合的三条路：页头 ☰（#admin-nav-toggle，在 AdminTopBar 里）/ 遮罩点击 / Esc；
+  点了菜单项也顺手关上。桌面宽（>900px）抽屉永远不开 —— 那边侧栏是常驻一列。
 
-  ① **让人知道"还能往右滑"**。14 个入口挤成一条，右端会把当前那一项从中间切断
-     （实测：「技能」显示成「技」），看着像坏了。滚动条在手机上不可见，
-     所以按滚动位置给 `.admin-side-nav` 切 `can-left` / `can-right` 两个类，
-     由 CSS 在那一侧做渐隐（admin.css 的「窄屏：侧栏不再占一列」那段）。
-
-  ② **载入时把"我在哪一项"滚到看得见的地方**。手机上第一屏常常只能看到前 5 项，
-     如果当前页是「友链」，用户会以为导航里没有自己这一项。
-
-  ⚠️ 自己算 scrollLeft，不用 scrollIntoView —— 后者在块轴方向也可能动，
-     会把整页往上卷一下（手机上一进页面就跳一下很难受）。
-  ⚠️ 字体载入完宽度会变，得再画一次；resize 同理。
+  为什么脚本要做这些事（CSS 独自不够）：
+    · 开合是状态，得有个类在 `.admin-side` 上换来换去（`.on`）；
+    · Esc 要监听 document；
+    · 拉宽到桌面以上时把开着的抽屉收起来，别留一个浮层在路上；
+    · 焦点：打开时移进菜单（键盘用户接着 Tab 还在菜单里），
+      关上时还给那颗开关（不会掉回 body 顶部）。
+  ⚠️ 早先这儿还有一段"横条"脚本（can-left/can-right 渐隐、当前项居中）——
+     抽屉是竖排全量的，用不上了，一并删掉，别留死代码。
 */}
 <script is:inline>
   (function () {
-    var nav = document.querySelector(".admin-side-nav");
-    if (!nav) return;
-    var EDGE = 4; // 容差：1px 的亚像素差不当成"还有内容"
+    function init() {
+      var side = document.getElementById("admin-side");
+      var mask = document.getElementById("admin-side-mask");
+      var toggle = document.getElementById("admin-nav-toggle");
+      if (!side || !mask || !toggle) return;
+      var mq = window.matchMedia("(max-width: 900px)");
 
-    function paint() {
-      var max = nav.scrollWidth - nav.clientWidth;
-      nav.classList.toggle("can-left", nav.scrollLeft > EDGE);
-      nav.classList.toggle("can-right", max > EDGE && nav.scrollLeft < max - EDGE);
+      function open() {
+        if (!mq.matches) return; // 桌面宽不当浮层用
+        side.classList.add("on");
+        mask.hidden = false;
+        toggle.setAttribute("aria-expanded", "true");
+        // 焦点移进抽屉：键盘用户接着 Tab 还在菜单里，不会掉回页面底下
+        var first = side.querySelector(".admin-side-item");
+        if (first) first.focus();
+      }
+      function close(back) {
+        side.classList.remove("on");
+        mask.hidden = true;
+        toggle.setAttribute("aria-expanded", "false");
+        // 焦点还给那颗开关（从菜单里或遮罩上关的都算；从开关自己关的不用动）
+        if (back !== false && (document.activeElement === document.body || side.contains(document.activeElement))) {
+          toggle.focus();
+        }
+      }
+      toggle.addEventListener("click", function () {
+        if (side.classList.contains("on")) close();
+        else open();
+      });
+      mask.addEventListener("click", function () {
+        close();
+      });
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && side.classList.contains("on")) close();
+      });
+      // 点了菜单项就关上（手机上选完功能不该还挡着半屏）
+      side.addEventListener("click", function (e) {
+        var a = e.target && e.target.closest ? e.target.closest("a.admin-side-item") : null;
+        if (a) close();
+      });
+      // 拉宽到桌面以上：把开着的抽屉收起来，别留一个浮层
+      if (mq.addEventListener) {
+        mq.addEventListener("change", function (e) {
+          if (!e.matches) close(false);
+        });
+      }
     }
 
-    function centerActive() {
-      var active = nav.querySelector('[aria-current="page"]');
-      if (!active) return;
-      var navBox = nav.getBoundingClientRect();
-      var itemBox = active.getBoundingClientRect();
-      // 只改横轴：把当前项挪到横条中间（左右各留一半余量）
-      var delta = itemBox.left - navBox.left - (nav.clientWidth - itemBox.width) / 2;
-      nav.scrollLeft = Math.max(0, nav.scrollLeft + delta);
-    }
-
-    centerActive();
-    paint();
-    nav.addEventListener("scroll", paint, { passive: true });
-    window.addEventListener("resize", paint);
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(paint);
-    // 兜底：图片/图标字形晚一步把宽度撑开时，再画一次
-    window.setTimeout(function () {
-      centerActive();
-      paint();
-    }, 400);
+    /* ⚠️ 必须等 DOM 解析完再挂监听（2026-10-15 实测踩到）：
+       ☰ 开关在 AdminTopBar 里，而页头在本页 DOM 里排在**侧栏之后**（开关在 ~38793 字节处，
+       这段脚本在 ~37125 处）。同步跑到这里时 getElementById("admin-nav-toggle") 拿到 null
+       → 整个 init 早退 → 表现是"☰ 点得动、click 也照常冒泡，抽屉就是不开"
+       （探针里文档级 click 计数器有值、抽屉状态纹丝不动，就是这个坑）。
+       改成等解析完再挂；首帧就已存在时（readyState 不是 loading）直接挂，不留延迟。 */
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+    else init();
   })();
 </script>

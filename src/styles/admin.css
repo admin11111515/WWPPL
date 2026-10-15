@@ -1482,102 +1482,93 @@ input[type="time"],
 	border-top: 1px solid var(--line-soft);
 }
 
-/* ── 窄屏（≤900px）：侧栏不再占一列，改成横向滚动的一条 ─────────────
-   2026-10-13 移动端体检把它量出两个毛病，一起改掉：
-     ① 第 6 项会被**从中间切断**（「技能」显示成「技」），右端却没有"还能滑"的任何提示
-        → 两端加渐隐（`can-left`/`can-right` 两个类，由 AdminSideNav 里的脚本按滚动位置切）
-        + 滑动停在整项上（scroll-snap）+ 外边留一点 scroll-padding
-     ② 分组标签在窄屏被隐藏后，三个分组糊成一片 → 组之间补一条细分隔线
-   项高抬到 44px（手机上这是用得最多的导航；桌面那档是 30px，拇指太密）。 */
+/* ── 窄屏（≤900px）：侧栏改成抽屉（2026-10-15）────────────────────
+   原来是顶部一条横向滚动带：14 个入口挤在一行，当前项被从中间切断
+   （实测「技能」显示成「技」），两端渐隐只是"提示"，找入口仍然要左右滑。
+   改成抽屉：页头 ☰（#admin-nav-toggle）开合，遮罩 / Esc / 点菜单项都能关；
+   桌面宽（>900px）完全不受影响 —— 那边侧栏照旧是常驻的一列。
+
+   ⚠️ 关的状态用 visibility 而不只 transform：只挪走的话元素还在 Tab 序列里，
+      手机上键盘用户会"菜单明明不见了，焦点还能进去"。
+   ⚠️ z-index 70 与「从图片库选一张」那族浮层同档。抽屉在 DOM 里排在页头、
+      内容前面，同档时后画的压上来 —— 内容里的浮层（如技能页图标面板）
+      正该压在抽屉上面，这个顺序是对的。
+   ⚠️ 横条时代那批规则（两端 mask 渐隐、scroll-padding、组间竖线）全删了，
+      抽屉是竖排全量，用不上。 */
+#admin-main .admin-nav-toggle {
+	/* ☰ 只有窄屏出现；桌面侧栏常驻，不需要它。
+	   ⚠️ 必须带 `#admin-main`（2026-10-15 量到）：admin.css 后面还有一条
+	      `.btn, .btn-primary, .btn-danger-sm, .btn-sm, .btn-icon, .toolbar-btn { display: inline-flex }`，
+	      与 `.admin-nav-toggle` **特异性同为 (0,1,0) 却排在后面** → 只写类名会被它压掉，
+	      桌面 1920px 上按钮算出来是 flex（作为 flex 子项被块化），☰ 就漏到桌面上了。
+	      带 id 前缀 (1,1,0) 稳压它；下面媒体查询里那条也带 id，靠"更靠后"在窄屏反超。 */
+	display: none;
+}
+.admin-side-mask {
+	display: none;
+}
+.admin-side-mask:not([hidden]) {
+	display: block;
+	position: fixed;
+	inset: 0;
+	z-index: 69; /* 比抽屉低一档，点它才关得掉抽屉 */
+	background: color-mix(in oklab, #000 45%, transparent);
+}
 @media (max-width: 900px) {
 	#admin-main {
 		display: block;
 	}
 	#admin-main > .admin-side {
-		position: static;
+		position: fixed;
+		top: 0;
+		bottom: 0;
+		left: 0;
+		z-index: 70;
+		width: min(15.5rem, 82vw);
 		max-height: none;
-		overflow: visible;
-		border-right: 0;
-		border-bottom: 1px solid var(--line-soft);
-		padding: 0.5rem 0.75rem 0.25rem;
+		padding: var(--sp-4) var(--sp-3);
+		border-right: 1px solid var(--line-soft);
+		box-shadow: 0 0 2rem rgb(0 0 0 / 0.25);
+		overflow-y: auto;
+		transform: translateX(-102%);
+		visibility: hidden;
+		transition: transform 0.25s ease, visibility 0.25s;
 	}
+	#admin-main > .admin-side.on {
+		transform: none;
+		visibility: visible;
+	}
+	/* 抽屉里恢复竖排：分组标签回来、每一项都全宽 */
 	.admin-side-nav {
-		flex-direction: row;
-		gap: 0.25rem;
-		overflow-x: auto;
-		scroll-padding-inline: 0.75rem;
-		-webkit-overflow-scrolling: touch;
-		/* 横条不需要滚动条占高（渐隐已经说明"还有内容"） */
-		scrollbar-width: none;
-		/* ⚠️ 这里**不要**写 scroll-snap：脚本要给「当前项居中」设 scrollLeft，
-		   而 scroll-snap 会在每次滚动结束后把位置吸附回最近的吸附点 —— 两者互相打架
-		   （载入时引擎还可能先吸一次，早于脚本）。这条横向带不需要吸附：
-		   两端渐隐已经说明"还能滑"，位置由脚本算，可控。 */
-	}
-	.admin-side-nav::-webkit-scrollbar {
-		display: none;
-	}
-	/* 两端渐隐：只在"那一侧确实还有内容"时出现。
-	   ⚠️ 用 mask 而不是盖一层渐变 —— 盖层会挡住点击，mask 不会。 */
-	.admin-side-nav.can-left {
-		mask-image: linear-gradient(to right, transparent 0, #000 1.5rem, #000 100%);
-		-webkit-mask-image: linear-gradient(to right, transparent 0, #000 1.5rem, #000 100%);
-	}
-	.admin-side-nav.can-right {
-		mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 1.5rem), transparent 100%);
-		-webkit-mask-image: linear-gradient(
-			to right,
-			#000 0,
-			#000 calc(100% - 1.5rem),
-			transparent 100%
-		);
-	}
-	.admin-side-nav.can-left.can-right {
-		mask-image: linear-gradient(
-			to right,
-			transparent 0,
-			#000 1.5rem,
-			#000 calc(100% - 1.5rem),
-			transparent 100%
-		);
-		-webkit-mask-image: linear-gradient(
-			to right,
-			transparent 0,
-			#000 1.5rem,
-			#000 calc(100% - 1.5rem),
-			transparent 100%
-		);
-	}
-	.admin-side-group {
-		display: flex;
-		align-items: center;
-		gap: 0.25rem;
-	}
-	/* 分组标签藏了，用一条竖线把分组关系留住 */
-	.admin-side-group + .admin-side-group::before {
-		content: "";
-		flex: none;
-		align-self: center;
-		width: 1px;
-		height: 1.25rem;
-		margin: 0 0.5rem;
-		background: var(--line-soft);
+		flex-direction: column;
+		gap: 0.125rem;
+		overflow: visible;
 	}
 	.admin-side-group + .admin-side-group {
-		margin-top: 0;
+		margin-top: var(--sp-5);
 	}
 	.admin-side-label {
-		display: none;
+		display: block;
 	}
 	.admin-side-item {
-		width: auto;
-		white-space: nowrap;
+		width: 100%;
+		white-space: normal;
 		min-height: 2.75rem; /* 44px：手机上的主要导航，拇指够得着 */
 	}
 	.admin-side-foot {
-		flex-direction: row;
-		margin-top: 0.25rem;
-		padding-top: 0.25rem;
+		flex-direction: column;
+		margin-top: auto;
+		padding-top: 0.625rem;
+	}
+	/* ☰ 开关：窄屏才显示。尺寸交给下面「手机控件 ≥44px」那批
+	   #admin-main .btn-sm 规则（min-height/min-width 2.75rem）。
+	   ⚠️ 带 id 前缀与上面对称（那条 display:none 也是 (1,1,0)）；两条同分，
+	      这条在媒体查询里、位置更后 → 窄屏显示、桌面隐藏。 */
+	#admin-main .admin-nav-toggle {
+		display: inline-flex;
+		justify-content: center;
+		padding-left: 0;
+		padding-right: 0;
 	}
 }
 

@@ -141,6 +141,9 @@ const EXPLICIT_ICONS = [
 	"material-symbols:tune", // 首页分组标题「站点」
 	"fluent-color:person-24", // 首页分组里「换头像」那一行
 	"material-symbols:chevron-right", // 列表行尾的箭头
+	// 2026-10-15：窄屏抽屉的开关（☰）。后台 ≤900px 的侧栏从顶部横条改成抽屉，
+	// 页头要有颗按钮开合它 —— menu 这个标准汉堡名当时不在清单里，补上。
+	"material-symbols:menu",
 ];
 
 // 支持的图标集及其包名

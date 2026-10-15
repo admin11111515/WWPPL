@@ -16,6 +16,8 @@ import { Icon } from "astro-icon/components";
  *   6. **现在（第六版）**：站长要求「后台里不需要顶部博客导航栏」→ 博客 `<Navbar />`
  *      整个撤掉。它带来的音乐键 / 背景播放 / 显示设置 / 搜索在后台都是前台功能，
  *      摆在那儿纯是噪音；页头一行照旧，右边顺手接住它留下的**主题开关**。
+ *    （2026-10-15 附注：窄屏 ≤900px 左侧多了一颗 ☰ —— 那边侧栏从顶部横条
+ *      改成抽屉，得有颗按钮开合它。桌面宽看不到它，页头形态不变。）
  *
  * ⚠️ 与第 3 版被否掉那条的区别（核验脚本按这几条断言，别改坏）：
  *      · **没有底色**、**不吸顶**（那是"一条栏"让人烦的地方）
@@ -58,6 +60,24 @@ const isAdminHome = Astro.url.pathname.replace(/\/+$/, "") === "/admin";
 <div class="container admin-head-container">
   <div class="admin-head">
     <div class="admin-head-left">
+      {/*
+        窄屏抽屉开关（☰）。桌面（>900px）侧栏是常驻的一列，用不到它 ——
+        admin.css 里 `.admin-nav-toggle` 默认 display:none，≤900px 才显示。
+        开合逻辑（遮罩 / Esc / 点菜单项都能关）在 AdminSideNav 的内联脚本里。
+        ⚠️ 图标名 material-symbols:menu 已加进 generate-icons.js 白名单；
+           不在名单里的名字 uiIcon() 会静默返回空串（按钮在、里面什么都没有）。
+      */}
+      <button
+        type="button"
+        class="btn btn-sm admin-nav-toggle"
+        id="admin-nav-toggle"
+        aria-label="打开导航菜单"
+        aria-expanded="false"
+        aria-controls="admin-side"
+        title="导航菜单"
+      >
+        <span class="admin-i" set:html={uiIcon("material-symbols:menu")} />
+      </button>
       {
         !isAdminHome && (
           <a href="/admin/" class="admin-back" title="回到后台首页">
