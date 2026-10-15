@@ -1644,6 +1644,39 @@ input[type="time"],
       要盖请写 `#admin-main > .container`，原因见上面「3. 宽度容器」那段。 */
 #admin-main { --admin-content-max: 1280px; }
 
+/* ── 访客不许看见后台主体（2026-10-15）────────────────────────────
+   后台各页是**静态产物**：客户端闸门（`AdminAuthGate.astro`）要等一次
+   `/api/auth/status` 的往返才判定，在那之前页面什么都有。
+   原来只有首页写了"未登录就藏主体"，其余页是"先亮一眼完整后台、再踢回登录页"
+   —— 站长的原话是「别人点后台管理竟然直接进去了」；图片库那页更糟：压根没闸门，
+   访客会一直停在后台界面上（写接口当然是 401，但界面全摊开了）。
+
+   判据用 `<html>` 上的类，**不能**用 `body.authed`：
+   `body.authed` 只有首页在加（那是登录页自己的状态），拿它判会把站长本人一起藏掉。
+   `html.admin-authed` 由闸门脚本在 <head> 里**同步**打上（本地有标记时），
+   所以老站长第一帧就是后台、不闪；访客则从第一帧就看不到。
+   ⚠️ 这是**客户端**的"关门"：真正的权限在服务端（/api/github/* 无会话一律 401）。
+      静态页面的 HTML 对谁都可见，这里管的是"别让人看到后台界面、别给错觉"。
+   ⚠️ 别写 `!important` 到下面那句"放行"上 —— 撤类要能立刻退回登录页。 */
+html:not(.admin-authed) #admin-main {
+	display: none !important;
+}
+/* 核对期间给一句话，别让人对着纯白发呆。
+   ⚠️ 排除登录页：登录页本来就要给访客看，盖上就没法输密码了。
+   （`#login-page` 只有 /admin/ 首页有；`:has()` 现代浏览器都支持，
+    本项目本来就在用 oklch/color-mix 这一档的新特性。） */
+html:not(.admin-authed) body:not(:has(#login-page))::before {
+	content: "正在核对登录状态…";
+	position: fixed;
+	inset: 0;
+	z-index: 9999;
+	display: grid;
+	place-items: center;
+	background: var(--bg);
+	color: var(--text-3);
+	font-size: 0.9375rem;
+}
+
 /* ── 2. 卡片：统一的边、圆角、悬停 ───────────────────────────── */
 .card,
 .card-base {

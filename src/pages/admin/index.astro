@@ -573,6 +573,12 @@ import { uiIcon } from "@/constants/ui-icons";
 
     // ===== 登录 =====
     function showAdmin() {
+      /* ⚠️ `html.admin-authed` 是全局那条判据（admin.css：html:not(.admin-authed) #admin-main
+         默认藏起来，访客第一帧就看不到后台）。登录是在**同一个文档里**切过去的、不刷新页面，
+         所以这里必须把它一起加上 —— 只在 body 上加 .authed 的话，
+         admin.css 那条 !important 的规则会继续压着，表现是"密码对了、登录页也收了，
+         后台却一片空白"（2026-10-15 闸门核验的端到端登录那条实测抓到的）。 */
+      document.documentElement.classList.add("admin-authed");
       document.body.classList.add("authed");
       $("login-page").style.display = "none";
       $("admin-main").classList.remove("hidden");
@@ -708,6 +714,9 @@ import { uiIcon } from "@/constants/ui-icons";
       });
     })();
     function showLogin() {
+      // 与 showAdmin 对称：撤掉"闸门放行"那条判据，否则登录页会被
+      // `html.admin-authed #login-page{display:none}` 藏掉（登出后看不到登录页）
+      document.documentElement.classList.remove("admin-authed");
       document.body.classList.remove("authed");
       $("admin-main").classList.add("hidden");
       $("login-page").style.display = "";
@@ -856,9 +865,14 @@ import { uiIcon } from "@/constants/ui-icons";
 
     // 会话失效/接口挂了：清本地标记 + 撤掉首帧防抖 + 显示登录页
     function failLogin() {
+      // ⚠️ "登录已过期"只对**确实登录过**的人说（本地有标记，或闸门留了 data-auth-expired 记号）。
+      //    头一回来的访客没有标记，跟他说"已过期"是听不懂的 —— 他会以为被谁踢了。
+      var expired = false;
+      try { expired = !!localStorage.getItem("admin_auth"); } catch (e) {}
+      if (!expired && document.documentElement.dataset.authExpired === "1") expired = true;
       localStorage.removeItem("admin_auth");
       document.documentElement.classList.remove("admin-authed");
-      $("login-error").textContent = "登录已过期，请重新输入密码";
+      $("login-error").textContent = expired ? "登录已过期，请重新输入密码" : "";
       startLoginAnimation();
     }
     })();

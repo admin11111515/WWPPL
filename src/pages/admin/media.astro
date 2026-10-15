@@ -883,8 +883,32 @@ const ICONS = {
     });
     document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeLightbox(); });
 
+    // ===== 登录闸门 =====
+    /* ⚠️ 这一页原来**没有**闸门（2026-10-15 站长报「别人点后台管理直接进去了」时量的：
+       14 个后台页里只有它既没有 checkAuth、也没有 doLogout）—— 访客打开 /admin/media/
+       会一直停在后台界面上（写接口照样 401，但界面全摊开），侧栏那颗「退出登录」
+       也因为 doLogout 不存在而是死的。补齐成与其余 13 页同款。
+       首帧那层"默认藏"的规则在 admin.css（html:not(.admin-authed) #admin-main），
+       这里负责"核实不过就送登录页"。 */
+    function checkAuth() {
+      return fetch("/api/auth/status")
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (!d.authed) { window.location.href = "/admin/"; return false; }
+          return true;
+        })
+        .catch(function () { window.location.href = "/admin/"; return false; });
+    }
+    function doLogout() {
+      localStorage.removeItem("admin_auth");
+      fetch("/api/auth/logout", { method: "POST" }).catch(function () {});
+      window.location.href = "/admin/";
+    }
+
     // ===== 启动 =====
-    loadAll();
+    checkAuth().then(function (ok) {
+      if (ok) loadAll();
+    });
   </script>
 </body>
 </html>
