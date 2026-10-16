@@ -26,7 +26,10 @@ const { Content } = await render(aboutPost);
         <!-- 背景图区域 -->
         <div class="about-hero">
             <div class="about-hero-overlay">
-                <h1 class="about-hero-title">About Me</h1>
+                <!-- ⚠️ 这里是 div 不是 h1：一页只能有一个 h1，正文那篇
+                     《关于我》的 `# 关于我` 才是页面主标题。改成 div 视觉不变
+                     （样式走 .about-hero-title 类，与标签无关）。 -->
+                <div class="about-hero-title">About Me</div>
                 <p class="about-hero-subtitle">上班，上课，写字</p>
             </div>
         </div>

@@ -55,6 +55,24 @@
             color: #409eff;
         }
 
+        /* 触控目标下限 24px（2026-10-14 全站布局体检量出来的）：
+           徽章是 img.shields.io 的图片，固有高度只有 20px；.footer-info 里带 16px
+           小图标的链接也只有 23px。平板/手机上点不实。
+           这里**只加命中区、不改视觉**：
+             · .badge-group a 是普通行内元素，给它加上下 padding 不影响任何排版
+               （行内元素的垂直 padding 不进行盒），但可点区域从 20px 变成 24px；
+             · .footer-info a 本来就是 inline-flex，用 min-height 把内容在 24px 里居中。 */
+        .badge-group a {
+            padding-top: 2px;
+            padding-bottom: 2px;
+        }
+
+        .footer-info a {
+            min-height: 24px;
+            min-width: 24px;
+            justify-content: center;
+        }
+
         /* 统计小图标 */
         .footer-info img {
             width: 16px;

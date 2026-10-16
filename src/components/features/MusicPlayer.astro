@@ -71,7 +71,9 @@ const widgetId =
 
         <!-- Time Display & Volume -->
         <div class="flex items-center gap-3 text-neutral-400 h-5">
-            <div class="text-[10px] font-mono flex items-center gap-1 shrink-0 h-full" aria-live="polite">
+            <!-- 11px 是本站说明文字的设计下限：原来写 text-[10px]，是全站唯一
+                 低于主题手机刻度（text-xs = 10.5px）的文字（2026-10-14 布局体检量到） -->
+            <div class="text-[11px] font-mono flex items-center gap-1 shrink-0 h-full" aria-live="polite">
                 <span class="current-time">0:00</span>
                 <span class="opacity-50" aria-hidden="true">/</span>
                 <span class="total-time">0:00</span>

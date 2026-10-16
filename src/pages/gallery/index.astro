@@ -116,7 +116,7 @@ const allTags = [...new Set(albums.flatMap((a) => a.tags || []))].sort();
           <p class="text-lg">{i18n(I18nKey.galleryNoAlbums)}</p>
           <a
             href="/archive/"
-            class="inline-flex items-center justify-center mt-4 text-sm underline underline-offset-4 opacity-70 transition-opacity hover:opacity-100 min-h-11 md:min-h-0"
+            class="inline-flex items-center justify-center mt-4 text-sm underline underline-offset-4 opacity-70 transition-opacity hover:opacity-100 min-h-11 md:min-h-6"
           >
             {i18n(I18nKey.keepExploring)}
           </a>
